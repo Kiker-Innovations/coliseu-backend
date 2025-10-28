@@ -1,81 +1,81 @@
-name: "Node.js Lambda Deployment – DEV"
+# name: "Node.js Lambda Deployment – DEV"
 
-on:
-  push:
-    branches: [ "develop" ]
+# on:
+#   push:
+#     branches: [ "develop" ]
 
-env:
-  DEPLOY_ENV: dev
+# env:
+#   DEPLOY_ENV: dev
 
-permissions:
-  id-token: write
-  contents: read
+# permissions:
+#   id-token: write
+#   contents: read
 
-jobs:
-  deploy-dev:
-    runs-on: ubuntu-latest
+# jobs:
+#   deploy-dev:
+#     runs-on: ubuntu-latest
 
-    steps:
-      # 1. Código
-      - name: Checkout
-        uses: actions/checkout@v3
+#     steps:
+#       # 1. Código
+#       - name: Checkout
+#         uses: actions/checkout@v3
 
-      # 2. Credenciais AWS DEV
-      - name: Configure AWS Credentials (dev)
-        uses: aws-actions/configure-aws-credentials@v3
-        with:
-          role-to-assume: arn:aws:iam::982534356352:role/role-delfin-lambda
-          aws-region: us-east-1    # ↳ mesmo da tfvars
+#       # 2. Credenciais AWS DEV
+#       - name: Configure AWS Credentials (dev)
+#         uses: aws-actions/configure-aws-credentials@v3
+#         with:
+#           role-to-assume: arn:aws:iam::982534356352:role/role-delfin-lambda
+#           aws-region: us-east-1    # ↳ mesmo da tfvars
 
-      # 3. Ambiente Node
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: "22.x"
+#       # 3. Ambiente Node
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v3
+#         with:
+#           node-version: "22.x"
 
-      # 3.1 Ambiente Bun
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
-        with:
-          bun-version: "1.2.13"
+#       # 3.1 Ambiente Bun
+#       - name: Setup Bun
+#         uses: oven-sh/setup-bun@v1
+#         with:
+#           bun-version: "1.2.13"
 
-      # 4. Build & package da Lambda
-      - name: Install Dependencies and Build
-        run: |
-          cd app
-          bun install
-          bun run package
+#       # 4. Build & package da Lambda
+#       - name: Install Dependencies and Build
+#         run: |
+#           cd app
+#           bun install
+#           bun run package
 
-      # 5. Copia pacote para módulo Terraform
-      - name: Move Lambda Package to Terraform Directory
-        run: |
-          cd app
-          mkdir -p ../infra/modules/lambda/package
-          mv lambda.zip ../infra/modules/lambda/package/ms-documents-dev.zip
+#       # 5. Copia pacote para módulo Terraform
+#       - name: Move Lambda Package to Terraform Directory
+#         run: |
+#           cd app
+#           mkdir -p ../infra/modules/lambda/package
+#           mv lambda.zip ../infra/modules/lambda/package/ms-documents-dev.zip
 
-      # 6. Terraform
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: 1.9.6
+#       # 6. Terraform
+#       - name: Setup Terraform
+#         uses: hashicorp/setup-terraform@v2
+#         with:
+#           terraform_version: 1.9.6
 
-      - name: Terraform Init
-        run: |
-          cd infra
-          terraform init \
-            -backend-config="inventories/${{ env.DEPLOY_ENV }}/backend.tfvars"
+#       - name: Terraform Init
+#         run: |
+#           cd infra
+#           terraform init \
+#             -backend-config="inventories/${{ env.DEPLOY_ENV }}/backend.tfvars"
 
-      - name: Terraform Plan (dev)
-        run: |
-          cd infra
-          terraform plan \
-            -var-file="inventories/${{ env.DEPLOY_ENV }}/variables.tfvars" \
-            -lock-timeout=300s
+#       - name: Terraform Plan (dev)
+#         run: |
+#           cd infra
+#           terraform plan \
+#             -var-file="inventories/${{ env.DEPLOY_ENV }}/variables.tfvars" \
+#             -lock-timeout=300s
 
-      - name: Terraform Apply (dev)
-        run: |
-          cd infra
-          terraform apply \
-            -var-file="inventories/${{ env.DEPLOY_ENV }}/variables.tfvars" \
-            -auto-approve \
-            -lock-timeout=300s
+#       - name: Terraform Apply (dev)
+#         run: |
+#           cd infra
+#           terraform apply \
+#             -var-file="inventories/${{ env.DEPLOY_ENV }}/variables.tfvars" \
+#             -auto-approve \
+#             -lock-timeout=300s

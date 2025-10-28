@@ -1,0 +1,30 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.0.5/schema.json",
+	"formatter": {
+		"enabled": true
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"suspicious": {
+				"noExplicitAny": "off"
+			},
+			"complexity": {
+				"noUselessCatch": "off",
+				"noStaticOnlyClass": "off"
+			}
+		}
+	},
+	"assist": {
+		"enabled": true,
+		"actions": {
+			"source": {
+				"organizeImports": "off"
+			}
+		}
+	},
+	"files": {
+		"includes": ["src/**/*.ts", "test/**/*.ts", "!**/*.min.ts"]
+	}
+}

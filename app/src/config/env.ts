@@ -1,0 +1,102 @@
+import { z } from "zod";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const packageJsonPath = join(__dirname, "../../package.json");
+const application = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
+
+const envSchema = z.object({
+	app: z.object({
+		port: z.number().int().positive().optional(),
+		environment: z.string().min(1).optional(),
+		baseUrl: z.string().url(),
+		jwtSecret: z.string().min(1),
+	}),
+	plugins: z.object({
+		swagger: z.object({
+			basePath: z.string().min(1),
+		}),
+	}),
+	stripPrefix: z.object({
+		path: z.string().min(1),
+	}),
+	databases: z.object({
+		mongodb: z.object({
+			url: z.string().url().min(1),
+			collections: z.object({
+				residents: z.string().min(1),
+			}),
+		}),
+	}),
+	providers: z.object({
+		aws: z.object({
+			config: z.object({
+				region: z.string().min(1), // Região AWS (obrigatório)
+				accessKeyId: z.string().min(1), // AWS Access Key ID (obrigatório)
+				secretAccessKey: z.string().min(1), // AWS Secret Access Key (obrigatório)
+			}),
+			s3: z.object({
+				bucketName: z.string().min(1), // Nome do bucket S3 (obrigatório)
+				endpoint: z.string().url().optional(), // Endpoint S3 (opcional para LocalStack)
+				presignedUrlExpiration: z.number().int().positive(), // Tempo de expiração em segundos
+				folders: z.object({
+					resident: z.string().min(1), // Pasta para fotos de moradores
+				}),
+			}),
+			ses: z.object({
+				fromEmail: z.string().email().min(1), // Email verificado no SES
+			}),
+		}),
+	}),
+});
+
+export const env = envSchema.parse({
+	app: {
+		port: Number(process.env.PORT),
+		environment: process.env.APP_ENVIRONMENT,
+		baseUrl: process.env.APP_BASE_URL,
+		jwtSecret: process.env.JWT_SECRET,
+	},
+	plugins: {
+		swagger: {
+			basePath: Object.is(process.env.USE_ROUTE_PREFIX, "true")
+				? `/api/${application.name.replace(/-/g, "")}/`
+				: "/",
+		},
+	},
+	stripPrefix: {
+		path: `/api/${application.name.replace(/-/g, "")}`,
+	},
+	databases: {
+		mongodb: {
+			url: process.env.MONGODB_URL,
+			collections: {
+				residents: process.env.MONGODB_COLLECTION_RESIDENTS,
+			},
+		},
+	},
+	providers: {
+		aws: {
+			config: {
+				region: process.env.AWS_REGION,
+				accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+				secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+			},
+			s3: {
+				bucketName: process.env.AWS_S3_BUCKET_NAME,
+				presignedUrlExpiration: Number(
+					process.env.AWS_S3_PRESIGNED_URL_EXPIRATION,
+				),
+				folders: {
+					resident: process.env.AWS_S3_FOLDER_RESIDENT,
+				},
+			},
+			ses: {
+				fromEmail: process.env.AWS_SES_FROM_EMAIL,
+			},
+		},
+	},
+});

@@ -1,0 +1,23 @@
+import type { ResidentStatusEnumType } from "../../../v1/enum/residentStatus.enum";
+
+export interface ResidentEntity {
+	id: string;
+	apartmentNumber: string;
+	email: string;
+	passwordHash: string;
+	phone: string;
+	status: ResidentStatusEnumType;
+	photoUrl: string | null;
+	residentCode: string;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+export type CreateResidentEntity = Omit<
+	ResidentEntity,
+	"id" | "createdAt" | "updatedAt"
+>;
+
+export type UpdateResidentEntity = Partial<
+	Pick<ResidentEntity, "phone" | "photoUrl" | "status" | "updatedAt">
+>;

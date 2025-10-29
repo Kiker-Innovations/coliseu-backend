@@ -25,6 +25,7 @@ jest.mock("../../../../../src/config/env", () => ({
 		databases: {
 			mongodb: {
 				url: "mongodb://localhost:27017/test",
+				database: "coliseu",
 				collections: {
 					residents: "residents",
 				},

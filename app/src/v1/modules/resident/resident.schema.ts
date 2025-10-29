@@ -6,27 +6,22 @@ export class ResidentSchema {
 			properties: {
 				apartmentNumber: {
 					type: "string",
-					maxLength: 4,
-					pattern: "^\\d+$",
 					description: "Número do apartamento (máximo 4 dígitos numéricos)",
 					example: "1234",
 				},
 				email: {
 					type: "string",
-					format: "email",
 					description: "Email do morador",
 					example: "morador@example.com",
 				},
 				password: {
 					type: "string",
-					minLength: 8,
 					description:
 						"Senha (mínimo 8 caracteres, com maiúscula, minúscula e caractere especial)",
 					example: "Senha@123",
 				},
 				phone: {
 					type: "string",
-					pattern: "^\\+\\d{11,15}$",
 					description: "Telefone no formato internacional",
 					example: "+5513974080222",
 				},
@@ -42,24 +37,10 @@ export class ResidentSchema {
 					data: {
 						type: "object",
 						properties: {
-							id: { type: "string", format: "uuid" },
 							email: { type: "string" },
 							apartmentNumber: { type: "string" },
 							phone: { type: "string" },
-							status: {
-								type: "string",
-								enum: ["INATIVO", "VALIDADO", "ATIVO"],
-							},
-							upload: {
-								type: "object",
-								properties: {
-									presignedUrl: { type: "string" },
-									photoUrl: { type: "string" },
-									s3Key: { type: "string" },
-									instructions: { type: "string" },
-									expiresIn: { type: "string" },
-								},
-							},
+							presignedUrl: { type: "string" },
 						},
 					},
 				},
@@ -100,7 +81,6 @@ export class ResidentSchema {
 			properties: {
 				id: {
 					type: "string",
-					format: "uuid",
 					description: "ID do morador",
 				},
 			},
@@ -114,17 +94,12 @@ export class ResidentSchema {
 					data: {
 						type: "object",
 						properties: {
-							id: { type: "string", format: "uuid" },
 							apartmentNumber: { type: "string" },
 							email: { type: "string" },
 							phone: { type: "string" },
-							status: {
-								type: "string",
-								enum: ["INATIVO", "VALIDADO", "ATIVO"],
-							},
 							photoUrl: { type: "string", nullable: true },
-							createdAt: { type: "string", format: "date-time" },
-							updatedAt: { type: "string", format: "date-time" },
+							createdAt: { type: "string" },
+							updatedAt: { type: "string" },
 						},
 					},
 				},
@@ -147,7 +122,6 @@ export class ResidentSchema {
 			properties: {
 				id: {
 					type: "string",
-					format: "uuid",
 					description: "ID do morador",
 				},
 			},
@@ -157,13 +131,11 @@ export class ResidentSchema {
 			properties: {
 				phone: {
 					type: "string",
-					pattern: "^\\+\\d{11,15}$",
 					description: "Telefone no formato internacional",
 					example: "+5513974080222",
 				},
 				photoUrl: {
 					type: "string",
-					format: "uri",
 					description: "URL da foto do morador",
 					example:
 						"https://bucket.s3.amazonaws.com/residents/abc-123/photo.jpg",
@@ -180,14 +152,14 @@ export class ResidentSchema {
 					data: {
 						type: "object",
 						properties: {
-							id: { type: "string", format: "uuid" },
+							id: { type: "string" },
 							apartmentNumber: { type: "string" },
 							email: { type: "string" },
 							phone: { type: "string" },
 							status: { type: "string" },
 							photoUrl: { type: "string", nullable: true },
-							createdAt: { type: "string", format: "date-time" },
-							updatedAt: { type: "string", format: "date-time" },
+							createdAt: { type: "string" },
+							updatedAt: { type: "string" },
 						},
 					},
 				},
@@ -210,7 +182,6 @@ export class ResidentSchema {
 			properties: {
 				id: {
 					type: "string",
-					format: "uuid",
 					description: "ID do morador",
 				},
 			},
@@ -242,7 +213,6 @@ export class ResidentSchema {
 			properties: {
 				email: {
 					type: "string",
-					format: "email",
 					description: "Email do morador",
 					example: "morador@example.com",
 				},
@@ -280,7 +250,6 @@ export class ResidentSchema {
 			properties: {
 				id: {
 					type: "string",
-					format: "uuid",
 					description: "ID do morador",
 				},
 			},

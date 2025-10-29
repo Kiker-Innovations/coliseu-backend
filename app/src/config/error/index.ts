@@ -1,5 +1,6 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import * as HttpStatus from "http-status";
+import HttpStatus from "http-status";
+import type { ZodError } from "zod";
 
 const isFastifyError = (error: any): boolean => {
 	return error.code < 600 || (error.statusCode && error.statusCode === 400);
@@ -10,12 +11,12 @@ const isZodError = (error: any): boolean => {
 };
 
 const isFlowError = (error: any): boolean => {
-	return error.message && error.statusCode;
+	return error.message;
 };
 
 export const errorHandler = (
 	genericError: any,
-	request: FastifyRequest,
+	_request: FastifyRequest,
 	reply: FastifyReply,
 ) => {
 	const error = { ...genericError };
@@ -32,20 +33,23 @@ export const errorHandler = (
 	}
 
 	if (isZodError(error)) {
-		const message = error.issues.map((issue) => {
-			return `${issue.path[0]}: ${issue.message}`;
-		});
+		const zodError = error as ZodError;
+		const errors = zodError.issues.map((issue) => ({
+			field: issue.path.join("."),
+			message: issue.message,
+		}));
 
 		return reply.status(400).send({
 			statusCode: 400,
-			message,
+			message: "Erro de validação nos dados fornecidos",
+			errors,
 			timestamp: new Date(),
 		});
 	}
 
 	if (isFlowError(error)) {
 		return reply.status(error.statusCode).send({
-			statusCode: error.statusCode,
+			statusCode: error?.statusCode || 500,
 			message: error.message,
 			timestamp: new Date(),
 		});

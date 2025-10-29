@@ -37,9 +37,8 @@ export const residentCreateSchema = z.object({
 
 export type ResidentCreateDto = z.infer<typeof residentCreateSchema>;
 
-export interface IResidentCreateDto {
-	apartmentNumber: string;
-	email: string;
-	password: string;
-	phone: string;
-}
+export const transformCreateResidentDto = (
+	data: ResidentCreateDto,
+): ResidentCreateDto => {
+	return residentCreateSchema.parse(data);
+};

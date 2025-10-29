@@ -12,6 +12,8 @@ export const residentUpdateSchema = z.object({
 
 export type ResidentUpdateDto = z.infer<typeof residentUpdateSchema>;
 
-export interface IResidentUpdateDto {
-	phone?: string;
-}
+export const transformUpdateResidentDto = (
+	data: ResidentUpdateDto,
+): ResidentUpdateDto => {
+	return residentUpdateSchema.parse(data);
+};

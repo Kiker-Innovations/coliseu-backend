@@ -27,9 +27,13 @@ class MongoConnection {
 		if (!this.isConnected) {
 			try {
 				await this.client.connect();
-				await this.client.db("admin").command({ ping: 1 });
+				await this.client
+					.db(env.databases.mongodb.database)
+					.command({ ping: 1 });
 				this.isConnected = true;
-				console.log("✅ Connected to MongoDB successfully!");
+				console.log(
+					`✅ Connected to MongoDB successfully! Database: ${env.databases.mongodb.database}`,
+				);
 			} catch (error) {
 				console.error("❌ Failed to connect to MongoDB:", error);
 				throw error;

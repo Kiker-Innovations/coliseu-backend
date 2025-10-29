@@ -15,7 +15,7 @@ export class ResidentRepository
 	private collection: Collection<ResidentEntity>;
 
 	constructor(mongoClient: MongoClient) {
-		const database = mongoClient.db();
+		const database = mongoClient.db(env.databases.mongodb.database);
 		this.collection = database.collection<ResidentEntity>(
 			env.databases.mongodb.collections.residents,
 		);
@@ -24,7 +24,7 @@ export class ResidentRepository
 	public async create(data: CreateResidentEntity): Promise<ResidentEntity> {
 		const now = new Date();
 		const residentEntity: ResidentEntity = {
-			id: randomUUID(),
+			_id: randomUUID(),
 			...data,
 			createdAt: now,
 			updatedAt: now,
@@ -34,8 +34,8 @@ export class ResidentRepository
 		return residentEntity;
 	}
 
-	public async findById(id: string): Promise<ResidentEntity | null> {
-		return await this.collection.findOne({ id });
+	public async findById(_id: string): Promise<ResidentEntity | null> {
+		return await this.collection.findOne({ _id });
 	}
 
 	public async findOne(
@@ -51,7 +51,7 @@ export class ResidentRepository
 	}
 
 	public async update(
-		id: string,
+		_id: string,
 		data: UpdateResidentEntity,
 	): Promise<ResidentEntity | null> {
 		const updateData = {
@@ -60,7 +60,7 @@ export class ResidentRepository
 		};
 
 		const result = await this.collection.findOneAndUpdate(
-			{ id },
+			{ _id },
 			{ $set: updateData },
 			{ returnDocument: "after" },
 		);
@@ -68,8 +68,8 @@ export class ResidentRepository
 		return result || null;
 	}
 
-	public async delete(id: string): Promise<boolean> {
-		const result = await this.collection.deleteOne({ id });
+	public async delete(_id: string): Promise<boolean> {
+		const result = await this.collection.deleteOne({ _id });
 		return result.deletedCount > 0;
 	}
 

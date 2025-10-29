@@ -1,5 +1,5 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import * as HttpStatus from "http-status";
+import HttpStatus from "http-status";
 import { errorHandler, httpException } from "../../../../src/config/error";
 
 const replyMock = {

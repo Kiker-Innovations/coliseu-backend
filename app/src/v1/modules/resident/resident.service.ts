@@ -9,7 +9,14 @@ import { ResidentRepository } from "../../../database/mongodb/repositories/resid
 import { S3Provider } from "../../../providers/aws/s3.provider";
 import { SESProvider } from "../../../providers/aws/ses.provider";
 import { ResidentStatusEnum } from "../../enum/residentStatus.enum";
-import type { ResidentCreateDto, ResidentUpdateDto } from "./dto";
+import type {
+	ResidentConfirmDto,
+	ResidentCreateDto,
+	ResidentUpdateDto,
+} from "./dto";
+import { httpException } from "../../../config/error";
+import httpStatus from "http-status";
+import type { HttpResponse } from "../../../interface/httpResponse.interface";
 
 export class ResidentService {
 	private residentRepository: ResidentRepository;
@@ -22,14 +29,23 @@ export class ResidentService {
 		this.sesProvider = new SESProvider();
 	}
 
-	public async createResident(
-		residentCreateDto: ResidentCreateDto,
-	): Promise<ResidentEntity> {
+	public async createResident(residentCreateDto: ResidentCreateDto): Promise<
+		HttpResponse<{
+			email: string;
+			apartmentNumber: string;
+			phone: string;
+			presignedUrl: string;
+		}>
+	> {
 		const existingResident = await this.residentRepository.findByEmail(
 			residentCreateDto.email,
 		);
+
 		if (existingResident) {
-			throw new Error("Email já cadastrado no sistema");
+			throw httpException(
+				"Email já cadastrado no sistema.",
+				httpStatus.CONFLICT,
+			);
 		}
 
 		const passwordHash = await this.hashPassword(residentCreateDto.password);
@@ -48,13 +64,52 @@ export class ResidentService {
 		const createdResident =
 			await this.residentRepository.create(residentEntity);
 
-		this.sendConfirmationEmailAsync(residentCreateDto.email, residentCode);
+		// this.sendConfirmationEmailAsync(residentCreateDto.email, residentCode);
 
-		return createdResident;
+		const { presignedUrl, publicUrl } = await this.generatePresignedUrl(
+			createdResident._id,
+			"jpg",
+		);
+
+		await this.residentRepository.update(createdResident._id, {
+			photoUrl: publicUrl,
+		});
+
+		return {
+			success: true,
+			message:
+				"Morador cadastrado com sucesso! Verifique seu email para confirmar o cadastro.",
+			data: {
+				email: createdResident.email,
+				apartmentNumber: createdResident.apartmentNumber,
+				phone: createdResident.phone,
+				presignedUrl,
+			},
+		};
 	}
 
-	public async getResident(residentId: string): Promise<ResidentEntity | null> {
-		return await this.residentRepository.findById(residentId);
+	public async getResident(residentId: string): Promise<
+		HttpResponse<{
+			email: string;
+			apartmentNumber: string;
+			phone: string;
+		}>
+	> {
+		const resident = await this.residentRepository.findById(residentId);
+
+		if (!resident) {
+			throw httpException("Morador não encontrado", httpStatus.NOT_FOUND);
+		}
+
+		return {
+			success: true,
+			message: "Morador encontrado com sucesso",
+			data: {
+				email: resident.email,
+				apartmentNumber: resident.apartmentNumber,
+				phone: resident.phone,
+			},
+		};
 	}
 
 	public async getResidentByEmail(
@@ -65,29 +120,90 @@ export class ResidentService {
 
 	public async updateResident(
 		residentId: string,
-		input: ResidentUpdateDto,
-	): Promise<ResidentEntity | null> {
-		return await this.residentRepository.update(residentId, input);
+		residentUpdateDto: ResidentUpdateDto,
+	): Promise<
+		HttpResponse<{
+			email: string;
+			apartmentNumber: string;
+			phone: string;
+		}>
+	> {
+		const resident = await this.residentRepository.findById(residentId);
+
+		if (!resident) {
+			throw httpException("Morador não encontrado", httpStatus.NOT_FOUND);
+		}
+
+		const updatedResident = await this.residentRepository.update(
+			residentId,
+			residentUpdateDto,
+		);
+
+		if (!updatedResident) {
+			throw httpException(
+				"Erro ao atualizar morador",
+				httpStatus.INTERNAL_SERVER_ERROR,
+			);
+		}
+
+		return {
+			success: true,
+			message: "Morador atualizado com sucesso",
+			data: {
+				email: updatedResident.email,
+				apartmentNumber: updatedResident.apartmentNumber,
+				phone: updatedResident.phone,
+			},
+		};
 	}
 
-	public async deleteResident(residentId: string): Promise<boolean> {
-		return await this.residentRepository.delete(residentId);
+	public async deleteResident(residentId: string): Promise<HttpResponse<null>> {
+		const resident = await this.residentRepository.findById(residentId);
+
+		if (!resident) {
+			throw httpException("Morador não encontrado", httpStatus.NOT_FOUND);
+		}
+
+		const deleted = await this.residentRepository.delete(residentId);
+
+		if (!deleted) {
+			throw httpException(
+				"Erro ao deletar morador",
+				httpStatus.INTERNAL_SERVER_ERROR,
+			);
+		}
+
+		return {
+			success: true,
+			message: "Morador deletado com sucesso",
+			data: null,
+		};
 	}
 
 	public async generatePresignedUrl(
 		residentId: string,
 		fileExtension: string,
-	): Promise<{ presignedUrl: string; photoUrl: string; s3Key: string }> {
-		const fileName = `${randomUUID()}.${fileExtension}`;
+	): Promise<{
+		presignedUrl: string;
+		s3Key: string;
+		expiresIn: string;
+		publicUrl: string;
+	}> {
+		const resident = await this.residentRepository.findById(residentId);
+
+		if (!resident) {
+			throw httpException("Morador não encontrado", httpStatus.NOT_FOUND);
+		}
+
+		const fileName = `${resident._id}-register-image.${fileExtension}`;
 		const s3Key = `${env.providers.aws.s3.folders.resident}/${residentId}/${fileName}`;
 
 		const contentTypeMap: Record<string, string> = {
 			jpg: "image/jpeg",
 			jpeg: "image/jpeg",
 			png: "image/png",
-			gif: "image/gif",
-			webp: "image/webp",
 		};
+
 		const contentType =
 			contentTypeMap[fileExtension.toLowerCase()] || "application/octet-stream";
 
@@ -95,47 +211,44 @@ export class ResidentService {
 			s3Key,
 			contentType,
 		);
-		const photoUrl = this.s3Provider.getPublicUrl(s3Key);
+		const publicUrl = this.s3Provider.getPublicUrl(s3Key);
 
 		return {
 			presignedUrl,
-			photoUrl,
+			publicUrl,
 			s3Key,
+			expiresIn: `${env.providers.aws.s3.presignedUrlExpiration} segundos`,
 		};
 	}
 
 	public async confirmResidentCode(
-		email: string,
-		code: string,
-	): Promise<{ success: boolean; message: string }> {
-		const resident = await this.getResidentByEmail(email);
+		residentConfirmDto: ResidentConfirmDto,
+	): Promise<HttpResponse<null>> {
+		const resident = await this.getResidentByEmail(residentConfirmDto.email);
 
 		if (!resident) {
-			return {
-				success: false,
-				message: "Morador não encontrado",
-			};
+			throw httpException("Morador não encontrado", httpStatus.NOT_FOUND);
 		}
 
 		if (
 			resident.status === ResidentStatusEnum.VALIDADO ||
 			resident.status === ResidentStatusEnum.ATIVO
 		) {
-			return {
-				success: false,
-				message: "Cadastro já foi confirmado anteriormente",
-			};
+			throw httpException(
+				"Cadastro já foi confirmado anteriormente",
+				httpStatus.BAD_REQUEST,
+			);
 		}
 
-		if (resident.residentCode !== code) {
-			return {
-				success: false,
-				message: "Código de confirmação inválido",
-			};
+		if (resident.residentCode !== residentConfirmDto.code) {
+			throw httpException(
+				"Código de confirmação inválido",
+				httpStatus.BAD_REQUEST,
+			);
 		}
 
 		// Atualiza status para VALIDADO
-		await this.residentRepository.updateByEmail(email, {
+		await this.residentRepository.updateByEmail(residentConfirmDto.email, {
 			status: ResidentStatusEnum.VALIDADO,
 		});
 
@@ -143,6 +256,7 @@ export class ResidentService {
 			success: true,
 			message:
 				"Cadastro confirmado com sucesso! Aguarde a aprovação do administrador.",
+			data: null,
 		};
 	}
 

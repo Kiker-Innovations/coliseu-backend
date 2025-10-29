@@ -17,7 +17,7 @@ export class ResidentRouteV1 {
 			method: "POST",
 			url: "/v1/residents",
 			schema: {
-				tags: ["v1", "residents"],
+				tags: ["Residents"],
 				summary: "Create a new resident",
 				description:
 					"Cria um novo morador no sistema e envia email de confirmação",
@@ -34,7 +34,7 @@ export class ResidentRouteV1 {
 			method: "GET",
 			url: "/v1/residents/:id",
 			schema: {
-				tags: ["v1", "residents"],
+				tags: ["Residents"],
 				summary: "Get resident by ID",
 				description: "Busca um morador específico por ID",
 				...this.residentSchema.getById,
@@ -50,7 +50,7 @@ export class ResidentRouteV1 {
 			method: "PUT",
 			url: "/v1/residents/:id",
 			schema: {
-				tags: ["v1", "residents"],
+				tags: ["Residents"],
 				summary: "Update resident",
 				description: "Atualiza dados de um morador (phone, photoUrl)",
 				...this.residentSchema.update,
@@ -66,7 +66,7 @@ export class ResidentRouteV1 {
 			method: "DELETE",
 			url: "/v1/residents/:id",
 			schema: {
-				tags: ["v1", "residents"],
+				tags: ["Residents"],
 				summary: "Delete resident",
 				description: "Remove um morador do sistema",
 				...this.residentSchema.remove,
@@ -82,28 +82,12 @@ export class ResidentRouteV1 {
 			method: "POST",
 			url: "/v1/residents/confirm",
 			schema: {
-				tags: ["v1", "residents"],
+				tags: ["Residents"],
 				summary: "Confirm resident email",
 				description: "Confirma o código de verificação enviado por email",
 				...this.residentSchema.confirm,
 			},
 			handler: this.residentController.confirmResident.bind(
-				this.residentController,
-			) as RouteHandlerMethod,
-		};
-	};
-
-	private generatePresignedUrl = (): RouteOptions => {
-		return {
-			method: "POST",
-			url: "/v1/residents/:id/presigned-url",
-			schema: {
-				tags: ["v1", "residents"],
-				summary: "Generate presigned URL for photo upload",
-				description: "Gera uma URL pré-assinada para upload de foto do morador",
-				...this.residentSchema.generatePresignedUrl,
-			},
-			handler: this.residentController.generatePresignedUrl.bind(
 				this.residentController,
 			) as RouteHandlerMethod,
 		};
@@ -116,7 +100,6 @@ export class ResidentRouteV1 {
 			this.update(),
 			this.remove(),
 			this.confirm(),
-			this.generatePresignedUrl(),
 		];
 	};
 }

@@ -26,6 +26,7 @@ const envSchema = z.object({
 	databases: z.object({
 		mongodb: z.object({
 			url: z.string().url().min(1),
+			database: z.string().min(1),
 			collections: z.object({
 				residents: z.string().min(1),
 			}),
@@ -73,6 +74,7 @@ export const env = envSchema.parse({
 	databases: {
 		mongodb: {
 			url: process.env.MONGODB_URL,
+			database: process.env.MONGODB_DATABASE,
 			collections: {
 				residents: process.env.MONGODB_COLLECTION_RESIDENTS,
 			},

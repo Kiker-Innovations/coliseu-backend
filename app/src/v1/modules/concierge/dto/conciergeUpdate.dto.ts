@@ -1,0 +1,38 @@
+import { z } from "zod";
+import type { ConciergeShiftEnumType } from "@/v1/enum/conciergeShift.enum";
+
+export const conciergeUpdateSchema = z.object({
+	phone: z
+		.string()
+		.regex(
+			/^\+\d{11,15}$/,
+			"Telefone deve estar no formato internacional (ex: +5513974080222)",
+		)
+		.optional()
+		.refine((val) => val !== "", "Telefone não pode estar vazio"),
+
+	name: z
+		.string()
+		.optional()
+		.refine((val) => val === undefined || val.trim() !== "", "Nome não pode estar vazio"),
+
+	email: z
+		.string()
+		.email("Email inválido")
+		.optional()
+		.refine((val) => val === undefined || val.trim() !== "", "Email não pode estar vazio"),
+
+	shift: z
+		.enum(["MANHA", "TARDE", "NOITE"])
+		.optional(),
+});
+
+export type ConciergeUpdateDto = z.infer<typeof conciergeUpdateSchema> & {
+	shift?: ConciergeShiftEnumType;
+};
+
+export const transformUpdateConciergeDto = (
+	data: ConciergeUpdateDto,
+): ConciergeUpdateDto => {
+	return conciergeUpdateSchema.parse(data);
+};

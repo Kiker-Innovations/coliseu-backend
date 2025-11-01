@@ -1,80 +1,93 @@
+import { Collection, MongoClient } from "mongodb";
+import { ConciergeEntity, CreateConciergeEntity, UpdateConciergeEntity } from "../entity/concierge.entity";
+import { IRepository } from "../interfaces/IRepository";
+import { env } from "@/config/env";
 import { randomUUID } from "node:crypto";
-import type { Collection, MongoClient } from "mongodb";
-import { env } from "../../../config/env";
-import type {
-	CreateConciergeEntity,
-	ConciergeEntity,
-	UpdateConciergeEntity,
-} from "../entity/concierge.entity";
-import type { IRepository } from "../interfaces/IRepository";
+
 
 export class ConciergeRepository
-	implements
-		IRepository<ConciergeEntity, CreateConciergeEntity, UpdateConciergeEntity>
-{
-	private collection: Collection<ConciergeEntity>;
+    implements
+    IRepository<ConciergeEntity, CreateConciergeEntity, UpdateConciergeEntity> {
 
-	constructor(mongoClient: MongoClient) {
-		const database = mongoClient.db(env.databases.mongodb.database);
-		this.collection = database.collection<ConciergeEntity>(
-			env.databases.mongodb.collections.concierges,
-		);
-	}
+    private collection: Collection<ConciergeEntity>;
 
-	public async create(data: CreateConciergeEntity): Promise<ConciergeEntity> {
-		const now = new Date();
-		const conciergeEntity: ConciergeEntity = {
-			_id: randomUUID(),
-			...data,
-			createdAt: now,
-			updatedAt: now,
-		};
+    constructor(mongoClient: MongoClient) {
+        const database = mongoClient.db(env.databases.mongodb.database);
+        this.collection = database.collection<ConciergeEntity>(
+            env.databases.mongodb.collections.concierges,
+        );
+    }
 
-		await this.collection.insertOne(conciergeEntity);
-		return conciergeEntity;
-	}
+    public async create(data: CreateConciergeEntity): Promise<ConciergeEntity> {
+        const now = new Date();
+        const conciergeEntity: ConciergeEntity = {
+            _id: randomUUID(),
+            ...data,
+            createdAt: now,
+            updatedAt: now,
+        };
 
-	public async findById(_id: string): Promise<ConciergeEntity | null> {
-		return await this.collection.findOne({ _id });
-	}
+        await this.collection.insertOne(conciergeEntity);
+        return conciergeEntity;
+    }
 
-	public async findOne(
-		filter: Partial<ConciergeEntity>,
-	): Promise<ConciergeEntity | null> {
-		return await this.collection.findOne(filter);
-	}
+    public async findByEmail(email: string): Promise<ConciergeEntity | null> {
+        return await this.findOne({ email });
+    }
 
-	public async findMany(
-		filter?: Partial<ConciergeEntity>,
-	): Promise<ConciergeEntity[]> {
-		return await this.collection.find(filter || {}).toArray();
-	}
+    public async findById(_id: string): Promise<ConciergeEntity | null> {
+        return await this.collection.findOne({ _id });
+    }
 
-	public async update(
-		_id: string,
-		data: UpdateConciergeEntity,
-	): Promise<ConciergeEntity | null> {
-		const updateData = {
-			...data,
-			updatedAt: new Date(),
-		};
+    public async findOne(
+        filter: Partial<ConciergeEntity>,
+    ): Promise<ConciergeEntity | null> {
+        return await this.collection.findOne(filter);
+    }
 
-		const result = await this.collection.findOneAndUpdate(
-			{ _id },
-			{ $set: updateData },
-			{ returnDocument: "after" },
-		);
+    public async findMany(): Promise<ConciergeEntity[]> {
+        return await this.collection.find({}).toArray();
+    }
 
-		return result || null;
-	}
+    public async update(
+        _id: string,
+        data: UpdateConciergeEntity,
+    ): Promise<ConciergeEntity | null> {
+        const updateData = {
+            ...data,
+            updatedAt: new Date(),
+        };
 
-	public async delete(_id: string): Promise<boolean> {
-		const result = await this.collection.deleteOne({ _id });
-		return result.deletedCount > 0;
-	}
+        const result = await this.collection.findOneAndUpdate(
+            { _id },
+            { $set: updateData },
+            { returnDocument: "after" },
+        );
 
-	public async findByEmail(email: string): Promise<ConciergeEntity | null> {
-		return await this.findOne({ email });
-	}
+        return result || null;
+    }
+
+    public async delete(_id: string): Promise<boolean> {
+        const result = await this.collection.deleteOne({ _id });
+        return result.deletedCount > 0;
+    }
+
+    public async updateByEmail(
+        email: string,
+        data: UpdateConciergeEntity,
+    ): Promise<ConciergeEntity | null> {
+        const updateData = {
+            ...data,
+            updatedAt: new Date(),
+        };
+
+        const result = await this.collection.findOneAndUpdate(
+            { email },
+            { $set: updateData },
+            { returnDocument: "after" },
+        );
+
+        return result || null;
+    }
+
 }
-

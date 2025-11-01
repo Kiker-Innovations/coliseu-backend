@@ -32,7 +32,10 @@ const envSchema = z.object({
 			collections: z.object({
 				residents: z.string().min(1),
 				concierges: z.string().min(1),
+<<<<<<< HEAD
+=======
 				admins: z.string().min(1),
+>>>>>>> f7972d48ea38141f79882e26a6e543bbf60f59f3
 			}),
 		}),
 	}),
@@ -85,9 +88,14 @@ export const env = envSchema.parse({
 			url: process.env.MONGODB_URL,
 			database: process.env.MONGODB_DATABASE,
 			collections: {
+<<<<<<< HEAD
+				residents: process.env.MONGODB_COLLECTION_RESIDENTS,
+				concierges: process.env.MONGODB_COLLECTION_CONCIERGES,
+=======
 				residents: process.env.MONGODB_COLLECTION_RESIDENTS || "residents",
 				concierges: process.env.MONGODB_COLLECTION_CONCIERGES || "concierges",
 				admins: process.env.MONGODB_COLLECTION_ADMINS || "admins",
+>>>>>>> f7972d48ea38141f79882e26a6e543bbf60f59f3
 			},
 		},
 	},

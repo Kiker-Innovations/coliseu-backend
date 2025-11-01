@@ -1,0 +1,345 @@
+export class AuthSchema {
+	public loginResident = {
+		body: {
+			type: "object",
+			required: ["apartmentNumber", "email", "password"],
+			properties: {
+				apartmentNumber: {
+					type: "string",
+					description: "Número do apartamento (máximo 4 dígitos numéricos)",
+					example: "1234",
+				},
+				email: {
+					type: "string",
+					description: "Email do morador",
+					example: "morador@example.com",
+				},
+				password: {
+					type: "string",
+					description: "Senha do morador",
+					example: "Senha@123",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Login realizado com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							token: { type: "string", description: "JWT access token" },
+							refreshToken: {
+								type: "string",
+								description: "JWT refresh token",
+							},
+						},
+					},
+				},
+			},
+			401: {
+				description: "Credenciais inválidas",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			403: {
+				description: "Cadastro não confirmado ou não aprovado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public loginConcierge = {
+		body: {
+			type: "object",
+			required: ["email", "password"],
+			properties: {
+				email: {
+					type: "string",
+					description: "Email do porteiro",
+					example: "porteiro@example.com",
+				},
+				password: {
+					type: "string",
+					description: "Senha do porteiro",
+					example: "Senha@123",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Login realizado com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							token: { type: "string", description: "JWT access token" },
+							refreshToken: {
+								type: "string",
+								description: "JWT refresh token",
+							},
+						},
+					},
+				},
+			},
+			401: {
+				description: "Credenciais inválidas",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			403: {
+				description: "Usuário inativo",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public loginAdmin = {
+		body: {
+			type: "object",
+			required: ["email", "password"],
+			properties: {
+				email: {
+					type: "string",
+					description: "Email do administrador",
+					example: "admin@example.com",
+				},
+				password: {
+					type: "string",
+					description: "Senha do administrador",
+					example: "Senha@123",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Login realizado com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							token: { type: "string", description: "JWT access token" },
+							refreshToken: {
+								type: "string",
+								description: "JWT refresh token",
+							},
+						},
+					},
+				},
+			},
+			401: {
+				description: "Credenciais inválidas",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			403: {
+				description: "Usuário inativo",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public validateResident = {
+		headers: {
+			type: "object",
+			required: ["authorization"],
+			properties: {
+				authorization: {
+					type: "string",
+					description: "Bearer token",
+					example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Token válido",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							userId: { type: "string" },
+							email: { type: "string" },
+							apartmentNumber: { type: "string" },
+							phone: { type: "string" },
+							status: { type: "string" },
+						},
+					},
+				},
+			},
+			401: {
+				description: "Token inválido ou expirado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			403: {
+				description: "Usuário não está ativo",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public validateConcierge = {
+		headers: {
+			type: "object",
+			required: ["authorization"],
+			properties: {
+				authorization: {
+					type: "string",
+					description: "Bearer token",
+					example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Token válido",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							userId: { type: "string" },
+							email: { type: "string" },
+							name: { type: "string" },
+							phone: { type: "string" },
+						},
+					},
+				},
+			},
+			401: {
+				description: "Token inválido ou expirado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public validateAdmin = {
+		headers: {
+			type: "object",
+			required: ["authorization"],
+			properties: {
+				authorization: {
+					type: "string",
+					description: "Bearer token",
+					example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Token válido",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							userId: { type: "string" },
+							email: { type: "string" },
+							name: { type: "string" },
+						},
+					},
+				},
+			},
+			401: {
+				description: "Token inválido ou expirado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public refreshToken = {
+		body: {
+			type: "object",
+			required: ["refreshToken"],
+			properties: {
+				refreshToken: {
+					type: "string",
+					description: "Refresh token recebido no login",
+					example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Token renovado com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							token: { type: "string", description: "Novo JWT access token" },
+							refreshToken: {
+								type: "string",
+								description: "Novo JWT refresh token",
+							},
+						},
+					},
+				},
+			},
+			401: {
+				description: "Refresh token inválido ou expirado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+}
+

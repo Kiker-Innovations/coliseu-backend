@@ -2,6 +2,7 @@ import type { ResidentStatusEnumType } from "../../../v1/enum/residentStatus.enu
 
 export interface ResidentEntity {
 	_id: string;
+	name: string;
 	apartmentNumber: string;
 	email: string;
 	passwordHash: string;
@@ -19,5 +20,5 @@ export type CreateResidentEntity = Omit<
 >;
 
 export type UpdateResidentEntity = Partial<
-	Pick<ResidentEntity, "phone" | "photoUrl" | "status" | "updatedAt">
+	Pick<ResidentEntity, "name" | "phone" | "photoUrl" | "status" | "updatedAt">
 >;

@@ -2,8 +2,13 @@ export class ResidentSchema {
 	public create = {
 		body: {
 			type: "object",
-			required: ["apartmentNumber", "email", "password", "phone"],
+			required: ["name", "apartmentNumber", "email", "password", "phone"],
 			properties: {
+				name: {
+					type: "string",
+					description: "Nome completo do morador",
+					example: "João Silva",
+				},
 				apartmentNumber: {
 					type: "string",
 					description: "Número do apartamento (máximo 4 dígitos numéricos)",
@@ -37,6 +42,7 @@ export class ResidentSchema {
 					data: {
 						type: "object",
 						properties: {
+							name: { type: "string" },
 							email: { type: "string" },
 							apartmentNumber: { type: "string" },
 							phone: { type: "string" },
@@ -129,6 +135,11 @@ export class ResidentSchema {
 		body: {
 			type: "object",
 			properties: {
+				name: {
+					type: "string",
+					description: "Nome completo do morador",
+					example: "João Silva",
+				},
 				phone: {
 					type: "string",
 					description: "Telefone no formato internacional",

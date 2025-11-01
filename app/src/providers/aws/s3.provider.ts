@@ -32,6 +32,7 @@ export class S3Provider {
 	public async getPresignedUrlForPut(
 		key: string,
 		contentType: string,
+		expiresIn: number = this.presignedUrlExpiration,
 	): Promise<string> {
 		const command = new PutObjectCommand({
 			Bucket: this.bucketName,
@@ -40,7 +41,7 @@ export class S3Provider {
 		});
 
 		const presignedUrl = await getSignedUrl(this.s3Client, command, {
-			expiresIn: this.presignedUrlExpiration,
+			expiresIn
 		});
 
 		return presignedUrl;

@@ -14,6 +14,8 @@ const envSchema = z.object({
 		environment: z.string().min(1).optional(),
 		baseUrl: z.string().url(),
 		jwtSecret: z.string().min(1),
+		jwtExpiration: z.string().min(1).default("7d"),
+		jwtRefreshExpiration: z.string().min(1).default("30d"),
 	}),
 	plugins: z.object({
 		swagger: z.object({
@@ -30,26 +32,33 @@ const envSchema = z.object({
 			collections: z.object({
 				residents: z.string().min(1),
 				concierges: z.string().min(1),
+<<<<<<< HEAD
+=======
+				admins: z.string().min(1),
+>>>>>>> f7972d48ea38141f79882e26a6e543bbf60f59f3
 			}),
 		}),
 	}),
 	providers: z.object({
+		resend: z.object({
+			apiKey: z.string().min(1),
+		}),
 		aws: z.object({
 			config: z.object({
-				region: z.string().min(1), // Região AWS (obrigatório)
-				accessKeyId: z.string().min(1), // AWS Access Key ID (obrigatório)
-				secretAccessKey: z.string().min(1), // AWS Secret Access Key (obrigatório)
+				region: z.string().min(1),
+				accessKeyId: z.string().min(1),
+				secretAccessKey: z.string().min(1),
 			}),
 			s3: z.object({
-				bucketName: z.string().min(1), // Nome do bucket S3 (obrigatório)
-				endpoint: z.string().url().optional(), // Endpoint S3 (opcional para LocalStack)
-				presignedUrlExpiration: z.number().int().positive(), // Tempo de expiração em segundos
+				bucketName: z.string().min(1),
+				endpoint: z.string().url().optional(),
+				presignedUrlExpiration: z.number().int().positive(),
 				folders: z.object({
-					resident: z.string().min(1), // Pasta para fotos de moradores
+					resident: z.string().min(1),
 				}),
 			}),
 			ses: z.object({
-				fromEmail: z.string().email().min(1), // Email verificado no SES
+				fromEmail: z.string().email().min(1),
 			}),
 		}),
 	}),
@@ -61,6 +70,8 @@ export const env = envSchema.parse({
 		environment: process.env.APP_ENVIRONMENT,
 		baseUrl: process.env.APP_BASE_URL,
 		jwtSecret: process.env.JWT_SECRET,
+		jwtExpiration: process.env.JWT_EXPIRATION || "7d",
+		jwtRefreshExpiration: process.env.JWT_REFRESH_EXPIRATION || "30d",
 	},
 	plugins: {
 		swagger: {
@@ -77,12 +88,21 @@ export const env = envSchema.parse({
 			url: process.env.MONGODB_URL,
 			database: process.env.MONGODB_DATABASE,
 			collections: {
+<<<<<<< HEAD
 				residents: process.env.MONGODB_COLLECTION_RESIDENTS,
 				concierges: process.env.MONGODB_COLLECTION_CONCIERGES,
+=======
+				residents: process.env.MONGODB_COLLECTION_RESIDENTS || "residents",
+				concierges: process.env.MONGODB_COLLECTION_CONCIERGES || "concierges",
+				admins: process.env.MONGODB_COLLECTION_ADMINS || "admins",
+>>>>>>> f7972d48ea38141f79882e26a6e543bbf60f59f3
 			},
 		},
 	},
 	providers: {
+		resend: {
+			apiKey: process.env.RESEND_API_KEY,
+		},
 		aws: {
 			config: {
 				region: process.env.AWS_REGION,

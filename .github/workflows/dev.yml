@@ -1,8 +1,8 @@
-# name: "Node.js Lambda Deployment – DEV"
+name: "Node.js ECS Deployment – DEV"
 
-# on:
-#   push:
-#     branches: [ "develop" ]
+on:
+  push:
+    branches: [ "develop" ]
 
 # env:
 #   DEPLOY_ENV: dev

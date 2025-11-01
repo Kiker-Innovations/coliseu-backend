@@ -7,8 +7,9 @@ import type {
 } from "../../../database/mongodb/entity/resident.entity";
 import { ResidentRepository } from "../../../database/mongodb/repositories/resident.repository";
 import { S3Provider } from "../../../providers/aws/s3.provider";
-import { SESProvider } from "../../../providers/aws/ses.provider";
+import { EmailProvider } from "../../../providers/resend/email.provider";
 import { ResidentStatusEnum } from "../../enum/residentStatus.enum";
+import { FromEmailEnum } from "../../enum/fromEmail.enum";
 import type {
 	ResidentConfirmDto,
 	ResidentCreateDto,
@@ -17,20 +18,22 @@ import type {
 import { httpException } from "../../../config/error";
 import httpStatus from "http-status";
 import type { HttpResponse } from "../../../interface/httpResponse.interface";
+import { TemplateEngine, EmailTemplates } from "../../../emailTemplates";
 
 export class ResidentService {
 	private residentRepository: ResidentRepository;
 	private s3Provider: S3Provider;
-	private sesProvider: SESProvider;
+	private emailProvider: EmailProvider;
 
 	constructor(mongoClient: MongoClient) {
 		this.residentRepository = new ResidentRepository(mongoClient);
 		this.s3Provider = new S3Provider();
-		this.sesProvider = new SESProvider();
+		this.emailProvider = new EmailProvider();
 	}
 
 	public async createResident(residentCreateDto: ResidentCreateDto): Promise<
 		HttpResponse<{
+			name: string;
 			email: string;
 			apartmentNumber: string;
 			phone: string;
@@ -52,6 +55,7 @@ export class ResidentService {
 		const residentCode = this.generateResidentCode();
 
 		const residentEntity: CreateResidentEntity = {
+			name: residentCreateDto.name,
 			apartmentNumber: residentCreateDto.apartmentNumber,
 			email: residentCreateDto.email,
 			passwordHash,
@@ -64,7 +68,13 @@ export class ResidentService {
 		const createdResident =
 			await this.residentRepository.create(residentEntity);
 
-		// this.sendConfirmationEmailAsync(residentCreateDto.email, residentCode);
+		// Enviar email de confirmação de forma assíncrona
+		this.sendConfirmationEmailAsync(
+			createdResident.email,
+			residentCode,
+			createdResident.name,
+			createdResident.apartmentNumber,
+		);
 
 		const { presignedUrl, publicUrl } = await this.generatePresignedUrl(
 			createdResident._id,
@@ -80,6 +90,7 @@ export class ResidentService {
 			message:
 				"Morador cadastrado com sucesso! Verifique seu email para confirmar o cadastro.",
 			data: {
+				name: createdResident.name,
 				email: createdResident.email,
 				apartmentNumber: createdResident.apartmentNumber,
 				phone: createdResident.phone,
@@ -195,7 +206,7 @@ export class ResidentService {
 			throw httpException("Morador não encontrado", httpStatus.NOT_FOUND);
 		}
 
-		const fileName = `${resident._id}-register-image.${fileExtension}`;
+		const fileName = `${resident._id}-photo.${fileExtension}`;
 		const s3Key = `${env.providers.aws.s3.folders.resident}/${residentId}/${fileName}`;
 
 		const contentTypeMap: Record<string, string> = {
@@ -210,6 +221,7 @@ export class ResidentService {
 		const presignedUrl = await this.s3Provider.getPresignedUrlForPut(
 			s3Key,
 			contentType,
+			60,
 		);
 		const publicUrl = this.s3Provider.getPublicUrl(s3Key);
 
@@ -263,21 +275,79 @@ export class ResidentService {
 	public async sendConfirmationEmail(
 		email: string,
 		residentCode: string,
-	): Promise<string> {
-		return await this.sesProvider.sendConfirmationEmail(email, residentCode);
+		residentName: string,
+		apartmentNumber: string,
+	): Promise<{
+		success: boolean;
+		messageId?: string;
+		error?: string;
+	}> {
+		const htmlContent = TemplateEngine.render(
+			EmailTemplates.RESIDENT_CONFIRMATION,
+			{
+				residentName,
+				apartmentNumber,
+				confirmationCode: residentCode,
+				email,
+				confirmationUrl: "https://coliseucondo.com.br/resident/confirmcode",
+			},
+		);
+
+		return await this.emailProvider.sendEmail({
+			from: FromEmailEnum.NOREPLY,
+			to: email,
+			subject: "Confirme seu Cadastro - Coliseu Condo",
+			html: htmlContent,
+			text: `Olá ${residentName}! Seu código de confirmação é: ${residentCode}. Acesse: https://coliseucondo.com.br/resident/confirmcode`,
+		});
+	}
+
+	public async sendWelcomeEmail(
+		email: string,
+		residentName: string,
+		apartmentNumber: string,
+	): Promise<{
+		success: boolean;
+		messageId?: string;
+		error?: string;
+	}> {
+		const htmlContent = TemplateEngine.render(EmailTemplates.RESIDENT_WELCOME, {
+			residentName,
+			apartmentNumber,
+			email,
+			loginUrl: `${env.app.baseUrl}/login`,
+		});
+
+		return await this.emailProvider.sendEmail({
+			from: FromEmailEnum.NOREPLY,
+			to: email,
+			subject: "Bem-vindo ao Coliseu Condo - Cadastro Aprovado! 🎉",
+			html: htmlContent,
+			text: `Parabéns ${residentName}! Seu cadastro foi aprovado no Coliseu Condo.`,
+		});
 	}
 
 	private sendConfirmationEmailAsync(
 		email: string,
 		residentCode: string,
+		residentName: string,
+		apartmentNumber: string,
 	): void {
-		this.sendConfirmationEmail(email, residentCode)
-			.then(() => {
-				console.log(`Email de confirmação enviado para ${email}`);
+		this.sendConfirmationEmail(email, residentCode, residentName, apartmentNumber)
+			.then((result) => {
+				if (result.success) {
+					console.log(`✅ Email de confirmação enviado para ${email}`);
+					console.log(`📧 Message ID: ${result.messageId}`);
+				} else {
+					console.error(
+						`❌ Erro ao enviar email de confirmação para ${email}:`,
+						result.error,
+					);
+				}
 			})
 			.catch((error) => {
 				console.error(
-					`Erro ao enviar email de confirmação para ${email}:`,
+					`❌ Erro inesperado ao enviar email de confirmação para ${email}:`,
 					error,
 				);
 			});

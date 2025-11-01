@@ -1,4 +1,4 @@
-import { randomBytes, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import type { MongoClient } from "mongodb";
 import { env } from "../../../config/env";
 import type {
@@ -7,28 +7,34 @@ import type {
 } from "../../../database/mongodb/entity/resident.entity";
 import { ResidentRepository } from "../../../database/mongodb/repositories/resident.repository";
 import { S3Provider } from "../../../providers/aws/s3.provider";
-import { EmailProvider } from "../../../providers/resend/email.provider";
 import { ResidentStatusEnum } from "../../enum/residentStatus.enum";
-import { FromEmailEnum } from "../../enum/fromEmail.enum";
 import type {
 	ResidentConfirmDto,
 	ResidentCreateDto,
 	ResidentUpdateDto,
+	ResidentForgetPasswordDto,
+	ResidentResetPasswordDto,
 } from "./dto";
 import { httpException } from "../../../config/error";
 import httpStatus from "http-status";
 import type { HttpResponse } from "../../../interface/httpResponse.interface";
-import { TemplateEngine, EmailTemplates } from "../../../emailTemplates";
+import {
+	hashPassword,
+	generateCode,
+	generateResetCode,
+} from "../../utils/cryptoHelper";
+import {
+	sendResidentConfirmationEmailAsync,
+	sendPasswordResetEmailAsync,
+} from "../../utils/emailHelper";
 
 export class ResidentService {
 	private residentRepository: ResidentRepository;
 	private s3Provider: S3Provider;
-	private emailProvider: EmailProvider;
 
 	constructor(mongoClient: MongoClient) {
 		this.residentRepository = new ResidentRepository(mongoClient);
 		this.s3Provider = new S3Provider();
-		this.emailProvider = new EmailProvider();
 	}
 
 	public async createResident(residentCreateDto: ResidentCreateDto): Promise<
@@ -51,8 +57,8 @@ export class ResidentService {
 			);
 		}
 
-		const passwordHash = await this.hashPassword(residentCreateDto.password);
-		const residentCode = this.generateResidentCode();
+		const passwordHash = await hashPassword(residentCreateDto.password);
+		const residentCode = await generateCode();
 
 		const residentEntity: CreateResidentEntity = {
 			name: residentCreateDto.name,
@@ -69,11 +75,11 @@ export class ResidentService {
 			await this.residentRepository.create(residentEntity);
 
 		// Enviar email de confirmação de forma assíncrona
-		this.sendConfirmationEmailAsync(
+		sendResidentConfirmationEmailAsync(
 			createdResident.email,
-			residentCode,
 			createdResident.name,
 			createdResident.apartmentNumber,
+			residentCode,
 		);
 
 		const { presignedUrl, publicUrl } = await this.generatePresignedUrl(
@@ -272,100 +278,88 @@ export class ResidentService {
 		};
 	}
 
-	public async sendConfirmationEmail(
-		email: string,
-		residentCode: string,
-		residentName: string,
-		apartmentNumber: string,
-	): Promise<{
-		success: boolean;
-		messageId?: string;
-		error?: string;
-	}> {
-		const htmlContent = TemplateEngine.render(
-			EmailTemplates.RESIDENT_CONFIRMATION,
-			{
-				residentName,
-				apartmentNumber,
-				confirmationCode: residentCode,
-				email,
-				confirmationUrl: "https://coliseucondo.com.br/resident/confirmcode",
-			},
+	public async forgetPassword(
+		forgetPasswordDto: ResidentForgetPasswordDto,
+	): Promise<HttpResponse<null>> {
+		const resident = await this.residentRepository.findByEmail(
+			forgetPasswordDto.email,
 		);
 
-		return await this.emailProvider.sendEmail({
-			from: FromEmailEnum.NOREPLY,
-			to: email,
-			subject: "Confirme seu Cadastro - Coliseu Condo",
-			html: htmlContent,
-			text: `Olá ${residentName}! Seu código de confirmação é: ${residentCode}. Acesse: https://coliseucondo.com.br/resident/confirmcode`,
-		});
-	}
-
-	public async sendWelcomeEmail(
-		email: string,
-		residentName: string,
-		apartmentNumber: string,
-	): Promise<{
-		success: boolean;
-		messageId?: string;
-		error?: string;
-	}> {
-		const htmlContent = TemplateEngine.render(EmailTemplates.RESIDENT_WELCOME, {
-			residentName,
-			apartmentNumber,
-			email,
-			loginUrl: `${env.app.baseUrl}/login`,
-		});
-
-		return await this.emailProvider.sendEmail({
-			from: FromEmailEnum.NOREPLY,
-			to: email,
-			subject: "Bem-vindo ao Coliseu Condo - Cadastro Aprovado! 🎉",
-			html: htmlContent,
-			text: `Parabéns ${residentName}! Seu cadastro foi aprovado no Coliseu Condo.`,
-		});
-	}
-
-	private sendConfirmationEmailAsync(
-		email: string,
-		residentCode: string,
-		residentName: string,
-		apartmentNumber: string,
-	): void {
-		this.sendConfirmationEmail(email, residentCode, residentName, apartmentNumber)
-			.then((result) => {
-				if (result.success) {
-					console.log(`✅ Email de confirmação enviado para ${email}`);
-					console.log(`📧 Message ID: ${result.messageId}`);
-				} else {
-					console.error(
-						`❌ Erro ao enviar email de confirmação para ${email}:`,
-						result.error,
-					);
-				}
-			})
-			.catch((error) => {
-				console.error(
-					`❌ Erro inesperado ao enviar email de confirmação para ${email}:`,
-					error,
-				);
-			});
-	}
-
-	private async hashPassword(password: string): Promise<string> {
-		const bcrypt = await import("bcrypt");
-		const saltRounds = 10;
-		return await bcrypt.hash(password, saltRounds);
-	}
-
-	private generateResidentCode(): string {
-		const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-		const bytes = randomBytes(6);
-		let code = "";
-		for (const byte of bytes) {
-			code += chars[byte % chars.length];
+		if (!resident) {
+			throw httpException("Email não encontrado", httpStatus.NOT_FOUND);
 		}
-		return code;
+
+		const resetCode = generateResetCode();
+		const resetTokenExpiry = new Date();
+		resetTokenExpiry.setMinutes(resetTokenExpiry.getMinutes() + 15); // Expira em 15 minutos
+
+		await this.residentRepository.update(resident._id, {
+			resetPasswordToken: resetCode,
+			resetPasswordTokenExpiry: resetTokenExpiry,
+		});
+
+		// Enviar email de forma assíncrona
+		sendPasswordResetEmailAsync(
+			resident.email,
+			resident.name,
+			resetCode,
+			"https://coliseucondo.com.br/resident/reset-password",
+		);
+
+		return {
+			success: true,
+			message:
+				"Código de recuperação enviado para seu email. Verifique sua caixa de entrada.",
+			data: null,
+		};
 	}
+
+	public async resetPassword(
+		resetPasswordDto: ResidentResetPasswordDto,
+	): Promise<HttpResponse<null>> {
+		const resident = await this.residentRepository.findByEmail(
+			resetPasswordDto.email,
+		);
+
+		if (!resident) {
+			throw httpException("Email não encontrado", httpStatus.NOT_FOUND);
+		}
+
+		if (!resident.resetPasswordToken || !resident.resetPasswordTokenExpiry) {
+			throw httpException(
+				"Nenhuma solicitação de recuperação de senha encontrada",
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
+		if (resident.resetPasswordToken !== resetPasswordDto.code) {
+			throw httpException(
+				"Código de recuperação inválido",
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
+		const now = new Date();
+		if (now > resident.resetPasswordTokenExpiry) {
+			throw httpException(
+				"Código de recuperação expirado. Solicite um novo código.",
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
+		const newPasswordHash = await hashPassword(resetPasswordDto.newPassword);
+
+		await this.residentRepository.update(resident._id, {
+			passwordHash: newPasswordHash,
+			resetPasswordToken: undefined,
+			resetPasswordTokenExpiry: undefined,
+		});
+
+		return {
+			success: true,
+			message: "Senha redefinida com sucesso! Você já pode fazer login.",
+			data: null,
+		};
+	}
+
 }

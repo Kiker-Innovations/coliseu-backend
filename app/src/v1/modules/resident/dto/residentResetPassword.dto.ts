@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const conciergeResetPasswordSchema = z.object({
+export const residentResetPasswordSchema = z.object({
 	email: z
 		.string({ required_error: "Email é obrigatório" })
 		.email("Email deve ser válido"),
@@ -24,12 +24,13 @@ export const conciergeResetPasswordSchema = z.object({
 		),
 });
 
-export type ConciergeResetPasswordDto = z.infer<
-	typeof conciergeResetPasswordSchema
+export type ResidentResetPasswordDto = z.infer<
+	typeof residentResetPasswordSchema
 >;
 
-export const transformResetPasswordConciergeDto = (
-	data: ConciergeResetPasswordDto,
-): ConciergeResetPasswordDto => {
-	return conciergeResetPasswordSchema.parse(data);
+export const transformResetPasswordResidentDto = (
+	data: ResidentResetPasswordDto,
+): ResidentResetPasswordDto => {
+	return residentResetPasswordSchema.parse(data);
 };
+

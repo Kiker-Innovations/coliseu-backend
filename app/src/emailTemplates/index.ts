@@ -16,8 +16,16 @@ export interface ResidentWelcomeTemplateData {
 	loginUrl: string;
 }
 
+export interface PasswordResetTemplateData {
+	userName: string;
+	email: string;
+	resetCode: string;
+	resetUrl?: string;
+}
+
 // Nomes dos templates
 export const EmailTemplates = {
 	RESIDENT_CONFIRMATION: "residentConfirmation",
 	RESIDENT_WELCOME: "residentWelcome",
+	PASSWORD_RESET: "passwordReset",
 } as const;

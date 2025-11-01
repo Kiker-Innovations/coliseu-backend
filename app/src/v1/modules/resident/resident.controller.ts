@@ -5,6 +5,8 @@ import {
 	transformConfirmResidentDto,
 	transformCreateResidentDto,
 	transformUpdateResidentDto,
+	transformForgetPasswordResidentDto,
+	transformResetPasswordResidentDto,
 } from "./dto";
 import { ResidentService } from "./resident.service";
 
@@ -72,6 +74,32 @@ export class ResidentController {
 			.send(
 				await this.residentService.confirmResidentCode(
 					transformConfirmResidentDto(request.body),
+				),
+			);
+	}
+
+	public async forgetPassword(
+		request: FastifyRequest,
+		reply: FastifyReply,
+	): Promise<void> {
+		return reply
+			.status(httpStatus.OK)
+			.send(
+				await this.residentService.forgetPassword(
+					transformForgetPasswordResidentDto(request.body),
+				),
+			);
+	}
+
+	public async resetPassword(
+		request: FastifyRequest,
+		reply: FastifyReply,
+	): Promise<void> {
+		return reply
+			.status(httpStatus.OK)
+			.send(
+				await this.residentService.resetPassword(
+					transformResetPasswordResidentDto(request.body),
 				),
 			);
 	}

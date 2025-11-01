@@ -11,11 +11,8 @@ export class Route {
 		for (const route of [
 			...new AuthRouteV1(mongoClient).routes(),
 			...new ResidentRouteV1(mongoClient).routes(),
+			...new ConciergeRouteV1(mongoClient).routes(),
 		]) {
-			server.route(route);
-		}
-
-		for (const route of [...new ConciergeRouteV1(mongoClient).routes()]) {
 			server.route(route);
 		}
 	};

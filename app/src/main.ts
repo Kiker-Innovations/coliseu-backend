@@ -13,7 +13,6 @@ async function bootstrap(): Promise<void> {
 	try {
 		process.stdout.write("\x1Bc\n\x1b[32mStarting server...\x1b[0m\n");
 
-		// Conectar ao MongoDB
 		await mongoConnection.connect();
 
 		server.setErrorHandler((error, request, reply) =>

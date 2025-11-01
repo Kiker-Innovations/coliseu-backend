@@ -8,13 +8,20 @@ import { httpException } from "@/config/error";
 import httpStatus from "http-status";
 import type { HttpResponse } from "@/interface/httpResponse.interface";
 import { ConciergeCreateDto } from "./dto/conciergeCreate.dto";
-import { hashPassword, generateCode, generateResetToken, comparePassword } from "@/v1/utils/cryptoHelper";
-import { sendConfirmationEmailAsync, sendPasswordResetEmailAsync } from "@/v1/utils/emailHelper";
+import {
+	hashPassword,
+	generateCode,
+	generateResetCode,
+	comparePassword,
+} from "@/v1/utils/cryptoHelper";
+import {
+	sendConfirmationEmailAsync,
+	sendPasswordResetEmailAsync,
+} from "@/v1/utils/emailHelper";
 import { ConciergeUpdateDto } from "./dto/conciergeUpdate.dto";
 import { ConciergeConfirmDto } from "./dto/conciergeConfirm.dto";
 import { ConciergeForgetPasswordDto } from "./dto/conciergeForgetPassword.dto";
 import { ConciergeResetPasswordDto } from "./dto/conciergeResetPassword.dto";
-import { ConciergeLoginDto } from "./dto/conciergeLogin.dto";
 
 export class ConciergeService {
     private conciergeRepository: ConciergeRepository;
@@ -232,24 +239,31 @@ export class ConciergeService {
             forgetPasswordDto.email,
         );
 
-        // Por segurança, sempre retornamos a mesma mensagem, independentemente se o email existe
-        if (concierge) {
-            const resetToken = await generateResetToken();
-            const resetTokenExpiry = new Date();
-            resetTokenExpiry.setHours(resetTokenExpiry.getHours() + 1); // Expira em 1 hora
-
-            await this.conciergeRepository.updateByEmail(forgetPasswordDto.email, {
-                resetPasswordToken: resetToken,
-                resetPasswordTokenExpiry: resetTokenExpiry,
-            });
-
-            sendPasswordResetEmailAsync(forgetPasswordDto.email, resetToken);
+        if (!concierge) {
+            throw httpException("Email não encontrado", httpStatus.NOT_FOUND);
         }
+
+        const resetCode = generateResetCode();
+        const resetTokenExpiry = new Date();
+        resetTokenExpiry.setMinutes(resetTokenExpiry.getMinutes() + 15); // Expira em 15 minutos
+
+        await this.conciergeRepository.updateByEmail(forgetPasswordDto.email, {
+            resetPasswordToken: resetCode,
+            resetPasswordTokenExpiry: resetTokenExpiry,
+        });
+
+        // Enviar email de forma assíncrona
+        sendPasswordResetEmailAsync(
+            concierge.email,
+            concierge.name,
+            resetCode,
+            "https://coliseucondo.com.br/concierge/reset-password",
+        );
 
         return {
             success: true,
             message:
-                "Se o email estiver cadastrado, você receberá um email com as instruções para redefinir sua senha.",
+                "Código de recuperação enviado para seu email. Verifique sua caixa de entrada.",
             data: null,
         };
     }
@@ -257,20 +271,24 @@ export class ConciergeService {
     public async resetPassword(
         resetPasswordDto: ConciergeResetPasswordDto,
     ): Promise<HttpResponse<null>> {
-        const concierge = await this.conciergeRepository.findOne({
-            resetPasswordToken: resetPasswordDto.token,
-        });
+        const concierge = await this.conciergeRepository.findByEmail(
+            resetPasswordDto.email,
+        );
 
         if (!concierge) {
+            throw httpException("Email não encontrado", httpStatus.NOT_FOUND);
+        }
+
+        if (!concierge.resetPasswordToken || !concierge.resetPasswordTokenExpiry) {
             throw httpException(
-                "Token de redefinição inválido ou expirado",
+                "Nenhuma solicitação de recuperação de senha encontrada",
                 httpStatus.BAD_REQUEST,
             );
         }
 
-        if (!concierge.resetPasswordTokenExpiry) {
+        if (concierge.resetPasswordToken !== resetPasswordDto.code) {
             throw httpException(
-                "Token de redefinição inválido ou expirado",
+                "Código de recuperação inválido",
                 httpStatus.BAD_REQUEST,
             );
         }
@@ -278,19 +296,12 @@ export class ConciergeService {
         const now = new Date();
         if (now > concierge.resetPasswordTokenExpiry) {
             throw httpException(
-                "Token de redefinição expirado. Solicite um novo reset de senha.",
+                "Código de recuperação expirado. Solicite um novo código.",
                 httpStatus.BAD_REQUEST,
             );
         }
 
-        if (concierge.resetPasswordToken !== resetPasswordDto.token) {
-            throw httpException(
-                "Token de redefinição inválido",
-                httpStatus.BAD_REQUEST,
-            );
-        }
-
-        const passwordHash = await hashPassword(resetPasswordDto.password);
+        const passwordHash = await hashPassword(resetPasswordDto.newPassword);
 
         await this.conciergeRepository.updateByEmail(concierge.email, {
             passwordHash,
@@ -300,66 +311,8 @@ export class ConciergeService {
 
         return {
             success: true,
-            message: "Senha redefinida com sucesso!",
+            message: "Senha redefinida com sucesso! Você já pode fazer login.",
             data: null,
-        };
-    }
-
-    public async login(
-        loginDto: ConciergeLoginDto,
-    ): Promise<
-        HttpResponse<{
-            id: string;
-            name: string;
-            email: string;
-            phone: string;
-            shift: string;
-            status: string;
-        }>
-    > {
-        const concierge = await this.conciergeRepository.findByEmail(
-            loginDto.email,
-        );
-
-        if (!concierge) {
-            throw httpException(
-                "Email ou senha inválidos",
-                httpStatus.UNAUTHORIZED,
-            );
-        }
-
-        const isPasswordValid = await comparePassword(
-            loginDto.password,
-            concierge.passwordHash,
-        );
-
-        if (!isPasswordValid) {
-            throw httpException(
-                "Email ou senha inválidos",
-                httpStatus.UNAUTHORIZED,
-            );
-        }
-
-        if (
-            concierge.status === ConciergeStatusEnum.INATIVO
-        ) {
-            throw httpException(
-                "Conta não confirmada. Verifique seu email para ativar a conta.",
-                httpStatus.FORBIDDEN,
-            );
-        }
-
-        return {
-            success: true,
-            message: "Login realizado com sucesso",
-            data: {
-                id: concierge._id,
-                name: concierge.name,
-                email: concierge.email,
-                phone: concierge.phone,
-                shift: concierge.shift,
-                status: concierge.status,
-            },
         };
     }
 }

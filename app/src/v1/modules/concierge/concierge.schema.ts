@@ -309,29 +309,20 @@ export class ConciergeSchema {
 		},
 		response: {
 			200: {
-				description: "Solicitação de reset de senha processada",
+				description: "Código de recuperação enviado para o email",
 				type: "object",
 				properties: {
 					success: { type: "boolean" },
 					message: { type: "string" },
+					data: { type: "null" },
 				},
 			},
-			400: {
-				description: "Dados inválidos",
+			404: {
+				description: "Email não encontrado",
 				type: "object",
 				properties: {
 					success: { type: "boolean" },
 					message: { type: "string" },
-					errors: {
-						type: "array",
-						items: {
-							type: "object",
-							properties: {
-								field: { type: "string" },
-								message: { type: "string" },
-							},
-						},
-					},
 				},
 			},
 		},
@@ -340,14 +331,19 @@ export class ConciergeSchema {
 	public resetPassword = {
 		body: {
 			type: "object",
-			required: ["token", "password"],
+			required: ["email", "code", "newPassword"],
 			properties: {
-				token: {
+				email: {
 					type: "string",
-					description: "Token de redefinição de senha recebido por email",
-					example: "ABC123XYZ456",
+					description: "Email do porteiro",
+					example: "porteiro@example.com",
 				},
-				password: {
+				code: {
+					type: "string",
+					description: "Código de recuperação de 6 dígitos recebido por email",
+					example: "123456",
+				},
+				newPassword: {
 					type: "string",
 					description:
 						"Nova senha (mínimo 8 caracteres, com maiúscula, minúscula e caractere especial)",
@@ -362,66 +358,19 @@ export class ConciergeSchema {
 				properties: {
 					success: { type: "boolean" },
 					message: { type: "string" },
+					data: { type: "null" },
 				},
 			},
 			400: {
-				description: "Token inválido ou expirado",
+				description: "Código inválido ou expirado",
 				type: "object",
 				properties: {
 					success: { type: "boolean" },
 					message: { type: "string" },
 				},
 			},
-		},
-	};
-
-	public login = {
-		body: {
-			type: "object",
-			required: ["email", "password"],
-			properties: {
-				email: {
-					type: "string",
-					description: "Email do porteiro",
-					example: "porteiro@example.com",
-				},
-				password: {
-					type: "string",
-					description: "Senha do porteiro",
-					example: "Senha@123",
-				},
-			},
-		},
-		response: {
-			200: {
-				description: "Login realizado com sucesso",
-				type: "object",
-				properties: {
-					success: { type: "boolean" },
-					message: { type: "string" },
-					data: {
-						type: "object",
-						properties: {
-							id: { type: "string" },
-							name: { type: "string" },
-							email: { type: "string" },
-							phone: { type: "string" },
-							shift: { type: "string" },
-							status: { type: "string" },
-						},
-					},
-				},
-			},
-			401: {
-				description: "Email ou senha inválidos",
-				type: "object",
-				properties: {
-					success: { type: "boolean" },
-					message: { type: "string" },
-				},
-			},
-			403: {
-				description: "Conta não confirmada",
+			404: {
+				description: "Email não encontrado",
 				type: "object",
 				properties: {
 					success: { type: "boolean" },

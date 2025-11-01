@@ -96,7 +96,7 @@ export class ConciergeRouteV1 {
 	private getMany = (): RouteOptions => {
 		return {
 			method: "GET",
-			url: "/v1/concierges/getmany",
+			url: "/v1/concierges",
 			schema: {
 				tags: ["Concierges"],
 				summary: "Get all concierges",
@@ -116,7 +116,8 @@ export class ConciergeRouteV1 {
 			schema: {
 				tags: ["Concierges"],
 				summary: "Request password reset",
-				description: "Solicita redefinição de senha. Envia email com token de reset.",
+				description:
+					"Solicita recuperação de senha. Um código de 6 dígitos será enviado por email (válido por 15 minutos)",
 				...this.conciergeSchema.forgetPassword,
 			},
 			handler: this.conciergeController.forgetPassword.bind(
@@ -131,27 +132,12 @@ export class ConciergeRouteV1 {
 			url: "/v1/concierges/reset-password",
 			schema: {
 				tags: ["Concierges"],
-				summary: "Reset password",
-				description: "Redefine a senha usando o token recebido por email",
+				summary: "Reset password with code",
+				description:
+					"Redefine a senha usando o código de recuperação recebido por email",
 				...this.conciergeSchema.resetPassword,
 			},
 			handler: this.conciergeController.resetPassword.bind(
-				this.conciergeController,
-			) as RouteHandlerMethod,
-		};
-	};
-
-	private login = (): RouteOptions => {
-		return {
-			method: "POST",
-			url: "/v1/concierges/login",
-			schema: {
-				tags: ["Concierges"],
-				summary: "Login concierge",
-				description: "Realiza login do porteiro validando email e senha",
-				...this.conciergeSchema.login,
-			},
-			handler: this.conciergeController.login.bind(
 				this.conciergeController,
 			) as RouteHandlerMethod,
 		};
@@ -167,7 +153,6 @@ export class ConciergeRouteV1 {
 			this.getMany(),
 			this.forgetPassword(),
 			this.resetPassword(),
-			this.login(),
 		];
 	};
 }

@@ -10,6 +10,8 @@ export interface ResidentEntity {
 	status: ResidentStatusEnumType;
 	photoUrl: string | null;
 	residentCode: string;
+	resetPasswordToken?: string;
+	resetPasswordTokenExpiry?: Date;
 	createdAt: Date;
 	updatedAt: Date;
 }
@@ -20,5 +22,15 @@ export type CreateResidentEntity = Omit<
 >;
 
 export type UpdateResidentEntity = Partial<
-	Pick<ResidentEntity, "name" | "phone" | "photoUrl" | "status" | "updatedAt">
+	Pick<
+		ResidentEntity,
+		| "name"
+		| "phone"
+		| "photoUrl"
+		| "status"
+		| "passwordHash"
+		| "resetPasswordToken"
+		| "resetPasswordTokenExpiry"
+		| "updatedAt"
+	>
 >;

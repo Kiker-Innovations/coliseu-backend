@@ -93,6 +93,40 @@ export class ResidentRouteV1 {
 		};
 	};
 
+	private forgetPassword = (): RouteOptions => {
+		return {
+			method: "POST",
+			url: "/v1/residents/forget-password",
+			schema: {
+				tags: ["Residents"],
+				summary: "Request password reset",
+				description:
+					"Solicita recuperação de senha. Um código de 6 dígitos será enviado por email (válido por 15 minutos)",
+				...this.residentSchema.forgetPassword,
+			},
+			handler: this.residentController.forgetPassword.bind(
+				this.residentController,
+			) as RouteHandlerMethod,
+		};
+	};
+
+	private resetPassword = (): RouteOptions => {
+		return {
+			method: "POST",
+			url: "/v1/residents/reset-password",
+			schema: {
+				tags: ["Residents"],
+				summary: "Reset password with code",
+				description:
+					"Redefine a senha usando o código de recuperação recebido por email",
+				...this.residentSchema.resetPassword,
+			},
+			handler: this.residentController.resetPassword.bind(
+				this.residentController,
+			) as RouteHandlerMethod,
+		};
+	};
+
 	public routes = (): RouteOptions[] => {
 		return [
 			this.create(),
@@ -100,6 +134,8 @@ export class ResidentRouteV1 {
 			this.update(),
 			this.remove(),
 			this.confirm(),
+			this.forgetPassword(),
+			this.resetPassword(),
 		];
 	};
 }

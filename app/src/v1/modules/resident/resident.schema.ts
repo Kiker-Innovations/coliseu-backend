@@ -310,4 +310,89 @@ export class ResidentSchema {
 			},
 		},
 	};
+
+	public forgetPassword = {
+		body: {
+			type: "object",
+			required: ["email"],
+			properties: {
+				email: {
+					type: "string",
+					description: "Email do morador",
+					example: "morador@example.com",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Código de recuperação enviado para o email",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: { type: "null" },
+				},
+			},
+			404: {
+				description: "Email não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public resetPassword = {
+		body: {
+			type: "object",
+			required: ["email", "code", "newPassword"],
+			properties: {
+				email: {
+					type: "string",
+					description: "Email do morador",
+					example: "morador@example.com",
+				},
+				code: {
+					type: "string",
+					description: "Código de recuperação de 6 dígitos recebido por email",
+					example: "123456",
+				},
+				newPassword: {
+					type: "string",
+					description:
+						"Nova senha (mínimo 8 caracteres, com maiúscula, minúscula e caractere especial)",
+					example: "NovaSenha@123",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Senha redefinida com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: { type: "null" },
+				},
+			},
+			400: {
+				description: "Código inválido ou expirado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			404: {
+				description: "Email não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
 }

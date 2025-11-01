@@ -29,6 +29,7 @@ const envSchema = z.object({
 			database: z.string().min(1),
 			collections: z.object({
 				residents: z.string().min(1),
+				concierges: z.string().min(1),
 			}),
 		}),
 	}),
@@ -77,6 +78,7 @@ export const env = envSchema.parse({
 			database: process.env.MONGODB_DATABASE,
 			collections: {
 				residents: process.env.MONGODB_COLLECTION_RESIDENTS,
+				concierges: process.env.MONGODB_COLLECTION_CONCIERGES,
 			},
 		},
 	},

@@ -49,11 +49,5 @@
 		"tslib": "^2.7.0",
 		"tsx": "^4.20.6",
 		"typescript": "^5.5.4"
-	},
-	"husky": {
-		"hooks": {
-			"pre-commit": "bun install && bun run lint:check && bun run test:cov && bun run build",
-			"pre-push": "bun install && bun run lint:check && bun run test:cov && bun run build"
-		}
 	}
 }

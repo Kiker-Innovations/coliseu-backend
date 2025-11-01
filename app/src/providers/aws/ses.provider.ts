@@ -142,4 +142,71 @@ Se você não solicitou este cadastro, por favor ignore este email.
 
 		return await this.sendEmail(toEmail, subject, htmlBody, textBody);
 	}
+
+	/**
+	 * Envia email de reset de senha para porteiro
+	 *
+	 * @param {string} toEmail - Email do porteiro
+	 * @param {string} resetToken - Token de reset de senha
+	 * @returns {Promise<string>} MessageId do email enviado
+	 */
+	public async sendPasswordResetEmail(
+		toEmail: string,
+		resetToken: string,
+	): Promise<string> {
+		const resetLink = `${env.app.baseUrl}/reset-password?token=${encodeURIComponent(resetToken)}&email=${encodeURIComponent(toEmail)}`;
+
+		const subject = "Redefinição de senha - Coliseu";
+
+		const htmlBody = `
+			<!DOCTYPE html>
+			<html>
+			<head>
+				<meta charset="UTF-8">
+				<title>Redefinição de senha</title>
+			</head>
+			<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+				<div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+					<h1 style="color: #2c3e50;">Redefinição de senha</h1>
+					<p>Olá,</p>
+					<p>Você solicitou a redefinição de senha da sua conta no Coliseu.</p>
+					<p>Para redefinir sua senha, clique no link abaixo:</p>
+					<div style="text-align: center; margin: 30px 0;">
+						<a href="${resetLink}" 
+						   style="background-color: #e74c3c; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+							Redefinir Senha
+						</a>
+					</div>
+					<p>Ou copie e cole o seguinte link no seu navegador:</p>
+					<p style="word-break: break-all; color: #7f8c8d;">${resetLink}</p>
+					<p><strong>Token de redefinição:</strong> <code style="background-color: #ecf0f1; padding: 5px 10px; border-radius: 3px;">${resetToken}</code></p>
+					<p style="color: #e74c3c; font-weight: bold;">Este link expira em 1 hora.</p>
+					<hr style="border: none; border-top: 1px solid #ecf0f1; margin: 30px 0;">
+					<p style="font-size: 12px; color: #7f8c8d;">
+						Se você não solicitou a redefinição de senha, por favor ignore este email. Sua senha permanecerá inalterada.
+					</p>
+				</div>
+			</body>
+			</html>
+		`;
+
+		const textBody = `
+Redefinição de senha - Coliseu
+
+Olá,
+
+Você solicitou a redefinição de senha da sua conta no Coliseu.
+
+Para redefinir sua senha, acesse o seguinte link:
+${resetLink}
+
+Token de redefinição: ${resetToken}
+
+Este link expira em 1 hora.
+
+Se você não solicitou a redefinição de senha, por favor ignore este email. Sua senha permanecerá inalterada.
+		`;
+
+		return await this.sendEmail(toEmail, subject, htmlBody, textBody);
+	}
 }

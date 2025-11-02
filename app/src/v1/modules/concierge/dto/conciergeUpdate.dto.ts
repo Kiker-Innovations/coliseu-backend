@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { ConciergeShiftEnumType } from "@/v1/enum/conciergeShift.enum";
+import type { ConciergeStatusEnumType } from "@/v1/enum/conciergeStatus.enum";
 
 export const conciergeUpdateSchema = z.object({
 	phone: z
@@ -25,10 +26,15 @@ export const conciergeUpdateSchema = z.object({
 	shift: z
 		.enum(["MANHA", "TARDE", "NOITE"])
 		.optional(),
+
+	status: z.enum(["INATIVO", "VALIDADO", "ATIVO", "DE_FERIAS"], {
+		errorMap: () => ({ message: "Status deve ser INATIVO, VALIDADO, ATIVO ou DE_FERIAS" }),
+	}).optional() as unknown as z.ZodType<ConciergeStatusEnumType | undefined>,
 });
 
 export type ConciergeUpdateDto = z.infer<typeof conciergeUpdateSchema> & {
 	shift?: ConciergeShiftEnumType;
+	status?: ConciergeStatusEnumType;
 };
 
 export const transformUpdateConciergeDto = (

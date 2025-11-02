@@ -10,6 +10,7 @@ import type { HttpResponse } from "../../../interface/httpResponse.interface";
 import type { JwtPayload } from "../../../interface/jwtPayload.interface";
 import type { RefreshTokenPayload } from "../../../interface/refreshTokenPayload.interface";
 import { ResidentStatusEnum } from "../../enum/residentStatus.enum";
+import { ConciergeStatusEnum } from "../../enum/conciergeStatus.enum";
 import { UserTypeEnum } from "../../enum/userType.enum";
 import type {
 	LoginAdminDto,
@@ -111,7 +112,7 @@ export class AuthService {
 			);
 		}
 
-		if (!concierge.isActive) {
+		if (concierge.status !== ConciergeStatusEnum.ATIVO) {
 			throw httpException(
 				"Usuário inativo. Entre em contato com o administrador.",
 				httpStatus.FORBIDDEN,
@@ -265,7 +266,7 @@ export class AuthService {
 			throw httpException("Usuário não encontrado", httpStatus.NOT_FOUND);
 		}
 
-		if (!concierge.isActive) {
+		if (concierge.status !== ConciergeStatusEnum.ATIVO) {
 			throw httpException("Usuário não está ativo", httpStatus.FORBIDDEN);
 		}
 
@@ -346,7 +347,7 @@ export class AuthService {
 				const concierge = await this.conciergeRepository.findById(
 					decoded.userId,
 				);
-				if (concierge && concierge.isActive) {
+				if (concierge && concierge.status === ConciergeStatusEnum.ATIVO) {
 					email = concierge.email;
 					isValid = true;
 				}

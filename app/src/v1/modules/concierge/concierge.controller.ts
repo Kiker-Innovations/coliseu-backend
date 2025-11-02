@@ -4,15 +4,18 @@ import type { MongoClient } from "mongodb";
 import { ConciergeService } from "./concierge.service";
 import { transformCreateConciergeDto } from "./dto/conciergeCreate.dto";
 import { transformUpdateConciergeDto } from "./dto/conciergeUpdate.dto";
-import { transformConfirmConciergeDto } from "./dto/conciergeConfirm.dto";
 import { transformForgetPasswordConciergeDto } from "./dto/conciergeForgetPassword.dto";
 import { transformResetPasswordConciergeDto } from "./dto/conciergeResetPassword.dto";
+import { AuthService } from "../auth/auth.service";
+import { transformLoginConciergeDto } from "../auth/dto";
 
 export class ConciergeController {
     private conciergeService: ConciergeService;
+    private authService: AuthService;
 
     constructor(mongoClient: MongoClient) {
         this.conciergeService = new ConciergeService(mongoClient);
+        this.authService = new AuthService(mongoClient);
     }
 
     public async createConcierge(
@@ -63,19 +66,6 @@ export class ConciergeController {
             .send(await this.conciergeService.deleteConcierge(id));
     }
 
-    public async confirmConcierge(
-        request: FastifyRequest,
-        reply: FastifyReply,
-    ): Promise<void> {
-        return reply
-            .status(httpStatus.OK)
-            .send(
-                await this.conciergeService.confirmConciergeCode(
-                    transformConfirmConciergeDto(request.body),
-                ),
-            );
-    }
-
     public async getManyConcierges(
         request: FastifyRequest,
         reply: FastifyReply,
@@ -107,6 +97,19 @@ export class ConciergeController {
             .send(
                 await this.conciergeService.resetPassword(
                     transformResetPasswordConciergeDto(request.body),
+                ),
+            );
+    }
+
+    public async login(
+        request: FastifyRequest,
+        reply: FastifyReply,
+    ): Promise<void> {
+        return reply
+            .status(httpStatus.OK)
+            .send(
+                await this.authService.loginConcierge(
+                    transformLoginConciergeDto(request.body),
                 ),
             );
     }

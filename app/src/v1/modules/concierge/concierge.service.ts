@@ -22,6 +22,7 @@ import { ConciergeConfirmDto } from "./dto/conciergeConfirm.dto";
 import { ConciergeForgetPasswordDto } from "./dto/conciergeForgetPassword.dto";
 import { ConciergeResetPasswordDto } from "./dto/conciergeResetPassword.dto";
 import { getDate } from "@/v1/utils/utils";
+import { ConciergeEmail } from "./concierge.emails";
 
 export class ConciergeService {
     private conciergeRepository: ConciergeRepository;
@@ -62,6 +63,14 @@ export class ConciergeService {
 
         const createdConcierge =
             await this.conciergeRepository.create(conciergeEntity);
+
+        const conciergeEmail = new ConciergeEmail();
+        conciergeEmail.sendConfirmationEmailAsync(
+            createdConcierge.email,
+            createdConcierge.name,
+            createdConcierge.shift,
+            conciergeCode,
+        );
 
         return {
             success: true,
@@ -196,7 +205,7 @@ export class ConciergeService {
         }
 
         await this.conciergeRepository.updateByEmail(conciergeConfirmDto.email, {
-            status: ConciergeStatusEnum.VALIDADO,
+            status: ConciergeStatusEnum.ATIVO,
         });
 
         return {

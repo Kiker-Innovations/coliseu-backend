@@ -15,6 +15,14 @@ export interface AdminConfirmationTemplateData {
 	confirmationUrl: string;
 }
 
+export interface ConciergeConfirmationTemplateData {
+	conciergeName: string;
+	shift: string;
+	confirmationCode: string;
+	email: string;
+	confirmationUrl: string;
+}
+
 export interface ResidentWelcomeTemplateData {
 	residentName: string;
 	apartmentNumber: string;
@@ -32,5 +40,6 @@ export interface PasswordResetTemplateData {
 export const EmailTemplates = {
 	RESIDENT_CONFIRMATION: "residentConfirmation",
 	ADMIN_CONFIRMATION: "adminConfirmation",
+	CONCIERGE_CONFIRMATION: "conciergeConfirmation",
 	PASSWORD_RESET: "passwordReset",
 } as const;

@@ -7,6 +7,7 @@ import type {
 	UpdateAdminEntity,
 } from "../entity/admin.entity";
 import type { IRepository } from "../interfaces/IRepository";
+import { getDate } from "@/v1/utils/utils";
 
 export class AdminRepository
 	implements IRepository<AdminEntity, CreateAdminEntity, UpdateAdminEntity>
@@ -21,7 +22,7 @@ export class AdminRepository
 	}
 
 	public async create(data: CreateAdminEntity): Promise<AdminEntity> {
-		const now = new Date();
+		const now = getDate();
 		const adminEntity: AdminEntity = {
 			_id: randomUUID(),
 			...data,
@@ -53,7 +54,7 @@ export class AdminRepository
 	): Promise<AdminEntity | null> {
 		const updateData = {
 			...data,
-			updatedAt: new Date(),
+			updatedAt: getDate(),
 		};
 
 		const result = await this.collection.findOneAndUpdate(
@@ -72,6 +73,24 @@ export class AdminRepository
 
 	public async findByEmail(email: string): Promise<AdminEntity | null> {
 		return await this.findOne({ email });
+	}
+
+	public async updateByEmail(
+		email: string,
+		data: UpdateAdminEntity,
+	): Promise<AdminEntity | null> {
+		const updateData = {
+			...data,
+			updatedAt: getDate(),
+		};
+
+		const result = await this.collection.findOneAndUpdate(
+			{ email },
+			{ $set: updateData },
+			{ returnDocument: "after" },
+		);
+
+		return result || null;
 	}
 }
 

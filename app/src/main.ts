@@ -26,7 +26,6 @@ async function bootstrap(): Promise<void> {
 		});
 		await server.listen({ port: env.app.port || 3000, host: "::" });
 
-		// Graceful shutdown
 		const signals = ["SIGINT", "SIGTERM"];
 		for (const signal of signals) {
 			process.on(signal, async () => {

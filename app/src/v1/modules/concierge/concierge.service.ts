@@ -15,13 +15,13 @@ import {
 	comparePassword,
 } from "@/v1/utils/cryptoHelper";
 import {
-	sendConfirmationEmailAsync,
-	sendPasswordResetEmailAsync,
+	sendPasswordResetEmail,
 } from "@/v1/utils/emailHelper";
 import { ConciergeUpdateDto } from "./dto/conciergeUpdate.dto";
 import { ConciergeConfirmDto } from "./dto/conciergeConfirm.dto";
 import { ConciergeForgetPasswordDto } from "./dto/conciergeForgetPassword.dto";
 import { ConciergeResetPasswordDto } from "./dto/conciergeResetPassword.dto";
+import { getDate } from "@/v1/utils/utils";
 
 export class ConciergeService {
     private conciergeRepository: ConciergeRepository;
@@ -62,8 +62,6 @@ export class ConciergeService {
 
         const createdConcierge =
             await this.conciergeRepository.create(conciergeEntity);
-
-        sendConfirmationEmailAsync(conciergeCreateDto.email, conciergeCode);
 
         return {
             success: true,
@@ -244,16 +242,15 @@ export class ConciergeService {
         }
 
         const resetCode = generateResetCode();
-        const resetTokenExpiry = new Date();
-        resetTokenExpiry.setMinutes(resetTokenExpiry.getMinutes() + 15); // Expira em 15 minutos
+        const resetTokenExpiry = getDate();
+        resetTokenExpiry.setMinutes(resetTokenExpiry.getMinutes() + 15);
 
         await this.conciergeRepository.updateByEmail(forgetPasswordDto.email, {
             resetPasswordToken: resetCode,
             resetPasswordTokenExpiry: resetTokenExpiry,
         });
 
-        // Enviar email de forma assíncrona
-        sendPasswordResetEmailAsync(
+        sendPasswordResetEmail(
             concierge.email,
             concierge.name,
             resetCode,
@@ -293,7 +290,7 @@ export class ConciergeService {
             );
         }
 
-        const now = new Date();
+        const now = getDate();
         if (now > concierge.resetPasswordTokenExpiry) {
             throw httpException(
                 "Código de recuperação expirado. Solicite um novo código.",

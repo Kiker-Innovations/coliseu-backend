@@ -1,9 +1,15 @@
 export { TemplateEngine } from "./templateEngine";
 
-// Interfaces para os dados dos templates
 export interface ResidentConfirmationTemplateData {
 	residentName: string;
 	apartmentNumber: string;
+	confirmationCode: string;
+	email: string;
+	confirmationUrl: string;
+}
+
+export interface AdminConfirmationTemplateData {
+	adminName: string;
 	confirmationCode: string;
 	email: string;
 	confirmationUrl: string;
@@ -23,9 +29,8 @@ export interface PasswordResetTemplateData {
 	resetUrl?: string;
 }
 
-// Nomes dos templates
 export const EmailTemplates = {
 	RESIDENT_CONFIRMATION: "residentConfirmation",
-	RESIDENT_WELCOME: "residentWelcome",
+	ADMIN_CONFIRMATION: "adminConfirmation",
 	PASSWORD_RESET: "passwordReset",
 } as const;

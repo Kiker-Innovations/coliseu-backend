@@ -16,6 +16,8 @@ import type {
 	LoginConciergeDto,
 	LoginResidentDto,
 } from "./dto";
+import { ConciergeStatusEnum } from "@/v1/enum/conciergeStatus.enum";
+import { AdminStatusEnum } from "@/v1/enum/adminStatus.enum";
 
 export class AuthService {
 	private residentRepository: ResidentRepository;
@@ -111,9 +113,9 @@ export class AuthService {
 			);
 		}
 
-		if (!concierge.isActive) {
+		if (concierge.status !== ConciergeStatusEnum.ATIVO) {
 			throw httpException(
-				"Usuário inativo. Entre em contato com o administrador.",
+				"Usuário não está ativo.",
 				httpStatus.FORBIDDEN,
 			);
 		}
@@ -164,9 +166,9 @@ export class AuthService {
 			);
 		}
 
-		if (!admin.isActive) {
+		if (admin.status !== AdminStatusEnum.ATIVO) {
 			throw httpException(
-				"Usuário inativo. Entre em contato com o administrador.",
+				"Usuário inativo. Confirme seu email para ativar sua conta.",
 				httpStatus.FORBIDDEN,
 			);
 		}
@@ -265,7 +267,7 @@ export class AuthService {
 			throw httpException("Usuário não encontrado", httpStatus.NOT_FOUND);
 		}
 
-		if (!concierge.isActive) {
+		if (concierge.status !== ConciergeStatusEnum.ATIVO) {
 			throw httpException("Usuário não está ativo", httpStatus.FORBIDDEN);
 		}
 
@@ -302,7 +304,7 @@ export class AuthService {
 			throw httpException("Usuário não encontrado", httpStatus.NOT_FOUND);
 		}
 
-		if (!admin.isActive) {
+		if (admin.status !== AdminStatusEnum.ATIVO) {
 			throw httpException("Usuário não está ativo", httpStatus.FORBIDDEN);
 		}
 
@@ -330,7 +332,6 @@ export class AuthService {
 				throw httpException("Token inválido", httpStatus.UNAUTHORIZED);
 			}
 
-			// Buscar usuário para garantir que ainda existe e está ativo
 			let email = "";
 			let isValid = false;
 
@@ -346,17 +347,17 @@ export class AuthService {
 				const concierge = await this.conciergeRepository.findById(
 					decoded.userId,
 				);
-				if (concierge && concierge.isActive) {
+				if (concierge && concierge.status === ConciergeStatusEnum.ATIVO) {
 					email = concierge.email;
 					isValid = true;
 				}
-			} else if (decoded.userType === UserTypeEnum.ADMIN) {
-				const admin = await this.adminRepository.findById(decoded.userId);
-				if (admin && admin.isActive) {
-					email = admin.email;
-					isValid = true;
-				}
+		} else if (decoded.userType === UserTypeEnum.ADMIN) {
+			const admin = await this.adminRepository.findById(decoded.userId);
+			if (admin && admin.status === AdminStatusEnum.ATIVO) {
+				email = admin.email;
+				isValid = true;
 			}
+		}
 
 			if (!isValid) {
 				throw httpException(

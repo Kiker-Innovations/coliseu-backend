@@ -31,6 +31,12 @@ export class ConciergeSchema {
 					description: "Turno do porteiro",
 					example: "MANHA",
 				},
+				status: {
+					type: "string",
+					enum: ["INATIVO", "VALIDADO", "ATIVO", "DE_FERIAS"],
+					description: "Status do porteiro (INATIVO, VALIDADO, ATIVO, DE_FERIAS). Se não informado, será ATIVO por padrão.",
+					example: "ATIVO",
+				},
 			},
 		},
 		response: {
@@ -156,6 +162,12 @@ export class ConciergeSchema {
 					description: "Turno do porteiro",
 					example: "MANHA",
 				},
+				status: {
+					type: "string",
+					enum: ["INATIVO", "VALIDADO", "ATIVO", "DE_FERIAS"],
+					description: "Status do porteiro (INATIVO, VALIDADO, ATIVO, DE_FERIAS)",
+					example: "ATIVO",
+				},
 			},
 		},
 		response: {
@@ -213,43 +225,6 @@ export class ConciergeSchema {
 			},
 			404: {
 				description: "Porteiro não encontrado",
-				type: "object",
-				properties: {
-					success: { type: "boolean" },
-					message: { type: "string" },
-				},
-			},
-		},
-	};
-
-	public confirm = {
-		body: {
-			type: "object",
-			required: ["email", "code"],
-			properties: {
-				email: {
-					type: "string",
-					description: "Email do porteiro",
-					example: "porteiro@example.com",
-				},
-				code: {
-					type: "string",
-					description: "Código de confirmação recebido por email",
-					example: "ABC123",
-				},
-			},
-		},
-		response: {
-			200: {
-				description: "Código confirmado com sucesso",
-				type: "object",
-				properties: {
-					success: { type: "boolean" },
-					message: { type: "string" },
-				},
-			},
-			400: {
-				description: "Código inválido ou porteiro não encontrado",
 				type: "object",
 				properties: {
 					success: { type: "boolean" },
@@ -371,6 +346,61 @@ export class ConciergeSchema {
 			},
 			404: {
 				description: "Email não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public login = {
+		body: {
+			type: "object",
+			required: ["email", "password"],
+			properties: {
+				email: {
+					type: "string",
+					description: "Email do porteiro",
+					example: "porteiro@example.com",
+				},
+				password: {
+					type: "string",
+					description: "Senha do porteiro",
+					example: "Senha@123",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Login realizado com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							token: { type: "string", description: "JWT access token" },
+							refreshToken: {
+								type: "string",
+								description: "JWT refresh token",
+							},
+						},
+					},
+				},
+			},
+			401: {
+				description: "Credenciais inválidas",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			403: {
+				description: "Usuário inativo. Apenas porteiros com status ATIVO podem fazer login.",
 				type: "object",
 				properties: {
 					success: { type: "boolean" },

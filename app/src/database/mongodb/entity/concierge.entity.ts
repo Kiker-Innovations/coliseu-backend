@@ -9,7 +9,7 @@ export interface ConciergeEntity {
   phone: string;
   shift: ConciergeShiftEnumType; 
   status: ConciergeStatusEnumType;
-  code: string;
+  code?: string;
   resetPasswordToken?: string;
   resetPasswordTokenExpiry?: Date;
   createdAt: Date;

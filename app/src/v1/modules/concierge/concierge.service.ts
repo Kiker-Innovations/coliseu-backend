@@ -3,14 +3,13 @@ import type {
     CreateConciergeEntity,
 } from "@/database/mongodb/entity/concierge.entity";
 import { ConciergeRepository } from "@/database/mongodb/repositories/concierge.repository";
-import { ConciergeStatusEnum } from "../../enum/conciergeStatus.enum";
+import { ConciergeStatusEnum, type ConciergeStatusEnumType } from "../../enum/conciergeStatus.enum";
 import { httpException } from "@/config/error";
 import httpStatus from "http-status";
 import type { HttpResponse } from "@/interface/httpResponse.interface";
 import { ConciergeCreateDto } from "./dto/conciergeCreate.dto";
 import {
 	hashPassword,
-	generateCode,
 	generateResetCode,
 	comparePassword,
 } from "@/v1/utils/cryptoHelper";
@@ -18,7 +17,6 @@ import {
 	sendPasswordResetEmail,
 } from "@/v1/utils/emailHelper";
 import { ConciergeUpdateDto } from "./dto/conciergeUpdate.dto";
-import { ConciergeConfirmDto } from "./dto/conciergeConfirm.dto";
 import { ConciergeForgetPasswordDto } from "./dto/conciergeForgetPassword.dto";
 import { ConciergeResetPasswordDto } from "./dto/conciergeResetPassword.dto";
 import { getDate } from "@/v1/utils/utils";
@@ -49,16 +47,14 @@ export class ConciergeService {
         }
 
         const passwordHash = await hashPassword(conciergeCreateDto.password);
-        const conciergeCode = await generateCode();
 
         const conciergeEntity: CreateConciergeEntity = {
             name: conciergeCreateDto.name,
             email: conciergeCreateDto.email,
             passwordHash,
             phone: conciergeCreateDto.phone,
-            status: ConciergeStatusEnum.INATIVO,
+            status: conciergeCreateDto.status || "ATIVO",
             shift: conciergeCreateDto.shift,
-            code: conciergeCode,
         };
 
         const createdConcierge =
@@ -75,7 +71,7 @@ export class ConciergeService {
         return {
             success: true,
             message:
-                "Porteiro cadastrado com sucesso! Verifique o email registrado para confirmar o cadastro.",
+                "Porteiro cadastrado com sucesso!",
             data: {
                 email: createdConcierge.email,
                 phone: createdConcierge.phone,
@@ -124,6 +120,7 @@ export class ConciergeService {
             email: string;
             phone: string;
             shift: string;
+            status: string;
         }>
     > {
         const concierge = await this.conciergeRepository.findById(conciergeId);
@@ -132,9 +129,13 @@ export class ConciergeService {
             throw httpException("Porteiro não encontrado", httpStatus.NOT_FOUND);
         }
 
+        const updateData: ConciergeUpdateDto = {
+            ...conciergeUpdateDto,
+        };
+
         const updatedConcierge = await this.conciergeRepository.update(
             conciergeId,
-            conciergeUpdateDto,
+            updateData,
         );
 
         if (!updatedConcierge) {
@@ -152,6 +153,7 @@ export class ConciergeService {
                 email: updatedConcierge.email,
                 phone: updatedConcierge.phone,
                 shift: updatedConcierge.shift,
+                status: updatedConcierge.status,
             },
         };
     }
@@ -254,7 +256,7 @@ export class ConciergeService {
         const resetTokenExpiry = getDate();
         resetTokenExpiry.setMinutes(resetTokenExpiry.getMinutes() + 15);
 
-        await this.conciergeRepository.updateByEmail(forgetPasswordDto.email, {
+        await this.conciergeRepository.update(concierge._id, {
             resetPasswordToken: resetCode,
             resetPasswordTokenExpiry: resetTokenExpiry,
         });
@@ -263,7 +265,7 @@ export class ConciergeService {
             concierge.email,
             concierge.name,
             resetCode,
-            "https://coliseucondo.com.br/concierge/reset-password",
+            resetUrl,
         );
 
         return {
@@ -307,10 +309,10 @@ export class ConciergeService {
             );
         }
 
-        const passwordHash = await hashPassword(resetPasswordDto.newPassword);
+        const newPasswordHash = await hashPassword(resetPasswordDto.newPassword);
 
-        await this.conciergeRepository.updateByEmail(concierge.email, {
-            passwordHash,
+        await this.conciergeRepository.update(concierge._id, {
+            passwordHash: newPasswordHash,
             resetPasswordToken: undefined,
             resetPasswordTokenExpiry: undefined,
         });

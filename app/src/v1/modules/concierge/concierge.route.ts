@@ -20,7 +20,7 @@ export class ConciergeRouteV1 {
 				tags: ["Concierges"],
 				summary: "Create a new concierge",
 				description:
-					"Cria um novo porteiro no sistema e envia email de confirmação",
+					"Cria um novo porteiro no sistema",
 				...this.conciergeSchema.create,
 			},
 			handler: this.conciergeController.createConcierge.bind(
@@ -77,22 +77,6 @@ export class ConciergeRouteV1 {
 		};
 	};
 
-	private confirm = (): RouteOptions => {
-		return {
-			method: "POST",
-			url: "/v1/concierges/confirm",
-			schema: {
-				tags: ["Concierges"],
-				summary: "Confirm concierge email",
-				description: "Confirma o código de verificação enviado por email",
-				...this.conciergeSchema.confirm,
-			},
-			handler: this.conciergeController.confirmConcierge.bind(
-				this.conciergeController,
-			) as RouteHandlerMethod,
-		};
-	};
-
 	private getMany = (): RouteOptions => {
 		return {
 			method: "GET",
@@ -143,16 +127,32 @@ export class ConciergeRouteV1 {
 		};
 	};
 
+	private login = (): RouteOptions => {
+		return {
+			method: "POST",
+			url: "/v1/concierges/login",
+			schema: {
+				tags: ["Concierges"],
+				summary: "Login concierge",
+				description: "Autentica um porteiro com email e senha. Apenas porteiros com status ATIVO podem fazer login.",
+				...this.conciergeSchema.login,
+			},
+			handler: this.conciergeController.login.bind(
+				this.conciergeController,
+			) as RouteHandlerMethod,
+		};
+	};
+
 	public routes = (): RouteOptions[] => {
 		return [
 			this.create(),
 			this.getById(),
 			this.update(),
 			this.remove(),
-			this.confirm(),
 			this.getMany(),
 			this.forgetPassword(),
 			this.resetPassword(),
+			this.login(),
 		];
 	};
 }

@@ -3,6 +3,7 @@ import { ConciergeEntity, CreateConciergeEntity, UpdateConciergeEntity } from ".
 import { IRepository } from "../interfaces/IRepository";
 import { env } from "@/config/env";
 import { randomUUID } from "node:crypto";
+import { getDate } from "@/v1/utils/utils";
 
 
 export class ConciergeRepository
@@ -19,7 +20,7 @@ export class ConciergeRepository
     }
 
     public async create(data: CreateConciergeEntity): Promise<ConciergeEntity> {
-        const now = new Date();
+        const now = getDate();
         const conciergeEntity: ConciergeEntity = {
             _id: randomUUID(),
             ...data,
@@ -55,7 +56,7 @@ export class ConciergeRepository
     ): Promise<ConciergeEntity | null> {
         const updateData = {
             ...data,
-            updatedAt: new Date(),
+            updatedAt: getDate(),
         };
 
         const result = await this.collection.findOneAndUpdate(
@@ -78,7 +79,7 @@ export class ConciergeRepository
     ): Promise<ConciergeEntity | null> {
         const updateData = {
             ...data,
-            updatedAt: new Date(),
+            updatedAt: getDate(),
         };
 
         const result = await this.collection.findOneAndUpdate(

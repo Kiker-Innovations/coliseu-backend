@@ -1,5 +1,5 @@
 export const FromEmailEnum = {
-	NOREPLY: "Luiz <onboarding@resend.dev>",
+	NOREPLY: "Coliseu <onboarding@resend.dev>",
 	HELP: "help@coliseucondo.com.br",
 	CONTACT: "contact@coliseucondo.com.br",
 } as const;

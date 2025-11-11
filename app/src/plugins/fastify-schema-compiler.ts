@@ -29,16 +29,12 @@ queryStringAjvInstance.addKeyword({
 	validate: (_schema, data) => typeof data === "string" && data.trim() !== "",
 });
 
-// Adiciona keywords usadas apenas para documentação (Swagger/OpenAPI)
-// Verifica se a keyword já existe antes de adicionar
 const addKeywordIfNotExists = (ajv: Ajv, keyword: string) => {
 	try {
 		if (!ajv.RULES.keywords?.[keyword]) {
 			ajv.addKeyword(keyword);
 		}
-	} catch {
-		// Keyword já existe, ignora
-	}
+	} catch {}
 };
 
 const documentationKeywords = ["example", "examples", "externalDocs"];

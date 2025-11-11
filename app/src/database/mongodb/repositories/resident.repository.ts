@@ -7,6 +7,7 @@ import type {
 	UpdateResidentEntity,
 } from "../entity/resident.entity";
 import type { IRepository } from "../interfaces/IRepository";
+import { getDate } from "@/v1/utils/utils";
 
 export class ResidentRepository
 	implements
@@ -22,7 +23,7 @@ export class ResidentRepository
 	}
 
 	public async create(data: CreateResidentEntity): Promise<ResidentEntity> {
-		const now = new Date();
+		const now = getDate();
 		const residentEntity: ResidentEntity = {
 			_id: randomUUID(),
 			...data,
@@ -56,7 +57,7 @@ export class ResidentRepository
 	): Promise<ResidentEntity | null> {
 		const updateData = {
 			...data,
-			updatedAt: new Date(),
+			updatedAt: getDate(),
 		};
 
 		const result = await this.collection.findOneAndUpdate(
@@ -83,7 +84,7 @@ export class ResidentRepository
 	): Promise<ResidentEntity | null> {
 		const updateData = {
 			...data,
-			updatedAt: new Date(),
+			updatedAt: getDate(),
 		};
 
 		const result = await this.collection.findOneAndUpdate(

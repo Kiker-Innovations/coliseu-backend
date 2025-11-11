@@ -23,10 +23,9 @@ import {
 	generateCode,
 	generateResetCode,
 } from "../../utils/cryptoHelper";
-import {
-	sendResidentConfirmationEmailAsync,
-	sendPasswordResetEmailAsync,
-} from "../../utils/emailHelper";
+import { ResidentEmail } from "./resident.emails";
+import { sendPasswordResetEmail } from "@/v1/utils/emailHelper";
+import { getDate } from "@/v1/utils/utils";
 
 export class ResidentService {
 	private residentRepository: ResidentRepository;
@@ -74,13 +73,13 @@ export class ResidentService {
 		const createdResident =
 			await this.residentRepository.create(residentEntity);
 
-		// Enviar email de confirmação de forma assíncrona
-		sendResidentConfirmationEmailAsync(
-			createdResident.email,
-			createdResident.name,
-			createdResident.apartmentNumber,
-			residentCode,
-		);
+		const residentEmail = new ResidentEmail();
+		residentEmail.sendConfirmationEmailAsync(
+				createdResident.email,
+				createdResident.name,
+				createdResident.apartmentNumber,
+				residentCode,
+			);
 
 		const { presignedUrl, publicUrl } = await this.generatePresignedUrl(
 			createdResident._id,
@@ -197,7 +196,7 @@ export class ResidentService {
 		};
 	}
 
-	public async generatePresignedUrl(
+	private async generatePresignedUrl(
 		residentId: string,
 		fileExtension: string,
 	): Promise<{
@@ -265,7 +264,6 @@ export class ResidentService {
 			);
 		}
 
-		// Atualiza status para VALIDADO
 		await this.residentRepository.updateByEmail(residentConfirmDto.email, {
 			status: ResidentStatusEnum.VALIDADO,
 		});
@@ -290,7 +288,7 @@ export class ResidentService {
 		}
 
 		const resetCode = generateResetCode();
-		const resetTokenExpiry = new Date();
+		const resetTokenExpiry = getDate();
 		resetTokenExpiry.setMinutes(resetTokenExpiry.getMinutes() + 15); // Expira em 15 minutos
 
 		await this.residentRepository.update(resident._id, {
@@ -298,12 +296,11 @@ export class ResidentService {
 			resetPasswordTokenExpiry: resetTokenExpiry,
 		});
 
-		// Enviar email de forma assíncrona
-		sendPasswordResetEmailAsync(
+		sendPasswordResetEmail(
 			resident.email,
 			resident.name,
 			resetCode,
-			"https://coliseucondo.com.br/resident/reset-password",
+			`https://coliseucondo.com.br/reset-password?email=${resident.email}`,
 		);
 
 		return {
@@ -339,7 +336,7 @@ export class ResidentService {
 			);
 		}
 
-		const now = new Date();
+		const now = getDate();
 		if (now > resident.resetPasswordTokenExpiry) {
 			throw httpException(
 				"Código de recuperação expirado. Solicite um novo código.",

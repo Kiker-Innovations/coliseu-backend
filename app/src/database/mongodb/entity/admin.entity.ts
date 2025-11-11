@@ -3,7 +3,10 @@ export interface AdminEntity {
 	email: string;
 	passwordHash: string;
 	name: string;
-	isActive: boolean;
+	status: string;
+	adminCode?: string;
+	resetPasswordToken?: string;
+	resetPasswordTokenExpiry?: Date;
 	createdAt: Date;
 	updatedAt: Date;
 }
@@ -14,6 +17,6 @@ export type CreateAdminEntity = Omit<
 >;
 
 export type UpdateAdminEntity = Partial<
-	Pick<AdminEntity, "name" | "isActive" | "updatedAt">
+	Omit<AdminEntity, "_id" | "createdAt">
 >;
 

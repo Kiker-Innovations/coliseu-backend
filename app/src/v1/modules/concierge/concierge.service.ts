@@ -14,11 +14,13 @@ import {
 	comparePassword,
 } from "@/v1/utils/cryptoHelper";
 import {
-	sendPasswordResetEmailAsync,
+	sendPasswordResetEmail,
 } from "@/v1/utils/emailHelper";
 import { ConciergeUpdateDto } from "./dto/conciergeUpdate.dto";
 import { ConciergeForgetPasswordDto } from "./dto/conciergeForgetPassword.dto";
 import { ConciergeResetPasswordDto } from "./dto/conciergeResetPassword.dto";
+import { getDate } from "@/v1/utils/utils";
+import { ConciergeEmail } from "./concierge.emails";
 
 export class ConciergeService {
     private conciergeRepository: ConciergeRepository;
@@ -57,6 +59,14 @@ export class ConciergeService {
 
         const createdConcierge =
             await this.conciergeRepository.create(conciergeEntity);
+
+        const conciergeEmail = new ConciergeEmail();
+        conciergeEmail.sendConfirmationEmailAsync(
+            createdConcierge.email,
+            createdConcierge.name,
+            createdConcierge.shift,
+            conciergeCode,
+        );
 
         return {
             success: true,
@@ -171,6 +181,44 @@ export class ConciergeService {
         };
     }
 
+    public async confirmConciergeCode(
+        conciergeConfirmDto: ConciergeConfirmDto,
+    ): Promise<HttpResponse<null>> {
+        const concierge = await this.conciergeRepository.findByEmail(conciergeConfirmDto.email);
+        if (!concierge) {
+            throw httpException("Morador não encontrado", httpStatus.NOT_FOUND);
+        }
+
+        if (
+            concierge.status === ConciergeStatusEnum.VALIDADO ||
+            concierge.status === ConciergeStatusEnum.ATIVO
+        ) {
+            throw httpException(
+                "Cadastro já foi confirmado anteriormente",
+                httpStatus.BAD_REQUEST,
+            );
+        }
+
+        if (concierge.code !== conciergeConfirmDto.code) {
+            throw httpException(
+                "Código de confirmação inválido",
+                httpStatus.BAD_REQUEST,
+            );
+        }
+
+        await this.conciergeRepository.updateByEmail(conciergeConfirmDto.email, {
+            status: ConciergeStatusEnum.ATIVO,
+        });
+
+        return {
+            success: true,
+            message:
+                "Cadastro confirmado com sucesso!",
+            data: null,
+        };
+    }
+
+
     public async getManyConcierges(): Promise<
         HttpResponse<{
             name: string;
@@ -205,17 +253,15 @@ export class ConciergeService {
         }
 
         const resetCode = generateResetCode();
-        const resetTokenExpiry = new Date();
-        resetTokenExpiry.setMinutes(resetTokenExpiry.getMinutes() + 15); // Expira em 15 minutos
+        const resetTokenExpiry = getDate();
+        resetTokenExpiry.setMinutes(resetTokenExpiry.getMinutes() + 15);
 
         await this.conciergeRepository.update(concierge._id, {
             resetPasswordToken: resetCode,
             resetPasswordTokenExpiry: resetTokenExpiry,
         });
 
-        // Enviar email de forma assíncrona
-        const resetUrl = `https://coliseucondo.com.br/concierge/reset-password/verify?email=${encodeURIComponent(concierge.email)}`;
-        sendPasswordResetEmailAsync(
+        sendPasswordResetEmail(
             concierge.email,
             concierge.name,
             resetCode,
@@ -255,7 +301,7 @@ export class ConciergeService {
             );
         }
 
-        const now = new Date();
+        const now = getDate();
         if (now > concierge.resetPasswordTokenExpiry) {
             throw httpException(
                 "Código de recuperação expirado. Solicite um novo código.",

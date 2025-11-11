@@ -1,3 +1,4 @@
+import { getDate } from "@/v1/utils/utils";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import HttpStatus from "http-status";
 import type { ZodError } from "zod";
@@ -28,7 +29,7 @@ export const errorHandler = (
 		return reply.status(400).send({
 			statusCode: error.statusCode,
 			message: `Invalid request ${validationContext}input`,
-			timestamp: new Date(),
+			timestamp: getDate(),
 		});
 	}
 
@@ -43,7 +44,7 @@ export const errorHandler = (
 			statusCode: 400,
 			message: "Erro de validação nos dados fornecidos",
 			errors,
-			timestamp: new Date(),
+			timestamp: getDate(),
 		});
 	}
 
@@ -51,7 +52,7 @@ export const errorHandler = (
 		return reply.status(error.statusCode).send({
 			statusCode: error?.statusCode || 500,
 			message: error.message,
-			timestamp: new Date(),
+			timestamp: getDate(),
 		});
 	}
 
@@ -63,7 +64,7 @@ export const errorHandler = (
 	return reply.status(HttpStatus.INTERNAL_SERVER_ERROR).send({
 		statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
 		message: HttpStatus[500],
-		timestamp: new Date(),
+		timestamp: getDate(),
 	});
 };
 

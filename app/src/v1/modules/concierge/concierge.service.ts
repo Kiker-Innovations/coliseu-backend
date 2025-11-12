@@ -207,6 +207,7 @@ export class ConciergeService {
         }
 
         await this.conciergeRepository.updateByEmail(conciergeConfirmDto.email, {
+<<<<<<< Updated upstream
             status: ConciergeStatusEnum.ATIVO,
         });
 
@@ -261,6 +262,7 @@ export class ConciergeService {
             resetPasswordTokenExpiry: resetTokenExpiry,
         });
 
+<<<<<<< Updated upstream
         sendPasswordResetEmail(
             concierge.email,
             concierge.name,

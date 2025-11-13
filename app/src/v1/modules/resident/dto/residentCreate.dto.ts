@@ -6,14 +6,20 @@ export const residentCreateSchema = z.object({
 		.min(3, "Nome deve ter no mínimo 3 caracteres")
 		.max(100, "Nome deve ter no máximo 100 caracteres")
 		.trim(),
+	buildingId: z
+		.string({ required_error: "ID do edifício é obrigatório" })
+		.uuid("ID do edifício deve ser um UUID válido"),
 	apartmentNumber: z
 		.string({ required_error: "Número do apartamento é obrigatório" })
 		.min(1, "Número do apartamento não pode ser vazio")
-		.max(4, "Número do apartamento deve ter no máximo 4 dígitos")
-		.refine(
-			(val) => /^\d+$/.test(val),
-			"Número do apartamento deve conter apenas dígitos numéricos",
-		),
+		.max(10, "Número do apartamento deve ter no máximo 10 caracteres")
+		.trim(),
+	blockName: z
+		.string()
+		.min(1, "Nome do bloco não pode ser vazio")
+		.max(50, "Nome do bloco deve ter no máximo 50 caracteres")
+		.trim()
+		.optional(),
 	email: z
 		.string({ required_error: "Email é obrigatório" })
 		.email("Email deve ser válido"),

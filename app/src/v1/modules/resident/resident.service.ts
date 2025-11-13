@@ -61,7 +61,9 @@ export class ResidentService {
 
 		const residentEntity: CreateResidentEntity = {
 			name: residentCreateDto.name,
+			buildingId: residentCreateDto.buildingId,
 			apartmentNumber: residentCreateDto.apartmentNumber,
+			blockName: residentCreateDto.blockName,
 			email: residentCreateDto.email,
 			passwordHash,
 			phone: residentCreateDto.phone,

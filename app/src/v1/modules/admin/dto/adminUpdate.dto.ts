@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 export const adminUpdateSchema = z.object({
+	buildingId: z
+		.string()
+		.uuid("ID do edifício deve ser um UUID válido")
+		.optional(),
 	name: z
 		.string()
 		.min(3, "Nome deve ter no mínimo 3 caracteres")

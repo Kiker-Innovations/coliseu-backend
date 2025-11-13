@@ -3,6 +3,9 @@ import type { ConciergeShiftEnumType } from "@/v1/enum/conciergeShift.enum";
 import type { ConciergeStatusEnumType } from "@/v1/enum/conciergeStatus.enum";
 
 export const conciergeCreateSchema = z.object({
+  buildingId: z
+    .string({ required_error: "ID do edifício é obrigatório" })
+    .uuid("ID do edifício deve ser um UUID válido"),
   name: z
     .string({ required_error: "Nome é obrigatório" })
     .min(2, "Nome deve ter no mínimo 2 caracteres"),

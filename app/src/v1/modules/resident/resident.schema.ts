@@ -2,17 +2,27 @@ export class ResidentSchema {
 	public create = {
 		body: {
 			type: "object",
-			required: ["name", "apartmentNumber", "email", "password", "phone"],
+			required: ["name", "buildingId", "apartmentNumber", "email", "password", "phone"],
 			properties: {
 				name: {
 					type: "string",
 					description: "Nome completo do morador",
 					example: "João Silva",
 				},
+				buildingId: {
+					type: "string",
+					description: "ID do edifício (UUID)",
+					example: "123e4567-e89b-12d3-a456-426614174000",
+				},
 				apartmentNumber: {
 					type: "string",
-					description: "Número do apartamento (máximo 4 dígitos numéricos)",
-					example: "1234",
+					description: "Número do apartamento",
+					example: "101",
+				},
+				blockName: {
+					type: "string",
+					description: "Nome do bloco/torre",
+					example: "Bloco A",
 				},
 				email: {
 					type: "string",
@@ -139,6 +149,21 @@ export class ResidentSchema {
 					type: "string",
 					description: "Nome completo do morador",
 					example: "João Silva",
+				},
+				buildingId: {
+					type: "string",
+					description: "ID do edifício (UUID)",
+					example: "123e4567-e89b-12d3-a456-426614174000",
+				},
+				apartmentNumber: {
+					type: "string",
+					description: "Número do apartamento",
+					example: "101",
+				},
+				blockName: {
+					type: "string",
+					description: "Nome do bloco/torre",
+					example: "Bloco A",
 				},
 				phone: {
 					type: "string",

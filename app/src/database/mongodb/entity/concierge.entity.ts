@@ -3,6 +3,7 @@ import { ConciergeStatusEnumType } from "@/v1/enum/conciergeStatus.enum";
 
 export interface ConciergeEntity {
   _id: string;
+  buildingId: string;
   name: string;
   email: string;
   passwordHash: string;
@@ -22,5 +23,5 @@ export type CreateConciergeEntity = Omit<
 >;
 
 export type UpdateConciergeEntity = Partial<
-  Pick<ConciergeEntity, "phone" | "status"| "shift" | "passwordHash" | "resetPasswordToken" | "resetPasswordTokenExpiry" | "updatedAt">
+  Pick<ConciergeEntity, "buildingId" | "phone" | "status"| "shift" | "passwordHash" | "resetPasswordToken" | "resetPasswordTokenExpiry" | "updatedAt">
 >;

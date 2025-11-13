@@ -7,6 +7,22 @@ export const residentUpdateSchema = z.object({
 		.max(100, "Nome deve ter no máximo 100 caracteres")
 		.trim()
 		.optional(),
+	buildingId: z
+		.string()
+		.uuid("ID do edifício deve ser um UUID válido")
+		.optional(),
+	apartmentNumber: z
+		.string()
+		.min(1, "Número do apartamento não pode ser vazio")
+		.max(10, "Número do apartamento deve ter no máximo 10 caracteres")
+		.trim()
+		.optional(),
+	blockName: z
+		.string()
+		.min(1, "Nome do bloco não pode ser vazio")
+		.max(50, "Nome do bloco deve ter no máximo 50 caracteres")
+		.trim()
+		.optional(),
 	phone: z
 		.string()
 		.regex(

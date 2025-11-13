@@ -1,6 +1,9 @@
 import { z } from "zod";
 
 export const adminCreateSchema = z.object({
+	buildingId: z
+		.string({ required_error: "ID do edifício é obrigatório" })
+		.uuid("ID do edifício deve ser um UUID válido"),
 	name: z
 		.string({ required_error: "Nome é obrigatório" })
 		.min(3, "Nome deve ter no mínimo 3 caracteres")

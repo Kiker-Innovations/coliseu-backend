@@ -3,7 +3,9 @@ import type { ResidentStatusEnumType } from "../../../v1/enum/residentStatus.enu
 export interface ResidentEntity {
 	_id: string;
 	name: string;
+	buildingId: string;
 	apartmentNumber: string;
+	blockName: string;
 	email: string;
 	passwordHash: string;
 	phone: string;
@@ -25,6 +27,9 @@ export type UpdateResidentEntity = Partial<
 	Pick<
 		ResidentEntity,
 		| "name"
+		| "buildingId"
+		| "apartmentNumber"
+		| "blockName"
 		| "phone"
 		| "photoUrl"
 		| "status"

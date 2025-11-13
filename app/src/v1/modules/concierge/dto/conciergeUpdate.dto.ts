@@ -3,6 +3,11 @@ import type { ConciergeShiftEnumType } from "@/v1/enum/conciergeShift.enum";
 import type { ConciergeStatusEnumType } from "@/v1/enum/conciergeStatus.enum";
 
 export const conciergeUpdateSchema = z.object({
+	buildingId: z
+		.string()
+		.uuid("ID do edifício deve ser um UUID válido")
+		.optional(),
+
 	phone: z
 		.string()
 		.regex(

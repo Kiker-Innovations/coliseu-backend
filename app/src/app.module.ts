@@ -4,6 +4,7 @@ import { AuthRouteV1 } from "./v1/modules/auth/auth.route";
 import { ResidentRouteV1 } from "./v1/modules/resident/resident.route";
 import { ConciergeRouteV1 } from "./v1/modules/concierge/concierge.route";
 import { AdminRouteV1 } from "./v1/modules/admin/admin.route";
+import { BuildingRouteV1 } from "./v1/modules/building/building.route";
 
 export class Route {
 	public registerRoutes = async (server: FastifyInstance): Promise<void> => {
@@ -14,6 +15,7 @@ export class Route {
 			...new ResidentRouteV1(mongoClient).routes(),
 			...new ConciergeRouteV1(mongoClient).routes(),
 			...new AdminRouteV1(mongoClient).routes(),
+			...new BuildingRouteV1(mongoClient).routes(),
 		]) {
 			server.route(route);
 		}

@@ -52,6 +52,7 @@ export class ConciergeService {
         const conciergeCode = await generateCode();
 
         const conciergeEntity: CreateConciergeEntity = {
+            buildingId: conciergeCreateDto.buildingId,
             name: conciergeCreateDto.name,
             email: conciergeCreateDto.email,
             passwordHash,

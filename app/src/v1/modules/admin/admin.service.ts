@@ -53,6 +53,7 @@ export class AdminService {
 		const adminCode = await generateCode();
 
 		const adminEntity: CreateAdminEntity = {
+			buildingId: adminCreateDto.buildingId,
 			name: adminCreateDto.name,
 			email: adminCreateDto.email,
 			passwordHash,

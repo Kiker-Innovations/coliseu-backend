@@ -1,5 +1,6 @@
 export interface AdminEntity {
 	_id: string;
+	buildingId: string;
 	email: string;
 	passwordHash: string;
 	name: string;

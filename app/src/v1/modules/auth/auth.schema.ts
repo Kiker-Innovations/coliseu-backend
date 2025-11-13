@@ -2,12 +2,12 @@ export class AuthSchema {
 	public loginResident = {
 		body: {
 			type: "object",
-			required: ["apartmentNumber", "email", "password"],
+			required: ["buildingId", "email", "password"],
 			properties: {
-				apartmentNumber: {
+				buildingId: {
 					type: "string",
-					description: "Número do apartamento (máximo 4 dígitos numéricos)",
-					example: "1234",
+					description: "ID do edifício (UUID)",
+					example: "123e4567-e89b-12d3-a456-426614174000",
 				},
 				email: {
 					type: "string",
@@ -62,8 +62,13 @@ export class AuthSchema {
 	public loginConcierge = {
 		body: {
 			type: "object",
-			required: ["email", "password"],
+			required: ["buildingId", "email", "password"],
 			properties: {
+				buildingId: {
+					type: "string",
+					description: "ID do edifício (UUID)",
+					example: "123e4567-e89b-12d3-a456-426614174000",
+				},
 				email: {
 					type: "string",
 					description: "Email do porteiro",
@@ -117,8 +122,13 @@ export class AuthSchema {
 	public loginAdmin = {
 		body: {
 			type: "object",
-			required: ["email", "password"],
+			required: ["buildingId", "email", "password"],
 			properties: {
+				buildingId: {
+					type: "string",
+					description: "ID do edifício (UUID)",
+					example: "123e4567-e89b-12d3-a456-426614174000",
+				},
 				email: {
 					type: "string",
 					description: "Email do administrador",
@@ -191,11 +201,11 @@ export class AuthSchema {
 					data: {
 						type: "object",
 						properties: {
-							userId: { type: "string" },
 							email: { type: "string" },
+							name: { type: "string" },
 							apartmentNumber: { type: "string" },
-							phone: { type: "string" },
-							status: { type: "string" },
+							blockName: { type: "string" },
+							buildingName: { type: "string" },
 						},
 					},
 				},
@@ -241,10 +251,10 @@ export class AuthSchema {
 					data: {
 						type: "object",
 						properties: {
-							userId: { type: "string" },
 							email: { type: "string" },
 							name: { type: "string" },
-							phone: { type: "string" },
+							shift: { type: "string" },
+							buildingName: { type: "string" },
 						},
 					},
 				},
@@ -282,9 +292,9 @@ export class AuthSchema {
 					data: {
 						type: "object",
 						properties: {
-							userId: { type: "string" },
 							email: { type: "string" },
 							name: { type: "string" },
+							buildingName: { type: "string" },
 						},
 					},
 				},

@@ -1,11 +1,9 @@
 import { z } from "zod";
 
 const loginResidentSchema = z.object({
-	apartmentNumber: z
-		.string()
-		.min(1, "Número do apartamento é obrigatório")
-		.max(4, "Número do apartamento deve ter no máximo 4 dígitos")
-		.regex(/^\d+$/, "Número do apartamento deve conter apenas dígitos"),
+	buildingId: z
+		.string({ required_error: "ID do edifício é obrigatório" })
+		.uuid("ID do edifício deve ser um UUID válido"),
 	email: z.string().email("Email inválido"),
 	password: z.string().min(1, "Senha é obrigatória"),
 });

@@ -2,8 +2,13 @@ export class AdminSchema {
 	public create = {
 		body: {
 			type: "object",
-			required: ["name", "email", "password"],
+			required: ["buildingId", "name", "email", "password"],
 			properties: {
+				buildingId: {
+					type: "string",
+					description: "ID do edifício (UUID)",
+					example: "123e4567-e89b-12d3-a456-426614174000",
+				},
 				name: {
 					type: "string",
 					description: "Nome completo do administrador",
@@ -120,6 +125,11 @@ export class AdminSchema {
 		body: {
 			type: "object",
 			properties: {
+				buildingId: {
+					type: "string",
+					description: "ID do edifício (UUID)",
+					example: "123e4567-e89b-12d3-a456-426614174000",
+				},
 				name: {
 					type: "string",
 					description: "Nome completo do administrador",

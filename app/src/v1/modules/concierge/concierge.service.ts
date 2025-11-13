@@ -206,11 +206,7 @@ export class ConciergeService {
         }
 
         await this.conciergeRepository.updateByEmail(conciergeConfirmDto.email, {
-<<<<<<< Updated upstream
-            status: ConciergeStatusEnum.ATIVO,
-=======
             status: ConciergeStatusEnum.VALIDADO,
->>>>>>> Stashed changes
         });
 
         return {
@@ -264,12 +260,7 @@ export class ConciergeService {
             resetPasswordTokenExpiry: resetTokenExpiry,
         });
 
-<<<<<<< Updated upstream
         sendPasswordResetEmail(
-=======
-        // Enviar email de forma assíncrona
-        sendPasswordResetEmailAsync(
->>>>>>> Stashed changes
             concierge.email,
             concierge.name,
             resetCode,

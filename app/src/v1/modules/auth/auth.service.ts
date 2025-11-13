@@ -11,7 +11,6 @@ import type { HttpResponse } from "../../../interface/httpResponse.interface";
 import type { JwtPayload } from "../../../interface/jwtPayload.interface";
 import type { RefreshTokenPayload } from "../../../interface/refreshTokenPayload.interface";
 import { ResidentStatusEnum } from "../../enum/residentStatus.enum";
-import { ConciergeStatusEnum } from "../../enum/conciergeStatus.enum";
 import { UserTypeEnum } from "../../enum/userType.enum";
 import type {
 	LoginAdminDto,

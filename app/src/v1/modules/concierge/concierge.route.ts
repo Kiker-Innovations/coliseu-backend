@@ -127,22 +127,6 @@ export class ConciergeRouteV1 {
 		};
 	};
 
-	private login = (): RouteOptions => {
-		return {
-			method: "POST",
-			url: "/v1/concierges/login",
-			schema: {
-				tags: ["Concierges"],
-				summary: "Login concierge",
-				description: "Autentica um porteiro com email e senha. Apenas porteiros com status ATIVO podem fazer login.",
-				...this.conciergeSchema.login,
-			},
-			handler: this.conciergeController.login.bind(
-				this.conciergeController,
-			) as RouteHandlerMethod,
-		};
-	};
-
 	public routes = (): RouteOptions[] => {
 		return [
 			this.create(),
@@ -152,7 +136,6 @@ export class ConciergeRouteV1 {
 			this.getMany(),
 			this.forgetPassword(),
 			this.resetPassword(),
-			this.login(),
 		];
 	};
 }

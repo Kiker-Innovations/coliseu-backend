@@ -280,6 +280,44 @@ export class ConciergeSchema {
 		},
 	};
 
+	public confirm = {
+		body: {
+			type: "object",
+			required: ["email", "code"],
+			properties: {
+				email: {
+					type: "string",
+					description: "Email do porteiro",
+					example: "porteiro@example.com",
+				},
+				code: {
+					type: "string",
+					description: "Código de confirmação recebido por email",
+					example: "ABC123",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Código confirmado com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: { type: "null" },
+				},
+			},
+			400: {
+				description: "Código inválido ou porteiro não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
 	public forgetPassword = {
 		body: {
 			type: "object",

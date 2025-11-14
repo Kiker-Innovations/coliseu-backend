@@ -1,3 +1,8 @@
+import {
+	protectedSchema,
+	unauthorizedResponse,
+} from "../../utils/schemaHelper";
+
 export class AuthSchema {
 	public loginResident = {
 		body: {
@@ -179,18 +184,7 @@ export class AuthSchema {
 		},
 	};
 
-	public validateResident = {
-		headers: {
-			type: "object",
-			required: ["authorization"],
-			properties: {
-				authorization: {
-					type: "string",
-					description: "Bearer token",
-					example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-				},
-			},
-		},
+	public validateResident = protectedSchema({
 		response: {
 			200: {
 				description: "Token válido",
@@ -210,14 +204,6 @@ export class AuthSchema {
 					},
 				},
 			},
-			401: {
-				description: "Token inválido ou expirado",
-				type: "object",
-				properties: {
-					success: { type: "boolean" },
-					message: { type: "string" },
-				},
-			},
 			403: {
 				description: "Usuário não está ativo",
 				type: "object",
@@ -226,21 +212,11 @@ export class AuthSchema {
 					message: { type: "string" },
 				},
 			},
+			...unauthorizedResponse,
 		},
-	};
+	});
 
-	public validateConcierge = {
-		headers: {
-			type: "object",
-			required: ["authorization"],
-			properties: {
-				authorization: {
-					type: "string",
-					description: "Bearer token",
-					example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-				},
-			},
-		},
+	public validateConcierge = protectedSchema({
 		response: {
 			200: {
 				description: "Token válido",
@@ -259,29 +235,11 @@ export class AuthSchema {
 					},
 				},
 			},
-			401: {
-				description: "Token inválido ou expirado",
-				type: "object",
-				properties: {
-					success: { type: "boolean" },
-					message: { type: "string" },
-				},
-			},
+			...unauthorizedResponse,
 		},
-	};
+	});
 
-	public validateAdmin = {
-		headers: {
-			type: "object",
-			required: ["authorization"],
-			properties: {
-				authorization: {
-					type: "string",
-					description: "Bearer token",
-					example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-				},
-			},
-		},
+	public validateAdmin = protectedSchema({
 		response: {
 			200: {
 				description: "Token válido",
@@ -299,16 +257,9 @@ export class AuthSchema {
 					},
 				},
 			},
-			401: {
-				description: "Token inválido ou expirado",
-				type: "object",
-				properties: {
-					success: { type: "boolean" },
-					message: { type: "string" },
-				},
-			},
+			...unauthorizedResponse,
 		},
-	};
+	});
 
 	public refreshToken = {
 		body: {

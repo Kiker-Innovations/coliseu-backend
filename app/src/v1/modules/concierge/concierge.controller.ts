@@ -4,6 +4,7 @@ import type { MongoClient } from "mongodb";
 import { ConciergeService } from "./concierge.service";
 import { transformCreateConciergeDto } from "./dto/conciergeCreate.dto";
 import { transformUpdateConciergeDto } from "./dto/conciergeUpdate.dto";
+import { transformConfirmConciergeDto } from "./dto/conciergeConfirm.dto";
 import { transformForgetPasswordConciergeDto } from "./dto/conciergeForgetPassword.dto";
 import { transformResetPasswordConciergeDto } from "./dto/conciergeResetPassword.dto";
 
@@ -69,6 +70,19 @@ export class ConciergeController {
         return reply
             .status(httpStatus.OK)
             .send(await this.conciergeService.getManyConcierges());
+    }
+
+    public async confirmConcierge(
+        request: FastifyRequest,
+        reply: FastifyReply,
+    ): Promise<void> {
+        return reply
+            .status(httpStatus.OK)
+            .send(
+                await this.conciergeService.confirmConciergeCode(
+                    transformConfirmConciergeDto(request.body),
+                ),
+            );
     }
 
     public async forgetPassword(

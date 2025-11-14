@@ -1,3 +1,9 @@
+import {
+	protectedSchema,
+	unauthorizedResponse,
+	forbiddenResponse,
+} from "../../utils/schemaHelper";
+
 export class ResidentSchema {
 	public create = {
 		body: {
@@ -90,7 +96,7 @@ export class ResidentSchema {
 		},
 	};
 
-	public getById = {
+	public getById = protectedSchema({
 		params: {
 			type: "object",
 			required: ["id"],
@@ -128,10 +134,11 @@ export class ResidentSchema {
 					message: { type: "string" },
 				},
 			},
+			...unauthorizedResponse,
 		},
-	};
+	});
 
-	public update = {
+	public update = protectedSchema({
 		params: {
 			type: "object",
 			required: ["id"],
@@ -208,10 +215,12 @@ export class ResidentSchema {
 					message: { type: "string" },
 				},
 			},
+			...unauthorizedResponse,
+			...forbiddenResponse,
 		},
-	};
+	});
 
-	public remove = {
+	public remove = protectedSchema({
 		params: {
 			type: "object",
 			required: ["id"],
@@ -239,8 +248,10 @@ export class ResidentSchema {
 					message: { type: "string" },
 				},
 			},
+			...unauthorizedResponse,
+			...forbiddenResponse,
 		},
-	};
+	});
 
 	public confirm = {
 		body: {
@@ -279,7 +290,7 @@ export class ResidentSchema {
 		},
 	};
 
-	public generatePresignedUrl = {
+	public generatePresignedUrl = protectedSchema({
 		params: {
 			type: "object",
 			required: ["id"],
@@ -333,8 +344,10 @@ export class ResidentSchema {
 					message: { type: "string" },
 				},
 			},
+			...unauthorizedResponse,
+			...forbiddenResponse,
 		},
-	};
+	});
 
 	public forgetPassword = {
 		body: {

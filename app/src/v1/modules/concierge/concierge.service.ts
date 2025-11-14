@@ -185,7 +185,7 @@ export class ConciergeService {
     ): Promise<HttpResponse<null>> {
         const concierge = await this.conciergeRepository.findByEmail(conciergeConfirmDto.email);
         if (!concierge) {
-            throw httpException("Morador não encontrado", httpStatus.NOT_FOUND);
+            throw httpException("Porteiro não encontrado", httpStatus.NOT_FOUND);
         }
 
         if (

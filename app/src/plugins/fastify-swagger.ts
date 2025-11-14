@@ -28,6 +28,14 @@ export const swagger = async (fastify, config: any) => {
 			schemes: ["http"],
 			consumes: ["application/json"],
 			produces: ["application/json"],
+			securityDefinitions: {
+				BearerAuth: {
+					type: "apiKey",
+					name: "Authorization",
+					in: "header",
+					description: "Token de autenticação no formato: Bearer {token}",
+				},
+			},
 			externalDocs: {
 				url: "https://swagger.io",
 				description: "Find more info here",

@@ -21,6 +21,13 @@ async function bootstrap(): Promise<void> {
 
 		registerPlugins(server, env);
 
+		// Registra o guard de autenticação global
+		const { authGuard } = await import("./plugins/fastify-auth-guard");
+		await server.register(authGuard, {
+			mongoClient: mongoConnection.getClient(),
+			stripPrefix: env.stripPrefix.path,
+		});
+
 		server.register(new Route().registerRoutes, {
 			prefix: env.stripPrefix.path,
 		});

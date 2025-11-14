@@ -93,6 +93,22 @@ export class ConciergeRouteV1 {
 		};
 	};
 
+	private confirm = (): RouteOptions => {
+		return {
+			method: "POST",
+			url: "/v1/concierges/confirm",
+			schema: {
+				tags: ["Concierges"],
+				summary: "Confirm concierge email",
+				description: "Confirma o código de verificação enviado por email",
+				...this.conciergeSchema.confirm,
+			},
+			handler: this.conciergeController.confirmConcierge.bind(
+				this.conciergeController,
+			) as RouteHandlerMethod,
+		};
+	};
+
 	private forgetPassword = (): RouteOptions => {
 		return {
 			method: "POST",
@@ -134,6 +150,7 @@ export class ConciergeRouteV1 {
 			this.update(),
 			this.remove(),
 			this.getMany(),
+			this.confirm(),
 			this.forgetPassword(),
 			this.resetPassword(),
 		];

@@ -202,7 +202,7 @@ export class AuthService {
 	): Promise<HttpResponse<{ token: string; refreshToken: string }>> {
 		const building = await this.buildingRepository.findById(
 			loginAdminDto.buildingId,
-		);
+		);		
 
 		if (!building) {
 			throw httpException(
@@ -212,7 +212,7 @@ export class AuthService {
 		}
 
 		const admin = await this.adminRepository.findByEmail(loginAdminDto.email);
-
+		
 		if (!admin) {
 			throw httpException(
 				"Credenciais inválidas",

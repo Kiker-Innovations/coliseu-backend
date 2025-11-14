@@ -206,7 +206,7 @@ export class ConciergeService {
         }
 
         await this.conciergeRepository.updateByEmail(conciergeConfirmDto.email, {
-            status: ConciergeStatusEnum.VALIDADO,
+            status: ConciergeStatusEnum.ATIVO,
         });
 
         return {

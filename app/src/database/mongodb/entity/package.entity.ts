@@ -5,13 +5,16 @@ export interface PackageEntity {
   apartmentId: string;
   receiverConciergeId: string;
   deliveryConciergeId?: string;
-  ownerName: string;
+  ownerName?: string;
   courierName?: string;
   recipientName?: string;
-  description: string;
+  description?: string;
   receiverDate: Date;
   deliveryDate?: Date;
   status: PackageStatusEnumType;
+  cancelReason?: string;
+  cancelledConciergeId?: string;
+  cancelledAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,7 +25,7 @@ export type CreatePackageEntity = Omit<
 >;
 
 export type UpdatePackageEntity = Partial<
-  Pick<PackageEntity, "apartmentId" | "receiverConciergeId" | "deliveryConciergeId" | "ownerName" | "recipientName" | "courierName" | "description" | "receiverDate" | "deliveryDate" | "status" | "updatedAt">
+  Pick<PackageEntity, "apartmentId" | "receiverConciergeId" | "deliveryConciergeId" | "ownerName" | "recipientName" | "courierName" | "description" | "receiverDate" | "deliveryDate" | "status" | "cancelReason" | "cancelledConciergeId" | "cancelledAt" | "updatedAt">
 >;
 
 export type ConfirmDeliveryPackageEntity = Pick<

@@ -3,9 +3,7 @@ export class PackageSchema {
 		body: {
 			type: "object",
 			required: [
-				"ownerName",
 				"apartmentId",
-				"description",
 				"receiverDate",
 				"receiverConciergeId",
 			],
@@ -25,6 +23,11 @@ export class PackageSchema {
 					type: "string",
 					description: "Descrição da encomenda",
 					example: "Pacote de roupas",
+				},
+				courierName: {
+					type: "string",
+					description: "Nome do entregador",
+					example: "Pedro Santos",
 				},
 				receiverDate: {
 					type: "string",
@@ -53,6 +56,7 @@ export class PackageSchema {
 							id: { type: "string" },
 							ownerName: { type: "string" },
 							description: { type: "string" },
+							courierName: { type: "string" },
 						},
 					},
 				},
@@ -102,6 +106,7 @@ export class PackageSchema {
 								_id: { type: "string" },
 								ownerName: { type: "string" },
 								description: { type: "string" },
+								courierName: { type: "string" },
 								apartmentNumber: { type: "string" },
 								receiverDate: { type: "string", format: "date-time" },
 								receiverConciergeName: { type: "string" },
@@ -129,6 +134,7 @@ export class PackageSchema {
 								_id: { type: "string" },
 								ownerName: { type: "string" },
 								description: { type: "string" },
+								courierName: { type: "string" },
 								apartmentNumber: { type: "string" },
 								deliveryDate: { type: "string", format: "date-time" },
 								recipientName: { type: "string" },
@@ -208,7 +214,7 @@ export class PackageSchema {
 		},
 		body: {
 			type: "object",
-			required: ["recipientName", "deliveryConciergeId"],
+			required: ["deliveryConciergeId"],
 			properties: {
 				recipientName: {
 					type: "string",
@@ -264,6 +270,157 @@ export class PackageSchema {
 				properties: {
 					success: { type: "boolean" },
 					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public getStats = {
+		response: {
+			200: {
+				description: "Estatísticas de encomendas obtidas com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							totalPendings: {
+								type: "number",
+								description: "Quantidade total de encomendas pendentes",
+							},
+							totalConfirmed: {
+								type: "number",
+								description: "Quantidade total de encomendas entregues hoje",
+							},
+							totalPendingsWeek: {
+								type: "number",
+								description:
+									"Quantidade total de encomendas entregues nesta semana",
+							},
+						},
+					},
+				},
+			},
+		},
+	};
+
+	public cancel = {
+		params: {
+			type: "object",
+			required: ["id"],
+			properties: {
+				id: {
+					type: "string",
+					format: "uuid",
+					description: "ID da encomenda",
+				},
+			},
+		},
+		body: {
+			type: "object",
+			required: ["cancelReason", "cancelledConciergeId"],
+			properties: {
+				cancelReason: {
+					type: "string",
+					description: "Justificativa do cancelamento",
+					example: "Encomenda retornada ao remetente",
+				},
+				cancelledConciergeId: {
+					type: "string",
+					format: "uuid",
+					description: "ID do porteiro que está cancelando",
+					example: "4bb39bb7-1baf-4593-be81-76a38ba3b807",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Encomenda cancelada com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							_id: { type: "string" },
+							apartmentId: { type: "string" },
+							receiverConciergeId: { type: "string" },
+							deliveryConciergeId: { type: "string" },
+							ownerName: { type: "string" },
+							courierName: { type: "string" },
+							recipientName: { type: "string" },
+							description: { type: "string" },
+							receiverDate: { type: "string", format: "date-time" },
+							deliveryDate: { type: "string", format: "date-time" },
+							status: { type: "string" },
+							cancelReason: { type: "string" },
+							cancelledConciergeId: { type: "string" },
+							cancelledAt: { type: "string", format: "date-time" },
+							createdAt: { type: "string", format: "date-time" },
+							updatedAt: { type: "string", format: "date-time" },
+						},
+					},
+				},
+			},
+			400: {
+				description: "Dados inválidos ou encomenda já cancelada/entregue",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			404: {
+				description: "Encomenda não encontrada",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public getCancelled = {
+		query: {
+			type: "object",
+			properties: {
+				days: {
+					type: "number",
+					description: "Número de dias para buscar cancelados (padrão: 7)",
+					example: 7,
+					default: 7,
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Encomendas canceladas encontradas",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "array",
+						items: {
+							type: "object",
+							properties: {
+								_id: { type: "string" },
+								ownerName: { type: "string" },
+								description: { type: "string" },
+								courierName: { type: "string" },
+								apartmentNumber: { type: "string" },
+								receiverDate: { type: "string", format: "date-time" },
+								cancelReason: { type: "string" },
+								cancelledConciergeId: { type: "string" },
+								cancelledAt: { type: "string", format: "date-time" },
+								cancelledByName: { type: "string" },
+							},
+						},
+					},
 				},
 			},
 		},

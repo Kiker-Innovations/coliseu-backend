@@ -4,6 +4,7 @@ import type { MongoClient } from "mongodb";
 import {
 	transformCreatePackageDto,
 	transformConfirmDeliveryPackageDto,
+	transformCancelPackageDto,
 } from "./dto";
 import { PackageService } from "./package.service";
 
@@ -68,6 +69,41 @@ export class PackageController {
 					transformConfirmDeliveryPackageDto(request.body),
 				),
 			);
+	}
+
+	public async getPackageStats(
+		request: FastifyRequest,
+		reply: FastifyReply,
+	): Promise<void> {
+		return reply
+			.status(httpStatus.OK)
+			.send(await this.packageService.getPackageStats());
+	}
+
+	public async cancelPackage(
+		request: FastifyRequest,
+		reply: FastifyReply,
+	): Promise<void> {
+		const { id } = request.params as { id: string };
+		return reply
+			.status(httpStatus.OK)
+			.send(
+				await this.packageService.cancelPackage(
+					id,
+					transformCancelPackageDto(request.body),
+				),
+			);
+	}
+
+	public async getCancelledPackages(
+		request: FastifyRequest,
+		reply: FastifyReply,
+	): Promise<void> {
+		const { days } = request.query as { days?: string };
+		const daysNumber = days ? parseInt(days, 10) : 7;
+		return reply
+			.status(httpStatus.OK)
+			.send(await this.packageService.getCancelledPackages(daysNumber));
 	}
 }
 

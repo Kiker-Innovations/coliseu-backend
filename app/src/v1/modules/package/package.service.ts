@@ -6,17 +6,22 @@ import type {
 import { PackageRepository } from "../../../database/mongodb/repositories/package.repository";
 import { ApartmentRepository } from "../../../database/mongodb/repositories/apartment.repository";
 import { ConciergeRepository } from "../../../database/mongodb/repositories/concierge.repository";
-import type { PackageCreateDto, PackageConfirmDeliveryDto } from "./dto";
+import { ResidentRepository } from "../../../database/mongodb/repositories/resident.repository";
+import { BuildingRepository } from "../../../database/mongodb/repositories/building.repository";
+import type { PackageCreateDto, PackageConfirmDeliveryDto, PackageCancelDto } from "./dto";
 import { httpException } from "../../../config/error";
 import httpStatus from "http-status";
 import type { HttpResponse } from "../../../interface/httpResponse.interface";
 import { PackageStatusEnum } from "@/v1/enum/packageStatus.enum";
-import { getDate } from "@/v1/utils/utils";
+import { ResidentStatusEnum } from "@/v1/enum/residentStatus.enum";
+import { getDate, formatDate } from "@/v1/utils/utils";
+import { sendPackageArrivalEmail } from "@/v1/utils/emailHelper";
 
 interface PendingPackageListItem {
 	_id: string;
 	ownerName: string;
 	description: string;
+	courierName?: string;
 	apartmentNumber: string;
 	receiverDate: Date;
 	receiverConciergeName: string;
@@ -26,21 +31,39 @@ interface DeliveredPackageListItem {
 	_id: string;
 	ownerName: string;
 	description: string;
+	courierName?: string;
 	apartmentNumber: string;
 	deliveryDate: Date;
 	recipientName: string;
 	deliveryConciergeName: string;
 }
 
+interface CancelledPackageListItem {
+	_id: string;
+	ownerName: string;
+	description: string;
+	courierName?: string;
+	apartmentNumber: string;
+	receiverDate: Date;
+	cancelReason: string;
+	cancelledConciergeId: string;
+	cancelledAt: Date;
+	cancelledByName: string;
+}
+
 export class PackageService {
 	private packageRepository: PackageRepository;
 	private apartmentRepository: ApartmentRepository;
 	private conciergeRepository: ConciergeRepository;
+	private residentRepository: ResidentRepository;
+	private buildingRepository: BuildingRepository;
 
 	constructor(mongoClient: MongoClient) {
 		this.packageRepository = new PackageRepository(mongoClient);
 		this.apartmentRepository = new ApartmentRepository(mongoClient);
 		this.conciergeRepository = new ConciergeRepository(mongoClient);
+		this.residentRepository = new ResidentRepository(mongoClient);
+		this.buildingRepository = new BuildingRepository(mongoClient);
 	}
 
 	public async createPackage(
@@ -48,8 +71,9 @@ export class PackageService {
 	): Promise<
 		HttpResponse<{
 			id: string;
-			ownerName: string;
-			description: string;
+			ownerName?: string;
+			description?: string;
+			courierName?: string;
 		}>
 	> {
 		// Verify apartment exists
@@ -76,11 +100,19 @@ export class PackageService {
 			receiverConciergeId: packageCreateDto.receiverConciergeId,
 			ownerName: packageCreateDto.ownerName,
 			description: packageCreateDto.description,
+			courierName: packageCreateDto.courierName,
 			receiverDate: packageCreateDto.receiverDate,
 			status: PackageStatusEnum.PENDENTE,
 		};
 
 		const createdPackage = await this.packageRepository.create(packageEntity);
+
+		// Send email notifications to residents
+		this.sendPackageArrivalNotificationsAsync(
+			packageCreateDto.apartmentId,
+			createdPackage.receiverDate,
+			createdPackage.description,
+		);
 
 		return {
 			success: true,
@@ -89,8 +121,84 @@ export class PackageService {
 				id: createdPackage._id,
 				ownerName: createdPackage.ownerName,
 				description: createdPackage.description,
+				courierName: createdPackage.courierName,
 			},
 		};
+	}
+
+	private async sendPackageArrivalNotificationsAsync(
+		apartmentId: string,
+		receiverDate: Date,
+		description?: string,
+	): Promise<void> {
+		try {
+			// Get apartment by apartmentId
+			const apartment = await this.apartmentRepository.findById(apartmentId);
+			if (!apartment) {
+				console.error(
+					`❌ Apartment não encontrado para apartmentId: ${apartmentId}`,
+				);
+				return;
+			}
+
+			// Get building information using buildingId from apartment
+			const building = await this.buildingRepository.findById(
+				apartment.buildingId,
+			);
+			if (!building) {
+				console.error(
+					`❌ Building não encontrado para buildingId: ${apartment.buildingId}`,
+				);
+				return;
+			}
+
+			// Find all residents for this apartment using apartmentId
+			const residents = await this.residentRepository.findMany({
+				apartmentId: apartmentId,
+			});
+
+			if (residents.length === 0) {
+				console.log(
+					`ℹ️ Nenhum resident encontrado para o apartamento ${apartment.number} (bloco ${apartment.block})`,
+				);
+				return;
+			}
+
+			// Format date in Brazilian format
+			const formattedDate = formatDate(
+				receiverDate,
+				"DD/MM/YYYY [às] HH:mm",
+			);
+
+			// Format apartment number with block if available
+			const apartmentDisplay = apartment.block
+				? `${apartment.block} - ${apartment.number}`
+				: apartment.number;
+
+			// Send email to each resident
+			const emailPromises = residents.map((resident) => {
+				// Only send to active residents
+				if (resident.status !== ResidentStatusEnum.ATIVO) {
+					return Promise.resolve();
+				}
+
+				return sendPackageArrivalEmail(
+					resident.email,
+					resident.name,
+					building.name,
+					apartmentDisplay,
+					formattedDate,
+					description,
+				);
+			});
+
+			await Promise.all(emailPromises);
+		} catch (error) {
+			console.error(
+				"❌ Erro ao enviar notificações de entrega por e-mail:",
+				error,
+			);
+		}
 	}
 
 	public async getPendingPackages(): Promise<
@@ -111,6 +219,7 @@ export class PackageService {
 					_id: pkg._id,
 					ownerName: pkg.ownerName,
 					description: pkg.description,
+					courierName: pkg.courierName,
 					apartmentNumber: apartment?.number || "N/A",
 					receiverDate: pkg.receiverDate,
 					receiverConciergeName: concierge?.name || "N/A",
@@ -128,7 +237,7 @@ export class PackageService {
 	public async getDeliveredPackages(): Promise<
 		HttpResponse<DeliveredPackageListItem[]>
 	> {
-		const packages = await this.packageRepository.findDelivered();
+		const packages = await this.packageRepository.findDeliveredLast7Days();
 
 		const packagesWithDetails = await Promise.all(
 			packages.map(async (pkg) => {
@@ -145,6 +254,7 @@ export class PackageService {
 					_id: pkg._id,
 					ownerName: pkg.ownerName,
 					description: pkg.description,
+					courierName: pkg.courierName,
 					apartmentNumber: apartment?.number || "N/A",
 					deliveryDate: pkg.deliveryDate || new Date(),
 					recipientName: pkg.recipientName || "N/A",
@@ -236,6 +346,115 @@ export class PackageService {
 			success: true,
 			message: "Entrega confirmada com sucesso",
 			data: updatedPackage,
+		};
+	}
+
+	public async getPackageStats(): Promise<
+		HttpResponse<{
+			totalPendings: number;
+			totalConfirmed: number;
+			totalPendingsWeek: number;
+		}>
+	> {
+		const [totalPendings, totalConfirmed, totalPendingsWeek] = await Promise.all([
+			this.packageRepository.countPending(),
+			this.packageRepository.countDeliveredToday(),
+			this.packageRepository.countDeliveredThisWeek(),
+		]);
+
+		return {
+			success: true,
+			message: "Estatísticas de encomendas obtidas com sucesso",
+			data: {
+				totalPendings,
+				totalConfirmed,
+				totalPendingsWeek,
+			},
+		};
+	}
+
+	public async cancelPackage(
+		packageId: string,
+		cancelDto: PackageCancelDto,
+	): Promise<HttpResponse<PackageEntity>> {
+		const packageEntity = await this.packageRepository.findById(packageId);
+
+		if (!packageEntity) {
+			throw httpException("Encomenda não encontrada", httpStatus.NOT_FOUND);
+		}
+
+		if (packageEntity.status === PackageStatusEnum.ENTREGUE) {
+			throw httpException(
+				"Encomenda já foi entregue e não pode ser cancelada",
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
+		if (packageEntity.status === PackageStatusEnum.CANCELADO) {
+			throw httpException(
+				"Encomenda já foi cancelada",
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
+		const concierge = await this.conciergeRepository.findById(cancelDto.cancelledConciergeId);
+		if (!concierge) {
+		}
+
+		const updatedPackage = await this.packageRepository.update(packageId, {
+			status: PackageStatusEnum.CANCELADO,
+			cancelReason: cancelDto.cancelReason,
+			cancelledConciergeId: cancelDto.cancelledConciergeId,
+			cancelledAt: getDate(),
+		});
+
+		if (!updatedPackage) {
+			throw httpException(
+				"Erro ao cancelar encomenda",
+				httpStatus.INTERNAL_SERVER_ERROR,
+			);
+		}
+
+		return {
+			success: true,
+			message: "Encomenda cancelada com sucesso",
+			data: updatedPackage,
+		};
+	}
+
+	public async getCancelledPackages(days: number = 7): Promise<
+		HttpResponse<CancelledPackageListItem[]>
+	> {
+		const packages = await this.packageRepository.findCancelledLastDays(days);
+
+		const packagesWithDetails = await Promise.all(
+			packages.map(async (pkg) => {
+				const apartment = await this.apartmentRepository.findById(
+					pkg.apartmentId,
+				);
+				const cancelledByConcierge = pkg.cancelledConciergeId
+					? await this.conciergeRepository.findById(pkg.cancelledConciergeId)
+					: null;
+
+				return {
+					_id: pkg._id,
+					ownerName: pkg.ownerName || "N/A",
+					description: pkg.description || "N/A",
+					courierName: pkg.courierName,
+					apartmentNumber: apartment?.number || "N/A",
+					receiverDate: pkg.receiverDate,
+					cancelReason: pkg.cancelReason || "N/A",
+					cancelledConciergeId: pkg.cancelledConciergeId || "N/A",
+					cancelledAt: pkg.cancelledAt || new Date(),
+					cancelledByName: cancelledByConcierge?.name || "N/A",
+				};
+			}),
+		);
+
+		return {
+			success: true,
+			message: "Encomendas canceladas encontradas com sucesso",
+			data: packagesWithDetails,
 		};
 	}
 }

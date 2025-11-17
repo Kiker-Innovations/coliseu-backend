@@ -92,6 +92,55 @@ export class PackageRouteV1 {
 		};
 	};
 
+	private getStats = (): RouteOptions => {
+		return {
+			method: "GET",
+			url: "/v1/packages/stats",
+			schema: {
+				tags: ["Packages"],
+				summary: "Get package statistics",
+				description:
+					"Lista as quantidades total de packages pendentes, entregues hoje e entregues na semana",
+				...this.packageSchema.getStats,
+			},
+			handler: this.packageController.getPackageStats.bind(
+				this.packageController,
+			) as RouteHandlerMethod,
+		};
+	};
+
+	private cancel = (): RouteOptions => {
+		return {
+			method: "PUT",
+			url: "/v1/packages/:id/cancel",
+			schema: {
+				tags: ["Packages"],
+				summary: "Cancel a package",
+				description: "Cancela uma encomenda",
+				...this.packageSchema.cancel,
+			},
+			handler: this.packageController.cancelPackage.bind(
+				this.packageController,
+			) as RouteHandlerMethod,
+		};
+	};
+
+	private getCancelled = (): RouteOptions => {
+		return {
+			method: "GET",
+			url: "/v1/packages/cancelled",
+			schema: {
+				tags: ["Packages"],
+				summary: "Get all cancelled packages",
+				description: "Lista todas as encomendas canceladas nos últimos dias",
+				...this.packageSchema.getCancelled,
+			},
+			handler: this.packageController.getCancelledPackages.bind(
+				this.packageController,
+			) as RouteHandlerMethod,
+		};
+	};
+
 	public routes = (): RouteOptions[] => {
 		return [
 			this.create(),
@@ -99,6 +148,9 @@ export class PackageRouteV1 {
 			this.getDelivered(),
 			this.getById(),
 			this.confirmDelivery(),
+			this.getStats(),
+			this.cancel(),
+			this.getCancelled(),
 		];
 	};
 }

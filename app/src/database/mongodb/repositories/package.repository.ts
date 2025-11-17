@@ -7,7 +7,7 @@ import type {
 	UpdatePackageEntity,
 } from "../entity/package.entity";
 import type { IRepository } from "../interfaces/IRepository";
-import { getDate } from "@/v1/utils/utils";
+import { getDate, toDate } from "@/v1/utils/utils";
 import { PackageStatusEnum } from "@/v1/enum/packageStatus.enum";
 
 export class PackageRepository
@@ -85,6 +85,73 @@ export class PackageRepository
 	public async findDelivered(): Promise<PackageEntity[]> {
 		return await this.collection
 			.find({ status: PackageStatusEnum.ENTREGUE })
+			.toArray();
+	}
+
+	public async findDeliveredLast7Days(): Promise<PackageEntity[]> {
+		const now = getDate();
+		const sevenDaysAgo = toDate(now).subtract(7, "day").startOf("day").toDate();
+
+		return await this.collection
+			.find({
+				status: PackageStatusEnum.ENTREGUE,
+				deliveryDate: {
+					$gte: sevenDaysAgo,
+				},
+			})
+			.toArray();
+	}
+
+	public async countPending(): Promise<number> {
+		return await this.collection.countDocuments({
+			status: PackageStatusEnum.PENDENTE,
+		});
+	}
+
+	public async countDeliveredToday(): Promise<number> {
+		const now = getDate();
+		const today = toDate(now).startOf("day").toDate();
+		const tomorrow = toDate(now).add(1, "day").startOf("day").toDate();
+
+		return await this.collection.countDocuments({
+			status: PackageStatusEnum.ENTREGUE,
+			deliveryDate: {
+				$gte: today,
+				$lt: tomorrow,
+			},
+		});
+	}
+
+	public async countDeliveredThisWeek(): Promise<number> {
+		const now = getDate();
+		const currentDate = toDate(now);
+		const dayOfWeek = currentDate.day(); 
+		
+		const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+		const startOfWeek = currentDate.subtract(daysToMonday, "day").startOf("day").toDate();
+		const endOfWeek = toDate(startOfWeek).add(7, "day").toDate();
+
+		return await this.collection.countDocuments({
+			status: PackageStatusEnum.ENTREGUE,
+			deliveryDate: {
+				$gte: startOfWeek,
+				$lt: endOfWeek,
+			},
+		});
+	}
+
+	public async findCancelledLastDays(days: number): Promise<PackageEntity[]> {
+		const now = getDate();
+		const startDate = toDate(now).subtract(days, "day").startOf("day").toDate();
+
+		return await this.collection
+			.find({
+				status: PackageStatusEnum.CANCELADO,
+				cancelledAt: {
+					$gte: startDate,
+				},
+			})
+			.sort({ cancelledAt: -1 })
 			.toArray();
 	}
 }

@@ -37,9 +37,18 @@ export interface PasswordResetTemplateData {
 	resetUrl?: string;
 }
 
+export interface PackageArrivalTemplateData {
+	residentName: string;
+	buildingName: string;
+	apartmentNumber: string;
+	arrivalDate: string;
+	description?: string;
+}
+
 export const EmailTemplates = {
 	RESIDENT_CONFIRMATION: "residentConfirmation",
 	ADMIN_CONFIRMATION: "adminConfirmation",
 	CONCIERGE_CONFIRMATION: "conciergeConfirmation",
 	PASSWORD_RESET: "passwordReset",
+	PACKAGE_ARRIVAL: "packageArrival",
 } as const;

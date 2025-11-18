@@ -14,7 +14,8 @@ export const authGuard = async (
 	const authMiddleware = new AuthMiddleware(config.mongoClient);
 
 	// Lista de rotas públicas (sem necessidade de autenticação)
-	const publicRoutes = [
+	// Armazena tanto com prefixo quanto sem prefixo para garantir compatibilidade
+	const publicRoutesWithPrefix = [
 		// Health check
 		`${config.stripPrefix}/healthcheck`,
 
@@ -32,6 +33,7 @@ export const authGuard = async (
 		// Rotas de confirmação de email
 		`${config.stripPrefix}/v1/residents/confirm`,
 		`${config.stripPrefix}/v1/admins/confirm`,
+		`${config.stripPrefix}/v1/concierges/confirm`,
 
 		// Rotas de recuperação de senha
 		`${config.stripPrefix}/v1/residents/forget-password`,
@@ -41,6 +43,14 @@ export const authGuard = async (
 		`${config.stripPrefix}/v1/concierges/forget-password`,
 		`${config.stripPrefix}/v1/concierges/reset-password`,
 	];
+
+	// Rotas públicas sem prefixo (para compatibilidade)
+	const publicRoutesWithoutPrefix = publicRoutesWithPrefix.map((route) =>
+		route.replace(config.stripPrefix, ""),
+	);
+
+	// Combina ambas as listas
+	const publicRoutes = [...publicRoutesWithPrefix, ...publicRoutesWithoutPrefix];
 
 	// Padrões de rotas públicas (regex)
 	const publicRoutePatterns = [
@@ -53,7 +63,8 @@ export const authGuard = async (
 	fastify.addHook(
 		"onRequest",
 		async (request: FastifyRequest, reply: FastifyReply) => {
-			const routeUrl = request.url.split("?")[0]; // Remove query params
+			// Tenta usar routerPath primeiro (mais confiável), senão usa url
+			const routeUrl = (request as any).routerPath || request.url.split("?")[0];
 			
 			// Verifica se a rota corresponde a algum padrão público (regex)
 			const matchesPattern = publicRoutePatterns.some((pattern) =>
@@ -64,15 +75,19 @@ export const authGuard = async (
 				return; // Rota pública por padrão
 			}
 
-			// Verifica se é uma rota pública exata
+			// Normaliza a rota para comparação (remove trailing slash e query params)
+			const normalizedRouteUrl = routeUrl.replace(/\/$/, "");
+
+			// Verifica se é uma rota pública exata (com ou sem prefixo)
 			const isPublicRoute = publicRoutes.some((publicRoute) => {
+				const normalizedPublicRoute = publicRoute.replace(/\/$/, "");
 				// Verifica se é uma rota pública
-				if (routeUrl === publicRoute) {
+				if (normalizedRouteUrl === normalizedPublicRoute) {
 					// Para rotas de cadastro, só libera POST
 					if (
-						publicRoute.endsWith("/residents") ||
-						publicRoute.endsWith("/admins") ||
-						publicRoute.endsWith("/concierges")
+						normalizedPublicRoute.endsWith("/residents") ||
+						normalizedPublicRoute.endsWith("/admins") ||
+						normalizedPublicRoute.endsWith("/concierges")
 					) {
 						return request.method === "POST";
 					}

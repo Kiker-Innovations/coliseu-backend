@@ -277,7 +277,7 @@ export class ConciergeService {
 
     public async resetPassword(
         resetPasswordDto: ConciergeResetPasswordDto,
-    ): Promise<HttpResponse<null>> {
+    ): Promise<HttpResponse<null>> {        
         const concierge = await this.conciergeRepository.findByEmail(
             resetPasswordDto.email,
         );
@@ -307,6 +307,7 @@ export class ConciergeService {
                 httpStatus.BAD_REQUEST,
             );
         }
+        
 
         const passwordHash = await hashPassword(resetPasswordDto.newPassword);
 

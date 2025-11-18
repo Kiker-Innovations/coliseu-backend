@@ -21,6 +21,14 @@ export const errorHandler = (
 	reply: FastifyReply,
 ) => {
 	const error = { ...genericError };
+	
+	if (isFlowError(error)) {
+		return reply.status(error.statusCode).send({
+			statusCode: error?.statusCode || 500,
+			message: error.message,
+			timestamp: getDate(),
+		});
+	}
 
 	if (isFastifyError(error)) {
 		const validationContext = error.validationContext
@@ -44,14 +52,6 @@ export const errorHandler = (
 			statusCode: 400,
 			message: "Erro de validação nos dados fornecidos",
 			errors,
-			timestamp: getDate(),
-		});
-	}
-
-	if (isFlowError(error)) {
-		return reply.status(error.statusCode).send({
-			statusCode: error?.statusCode || 500,
-			message: error.message,
 			timestamp: getDate(),
 		});
 	}

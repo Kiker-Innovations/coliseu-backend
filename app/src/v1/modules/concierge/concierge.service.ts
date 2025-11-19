@@ -57,7 +57,7 @@ export class ConciergeService {
             email: conciergeCreateDto.email,
             passwordHash,
             phone: conciergeCreateDto.phone,
-            status: ConciergeStatusEnum.INATIVO,
+            status: conciergeCreateDto.status,
             shift: conciergeCreateDto.shift,
             code: conciergeCode,
         };

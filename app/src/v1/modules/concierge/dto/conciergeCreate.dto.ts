@@ -28,8 +28,9 @@ export const conciergeCreateSchema = z.object({
     required_error: "Turno é obrigatório",
   }) as unknown as z.ZodType<ConciergeShiftEnumType>,
   status: z.enum(["INATIVO", "VALIDADO", "ATIVO", "DE_FERIAS"], {
-    errorMap: () => ({ message: "Status deve ser INATIVO, VALIDADO, ATIVO ou DE_FERIAS" }),
-  }).optional() as unknown as z.ZodType<ConciergeStatusEnumType | undefined>,
+    required_error: "Status é obrigatório",
+    invalid_type_error: "Status deve ser INATIVO, VALIDADO, ATIVO ou DE_FERIAS",
+  }) as unknown as z.ZodType<ConciergeStatusEnumType>,
 });
 
 export type ConciergeCreateDto = z.infer<typeof conciergeCreateSchema>;

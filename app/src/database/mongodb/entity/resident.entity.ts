@@ -4,9 +4,7 @@ export interface ResidentEntity {
 	_id: string;
 	name: string;
 	buildingId: string;
-	apartmentNumber: string;
-	apartmentId?: string;
-	blockName: string;
+	apartmentId: string;
 	email: string;
 	passwordHash: string;
 	phone: string;
@@ -29,8 +27,7 @@ export type UpdateResidentEntity = Partial<
 		ResidentEntity,
 		| "name"
 		| "buildingId"
-		| "apartmentNumber"
-		| "blockName"
+		| "apartmentId"
 		| "phone"
 		| "photoUrl"
 		| "status"

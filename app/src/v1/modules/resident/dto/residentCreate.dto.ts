@@ -9,17 +9,9 @@ export const residentCreateSchema = z.object({
 	buildingId: z
 		.string({ required_error: "ID do edifício é obrigatório" })
 		.uuid("ID do edifício deve ser um UUID válido"),
-	apartmentNumber: z
-		.string({ required_error: "Número do apartamento é obrigatório" })
-		.min(1, "Número do apartamento não pode ser vazio")
-		.max(10, "Número do apartamento deve ter no máximo 10 caracteres")
-		.trim(),
-	blockName: z
-		.string()
-		.min(1, "Nome do bloco não pode ser vazio")
-		.max(50, "Nome do bloco deve ter no máximo 50 caracteres")
-		.trim()
-		.optional(),
+	apartmentId: z
+		.string({ required_error: "ID do apartamento é obrigatório" })
+		.uuid("ID do apartamento deve ser um UUID válido"),
 	email: z
 		.string({ required_error: "Email é obrigatório" })
 		.email("Email deve ser válido"),

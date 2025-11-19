@@ -2,7 +2,6 @@ export { TemplateEngine } from "./templateEngine";
 
 export interface ResidentConfirmationTemplateData {
 	residentName: string;
-	apartmentNumber: string;
 	confirmationCode: string;
 	email: string;
 	confirmationUrl: string;

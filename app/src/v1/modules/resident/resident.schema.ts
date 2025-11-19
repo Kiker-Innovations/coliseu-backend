@@ -8,7 +8,7 @@ export class ResidentSchema {
 	public create = {
 		body: {
 			type: "object",
-			required: ["name", "buildingId", "apartmentNumber", "email", "password", "phone"],
+			required: ["name", "buildingId", "apartmentId", "email", "password", "phone"],
 			properties: {
 				name: {
 					type: "string",
@@ -20,15 +20,10 @@ export class ResidentSchema {
 					description: "ID do edifício (UUID)",
 					example: "123e4567-e89b-12d3-a456-426614174000",
 				},
-				apartmentNumber: {
+				apartmentId: {
 					type: "string",
-					description: "Número do apartamento",
-					example: "101",
-				},
-				blockName: {
-					type: "string",
-					description: "Nome do bloco/torre",
-					example: "Bloco A",
+					description: "ID do apartamento (UUID)",
+					example: "123e4567-e89b-12d3-a456-426614174001",
 				},
 				email: {
 					type: "string",
@@ -60,7 +55,6 @@ export class ResidentSchema {
 						properties: {
 							name: { type: "string" },
 							email: { type: "string" },
-							apartmentNumber: { type: "string" },
 							phone: { type: "string" },
 							presignedUrl: { type: "string" },
 						},
@@ -116,7 +110,6 @@ export class ResidentSchema {
 					data: {
 						type: "object",
 						properties: {
-							apartmentNumber: { type: "string" },
 							email: { type: "string" },
 							phone: { type: "string" },
 							photoUrl: { type: "string", nullable: true },
@@ -162,15 +155,10 @@ export class ResidentSchema {
 					description: "ID do edifício (UUID)",
 					example: "123e4567-e89b-12d3-a456-426614174000",
 				},
-				apartmentNumber: {
+				apartmentId: {
 					type: "string",
-					description: "Número do apartamento",
-					example: "101",
-				},
-				blockName: {
-					type: "string",
-					description: "Nome do bloco/torre",
-					example: "Bloco A",
+					description: "ID do apartamento (UUID)",
+					example: "123e4567-e89b-12d3-a456-426614174001",
 				},
 				phone: {
 					type: "string",
@@ -196,7 +184,6 @@ export class ResidentSchema {
 						type: "object",
 						properties: {
 							id: { type: "string" },
-							apartmentNumber: { type: "string" },
 							email: { type: "string" },
 							phone: { type: "string" },
 							status: { type: "string" },

@@ -13,14 +13,12 @@ export class ResidentEmail {
 	async sendConfirmationEmail(
 		email: string,
 		residentName: string,
-		apartmentNumber: string,
 		confirmationCode: string,
 	): Promise<{ success: boolean; messageId?: string; error?: string }> {
 		const htmlContent = TemplateEngine.render(
 			EmailTemplates.RESIDENT_CONFIRMATION,
 			{
 				residentName,
-				apartmentNumber,
 				confirmationCode,
 				email,
 				confirmationUrl: "https://coliseucondo.com.br/confirmcode",
@@ -39,14 +37,12 @@ export class ResidentEmail {
 	async sendConfirmationEmailAsync(
 		email: string,
 		residentName: string,
-		apartmentNumber: string,
 		confirmationCode: string,
 	): Promise<void> {
 		try {
 			const result = await this.sendConfirmationEmail(
 				email,
 				residentName,
-				apartmentNumber,
 				confirmationCode,
 			);
 			if (result.success) {

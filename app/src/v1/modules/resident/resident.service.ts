@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import type { MongoClient } from "mongodb";
 import { env } from "../../../config/env";
 import type {
@@ -40,7 +39,6 @@ export class ResidentService {
 		HttpResponse<{
 			name: string;
 			email: string;
-			apartmentNumber: string;
 			phone: string;
 			presignedUrl: string;
 		}>
@@ -62,8 +60,7 @@ export class ResidentService {
 		const residentEntity: CreateResidentEntity = {
 			name: residentCreateDto.name,
 			buildingId: residentCreateDto.buildingId,
-			apartmentNumber: residentCreateDto.apartmentNumber,
-			blockName: residentCreateDto.blockName,
+			apartmentId: residentCreateDto.apartmentId,
 			email: residentCreateDto.email,
 			passwordHash,
 			phone: residentCreateDto.phone,
@@ -77,11 +74,10 @@ export class ResidentService {
 
 		const residentEmail = new ResidentEmail();
 		residentEmail.sendConfirmationEmailAsync(
-				createdResident.email,
-				createdResident.name,
-				createdResident.apartmentNumber,
-				residentCode,
-			);
+			createdResident.email,
+			createdResident.name,
+			residentCode,
+		);
 
 		const { presignedUrl, publicUrl } = await this.generatePresignedUrl(
 			createdResident._id,
@@ -99,7 +95,6 @@ export class ResidentService {
 			data: {
 				name: createdResident.name,
 				email: createdResident.email,
-				apartmentNumber: createdResident.apartmentNumber,
 				phone: createdResident.phone,
 				presignedUrl,
 			},
@@ -109,7 +104,6 @@ export class ResidentService {
 	public async getResident(residentId: string): Promise<
 		HttpResponse<{
 			email: string;
-			apartmentNumber: string;
 			phone: string;
 		}>
 	> {
@@ -124,7 +118,6 @@ export class ResidentService {
 			message: "Morador encontrado com sucesso",
 			data: {
 				email: resident.email,
-				apartmentNumber: resident.apartmentNumber,
 				phone: resident.phone,
 			},
 		};
@@ -142,7 +135,6 @@ export class ResidentService {
 	): Promise<
 		HttpResponse<{
 			email: string;
-			apartmentNumber: string;
 			phone: string;
 		}>
 	> {
@@ -169,7 +161,6 @@ export class ResidentService {
 			message: "Morador atualizado com sucesso",
 			data: {
 				email: updatedResident.email,
-				apartmentNumber: updatedResident.apartmentNumber,
 				phone: updatedResident.phone,
 			},
 		};

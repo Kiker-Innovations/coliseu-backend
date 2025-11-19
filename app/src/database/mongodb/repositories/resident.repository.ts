@@ -95,4 +95,8 @@ export class ResidentRepository
 
 		return result || null;
 	}
+
+	public async countByBuildingId(buildingId: string): Promise<number> {
+		return await this.collection.countDocuments({ buildingId });
+	}
 }

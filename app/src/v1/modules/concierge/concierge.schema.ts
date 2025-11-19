@@ -2,7 +2,7 @@ export class ConciergeSchema {
 	public create = {
 		body: {
 			type: "object",
-			required: ["buildingId", "email", "password", "phone"],
+			required: ["buildingId", "email", "password", "phone", "status"],
 			properties: {
 				buildingId: {
 					type: "string",
@@ -39,7 +39,7 @@ export class ConciergeSchema {
 				status: {
 					type: "string",
 					enum: ["INATIVO", "VALIDADO", "ATIVO", "DE_FERIAS"],
-					description: "Status do porteiro (INATIVO, VALIDADO, ATIVO, DE_FERIAS). Se não informado, será ATIVO por padrão.",
+					description: "Status do porteiro (INATIVO, VALIDADO, ATIVO, DE_FERIAS)",
 					example: "ATIVO",
 				},
 			},

@@ -8,6 +8,7 @@ import { BuildingRouteV1 } from "./v1/modules/building/building.route";
 import { PackageRouteV1 } from "./v1/modules/package/package.route";
 import { ApartmentRouteV1 } from "./v1/modules/apartment/apartment.route";
 import { PollRouteV1 } from "./v1/modules/poll/poll.route";
+import { SuggestionRouteV1 } from "./v1/modules/suggestion/suggestion.route";
 
 export class Route {
 	public registerRoutes = async (server: FastifyInstance): Promise<void> => {
@@ -22,6 +23,7 @@ export class Route {
 			...new PackageRouteV1(mongoClient).routes(),
 			...new ApartmentRouteV1(mongoClient).routes(),
 			...new PollRouteV1(mongoClient).routes(),
+			...new SuggestionRouteV1(mongoClient).routes(),
 		]) {
 			server.route(route);
 		}

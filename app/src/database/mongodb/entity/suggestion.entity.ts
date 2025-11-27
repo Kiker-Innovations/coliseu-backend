@@ -1,6 +1,7 @@
 export interface SuggestionEntity {
 	_id: string;
-	residentId: string;
+	apartmentId: string;
+	buildingId: string;
 	title: string;
 	description: string;
 	createdAt: Date;

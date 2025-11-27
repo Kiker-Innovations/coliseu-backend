@@ -34,7 +34,6 @@ export async function generateResetToken(): Promise<string> {
 }
 
 export function generateResetCode(): string {
-    // Gera código de 6 dígitos numéricos
     const bytes = randomBytes(3);
     let code = "";
     for (const byte of bytes) {

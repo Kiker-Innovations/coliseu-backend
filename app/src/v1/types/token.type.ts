@@ -1,6 +1,6 @@
-import type { UserTypeEnumType } from "../v1/enum/userType.enum";
+import type { UserTypeEnumType } from "../enum/userType.enum";
 
-export interface JwtPayload {
+export interface TokenPayload {
 	userId: string;
 	userType: UserTypeEnumType;
 	buildingId: string;
@@ -11,7 +11,5 @@ export interface JwtPayload {
 	blockName?: string;
 	buildingName?: string;
 	shift?: string;
-	iat?: number;
-	exp?: number;
 }
 

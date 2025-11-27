@@ -7,6 +7,7 @@ import { AdminRepository } from "../../../database/mongodb/repositories/admin.re
 import { ConciergeRepository } from "../../../database/mongodb/repositories/concierge.repository";
 import { ResidentRepository } from "../../../database/mongodb/repositories/resident.repository";
 import { BuildingRepository } from "../../../database/mongodb/repositories/building.repository";
+import { ApartmentRepository } from "../../../database/mongodb/repositories/apartment.repository";
 import type { HttpResponse } from "../../../interface/httpResponse.interface";
 import type { JwtPayload } from "../../../interface/jwtPayload.interface";
 import type { RefreshTokenPayload } from "../../../interface/refreshTokenPayload.interface";
@@ -25,12 +26,14 @@ export class AuthService {
 	private conciergeRepository: ConciergeRepository;
 	private adminRepository: AdminRepository;
 	private buildingRepository: BuildingRepository;
+	private apartmentRepository: ApartmentRepository;
 
 	constructor(mongoClient: MongoClient) {
 		this.residentRepository = new ResidentRepository(mongoClient);
 		this.conciergeRepository = new ConciergeRepository(mongoClient);
 		this.adminRepository = new AdminRepository(mongoClient);
 		this.buildingRepository = new BuildingRepository(mongoClient);
+		this.apartmentRepository = new ApartmentRepository(mongoClient);
 	}
 
 	public async loginResident(
@@ -91,14 +94,18 @@ export class AuthService {
 			);
 		}
 
+		// Get apartment information
+		const apartment = await this.apartmentRepository.findById(resident.apartmentId);
+		
 		const token = await this.generateToken({
 			userId: resident._id,
 			userType: UserTypeEnum.RESIDENT,
 			buildingId: resident.buildingId,
 			email: resident.email,
 			name: resident.name,
-			apartmentNumber: resident.apartmentNumber,
-			blockName: resident.blockName,
+			apartmentId: resident.apartmentId,
+			apartmentNumber: apartment?.number,
+			blockName: apartment?.block,
 			buildingName: building.name,
 		});
 
@@ -306,6 +313,8 @@ export class AuthService {
 			throw httpException("Edifício não encontrado", httpStatus.NOT_FOUND);
 		}
 
+		const apartment = await this.apartmentRepository.findById(resident.apartmentId);
+
 		return {
 			success: true,
 			message: "Token válido",
@@ -313,8 +322,8 @@ export class AuthService {
 				id: resident._id,
 				email: resident.email,
 				name: resident.name,
-				apartmentNumber: resident.apartmentNumber,
-				blockName: resident.blockName,
+				apartmentNumber: apartment?.number,
+				blockName: apartment?.block,
 				buildingName: building.name,
 			},
 		};
@@ -432,11 +441,13 @@ export class AuthService {
 				);
 				if (resident && resident.status === ResidentStatusEnum.ATIVO) {
 					const building = await this.buildingRepository.findById(resident.buildingId);
+					const apartment = await this.apartmentRepository.findById(resident.apartmentId);
 					if (building) {
 						tokenPayload.email = resident.email;
 						tokenPayload.name = resident.name;
-						tokenPayload.apartmentNumber = resident.apartmentNumber;
-						tokenPayload.blockName = resident.blockName;
+						tokenPayload.apartmentId = resident.apartmentId;
+						tokenPayload.apartmentNumber = apartment?.number;
+						tokenPayload.blockName = apartment?.block;
 						tokenPayload.buildingName = building.name;
 						isValid = true;
 					}

@@ -8,6 +8,7 @@ import type { ApartmentCreateDto, ApartmentUpdateDto } from "./dto";
 import { httpException } from "../../../config/error";
 import httpStatus from "http-status";
 import type { HttpResponse } from "../../../interface/httpResponse.interface";
+import { ApartmentStatusEnum } from "@/v1/enum/apartmentStatus.enum";
 
 export class ApartmentService {
 	private apartmentRepository: ApartmentRepository;
@@ -29,7 +30,7 @@ export class ApartmentService {
 			number: apartmentCreateDto.number,
 			block: apartmentCreateDto.block,
 			floor: apartmentCreateDto.floor,
-			status: apartmentCreateDto.status,
+			status: apartmentCreateDto.status ? apartmentCreateDto.status : ApartmentStatusEnum.DESOCUPADO,
 		};
 
 		const createdApartment = await this.apartmentRepository.create(apartmentEntity);

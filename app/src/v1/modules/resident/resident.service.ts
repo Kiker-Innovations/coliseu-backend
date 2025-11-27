@@ -25,13 +25,17 @@ import {
 import { ResidentEmail } from "./resident.emails";
 import { sendPasswordResetEmail } from "@/v1/utils/emailHelper";
 import { getDate } from "@/v1/utils/utils";
+import { ApartmentRepository } from "@/database/mongodb/repositories/apartment.repository";
+import { ApartmentStatusEnum } from "@/v1/enum/apartmentStatus.enum";
 
 export class ResidentService {
 	private residentRepository: ResidentRepository;
+	private apartmentRepository: ApartmentRepository;
 	private s3Provider: S3Provider;
 
 	constructor(mongoClient: MongoClient) {
 		this.residentRepository = new ResidentRepository(mongoClient);
+		this.apartmentRepository = new ApartmentRepository(mongoClient);
 		this.s3Provider = new S3Provider();
 	}
 
@@ -261,6 +265,14 @@ export class ResidentService {
 			status: ResidentStatusEnum.VALIDADO,
 		});
 
+		const apartment = await this.apartmentRepository.findById(resident.apartmentId);
+
+		if (apartment) {
+			if (apartment.status === ApartmentStatusEnum.DESOCUPADO) {
+				await this.apartmentRepository.update(resident.apartmentId, { status: ApartmentStatusEnum.OCUPADO });
+			}
+		}
+
 		return {
 			success: true,
 			message:
@@ -282,7 +294,7 @@ export class ResidentService {
 
 		const resetCode = generateResetCode();
 		const resetTokenExpiry = getDate();
-		resetTokenExpiry.setMinutes(resetTokenExpiry.getMinutes() + 15); // Expira em 15 minutos
+		resetTokenExpiry.setMinutes(resetTokenExpiry.getMinutes() + 15);
 
 		await this.residentRepository.update(resident._id, {
 			resetPasswordToken: resetCode,
@@ -340,6 +352,7 @@ export class ResidentService {
 		const newPasswordHash = await hashPassword(resetPasswordDto.newPassword);
 
 		await this.residentRepository.update(resident._id, {
+			status: ResidentStatusEnum.ATIVO,
 			passwordHash: newPasswordHash,
 			resetPasswordToken: undefined,
 			resetPasswordTokenExpiry: undefined,

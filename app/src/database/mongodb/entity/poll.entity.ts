@@ -1,6 +1,7 @@
 import { PollStatusEnumType } from "@/v1/enum/pollStatus.enum";
 
 export interface PollOption {
+	id: number;
 	description: string;
 	votes: number;
 	percent: number;

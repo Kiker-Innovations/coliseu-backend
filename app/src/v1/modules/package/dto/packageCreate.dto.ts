@@ -26,9 +26,6 @@ export const packageCreateSchema = z.object({
 		.string({ required_error: "Data e hora de chegada é obrigatória" })
 		.datetime("Data e hora deve estar no formato ISO 8601")
 		.transform((str) => new Date(str)),
-	receiverConciergeId: z
-		.string({ required_error: "ID do porteiro é obrigatório" })
-		.uuid("ID do porteiro deve ser um UUID válido"),
 });
 
 export type PackageCreateDto = z.infer<typeof packageCreateSchema>;

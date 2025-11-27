@@ -195,6 +195,7 @@ export class AuthSchema {
 					data: {
 						type: "object",
 						properties: {
+							id: { type: "string", description: "ID do morador" },
 							email: { type: "string" },
 							name: { type: "string" },
 							apartmentNumber: { type: "string" },

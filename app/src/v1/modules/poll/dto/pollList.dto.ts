@@ -1,6 +1,7 @@
 import { z } from "zod";
+import { PollStatusEnum } from "@/v1/enum/pollStatus.enum";
 
-export const pollListByMonthYearSchema = z.object({
+const basePollListSchema = z.object({
 	buildingId: z
 		.string({ required_error: "ID do edifício é obrigatório" })
 		.uuid("ID do edifício deve ser um UUID válido"),
@@ -16,11 +17,35 @@ export const pollListByMonthYearSchema = z.object({
 		.max(2100, "Ano deve ser menor ou igual a 2100"),
 });
 
+export const pollListByMonthYearSchema = basePollListSchema;
+
+export const pollListByStatusSchema = basePollListSchema.extend({
+	status: z
+		.array(
+			z.enum([
+				PollStatusEnum.ATIVO,
+				PollStatusEnum.PROGRAMADO,
+				PollStatusEnum.FINALIZADO,
+				PollStatusEnum.CANCELADO,
+			]),
+			{ required_error: "Status é obrigatório" },
+		)
+		.min(1, "Deve haver pelo menos um status")
+		.max(4, "Máximo de 4 status permitidos"),
+});
+
 export type PollListByMonthYearDto = z.infer<typeof pollListByMonthYearSchema>;
+export type PollListByStatusDto = z.infer<typeof pollListByStatusSchema>;
 
 export const transformPollListByMonthYearDto = (
 	data: PollListByMonthYearDto,
 ): PollListByMonthYearDto => {
 	return pollListByMonthYearSchema.parse(data);
+};
+
+export const transformPollListByStatusDto = (
+	data: PollListByStatusDto,
+): PollListByStatusDto => {
+	return pollListByStatusSchema.parse(data);
 };
 

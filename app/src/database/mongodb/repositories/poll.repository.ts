@@ -8,7 +8,7 @@ import type {
 	UpdatePollEntity,
 } from "../entity/poll.entity";
 import type { IRepository } from "../interfaces/IRepository";
-import { getDate } from "@/v1/utils/utils";
+import { getDate, toDate } from "@/v1/utils/utils";
 import { PollStatusEnum } from "@/v1/enum/pollStatus.enum";
 
 export class PollRepository
@@ -26,8 +26,9 @@ export class PollRepository
 	public async create(data: CreatePollEntity): Promise<PollEntity> {
 		const now = getDate();
 		
-		// Convert array of strings to array of PollOption objects
-		const options: PollOption[] = data.options.map((description) => ({
+		// Convert array of strings to array of PollOption objects with unique IDs
+		const options: PollOption[] = data.options.map((description, index) => ({
+			id: index,
 			description,
 			votes: 0,
 			percent: 0,
@@ -51,7 +52,30 @@ export class PollRepository
 	}
 
 	public async findById(_id: string): Promise<PollEntity | null> {
-		return await this.collection.findOne({ _id });
+		const poll = await this.collection.findOne({ _id });
+		if (!poll) return null;
+		
+		// Normalize dates to ensure they are Date objects
+		// Handle MongoDB date format { $date: "..." } or direct Date objects
+		const normalizeDate = (date: any): Date => {
+			if (!date) return date;
+			if (date instanceof Date) return date;
+			if (typeof date === 'object' && '$date' in date) {
+				return new Date(date.$date);
+			}
+			return new Date(date);
+		};
+
+		return {
+			...poll,
+			startDate: normalizeDate(poll.startDate),
+			endDate: normalizeDate(poll.endDate),
+			createdAt: normalizeDate(poll.createdAt),
+			updatedAt: normalizeDate(poll.updatedAt),
+			...(poll.cancelledAt && {
+				cancelledAt: normalizeDate(poll.cancelledAt),
+			}),
+		};
 	}
 
 	public async findOne(
@@ -89,24 +113,95 @@ export class PollRepository
 		return result.deletedCount > 0;
 	}
 
+	public async findByStatusAndMonthYear(
+		buildingId: string,
+		status: string[],
+		month: number,
+		year: number,
+	): Promise<PollEntity[]> {
+		const startOfMonth = toDate(`${year}-${String(month).padStart(2, "0")}-01`)
+			.startOf("month")
+			.startOf("day")
+			.toDate();
+		const endOfMonth = toDate(`${year}-${String(month).padStart(2, "0")}-01`)
+			.endOf("month")
+			.endOf("day")
+			.toDate();
+
+		// Check if status includes FINALIZADO or CANCELADO to use different date filters
+		const hasFinishedOrCancelled = status.some(
+			(s) => s === PollStatusEnum.FINALIZADO || s === PollStatusEnum.CANCELADO,
+		);
+		const hasActiveOrProgrammed = status.some(
+			(s) => s === PollStatusEnum.ATIVO || s === PollStatusEnum.PROGRAMADO,
+		);
+
+		const query: any = {
+			buildingId,
+			status: { $in: status },
+		};
+
+		// If mixing status types, we need to handle dates differently
+		if (hasFinishedOrCancelled && hasActiveOrProgrammed) {
+			// Mixed: use OR condition for dates
+			query.$or = [
+				{ startDate: { $gte: startOfMonth, $lte: endOfMonth } },
+				{ endDate: { $gte: startOfMonth, $lte: endOfMonth } },
+				{ cancelledAt: { $gte: startOfMonth, $lte: endOfMonth } },
+			];
+		} else if (hasFinishedOrCancelled) {
+			// Only finished/cancelled: use endDate or cancelledAt
+			query.$or = [
+				{ endDate: { $gte: startOfMonth, $lte: endOfMonth } },
+				{ cancelledAt: { $gte: startOfMonth, $lte: endOfMonth } },
+			];
+		} else {
+			// Only active/programmed: use startDate
+			query.startDate = {
+				$gte: startOfMonth,
+				$lte: endOfMonth,
+			};
+		}
+
+		const polls = await this.collection.find(query).toArray();
+		
+		// Normalize dates to ensure they are Date objects
+		// Handle MongoDB date format { $date: "..." } or direct Date objects
+		return polls.map((poll) => {
+			const normalizeDate = (date: any): Date => {
+				if (!date) return date;
+				if (date instanceof Date) return date;
+				if (typeof date === 'object' && '$date' in date) {
+					return new Date(date.$date);
+				}
+				return new Date(date);
+			};
+
+			return {
+				...poll,
+				startDate: normalizeDate(poll.startDate),
+				endDate: normalizeDate(poll.endDate),
+				createdAt: normalizeDate(poll.createdAt),
+				updatedAt: normalizeDate(poll.updatedAt),
+				...(poll.cancelledAt && {
+					cancelledAt: normalizeDate(poll.cancelledAt),
+				}),
+			};
+		});
+	}
+
+	// Keep old methods for backward compatibility (can be removed later)
 	public async findActiveByMonthYear(
 		buildingId: string,
 		month: number,
 		year: number,
 	): Promise<PollEntity[]> {
-		const startOfMonth = new Date(year, month - 1, 1, 0, 0, 0, 0);
-		const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
-
-		return await this.collection
-			.find({
-				buildingId,
-				status: PollStatusEnum.ATIVO,
-				startDate: {
-					$gte: startOfMonth,
-					$lte: endOfMonth,
-				},
-			})
-			.toArray();
+		return this.findByStatusAndMonthYear(
+			buildingId,
+			[PollStatusEnum.ATIVO, PollStatusEnum.PROGRAMADO],
+			month,
+			year,
+		);
 	}
 
 	public async findFinishedAndCancelledByMonthYear(
@@ -114,21 +209,90 @@ export class PollRepository
 		month: number,
 		year: number,
 	): Promise<PollEntity[]> {
-		const startOfMonth = new Date(year, month - 1, 1, 0, 0, 0, 0);
-		const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+		return this.findByStatusAndMonthYear(
+			buildingId,
+			[PollStatusEnum.FINALIZADO, PollStatusEnum.CANCELADO],
+			month,
+			year,
+		);
+	}
 
-		return await this.collection
-			.find({
-				buildingId,
-				status: {
-					$in: [PollStatusEnum.FINALIZADO, PollStatusEnum.CANCELADO],
+	public async incrementOptionVote(
+		_id: string,
+		optionId: number,
+	): Promise<PollEntity | null> {
+		const result = await this.collection.findOneAndUpdate(
+			{ _id },
+			{
+				$inc: {
+					"options.$[option].votes": 1,
+					votes: 1,
 				},
-				$or: [
-					{ endDate: { $gte: startOfMonth, $lte: endOfMonth } },
-					{ cancelledAt: { $gte: startOfMonth, $lte: endOfMonth } },
+				$set: {
+					updatedAt: getDate(),
+				},
+			},
+			{
+				arrayFilters: [{ "option.id": optionId }],
+				returnDocument: "after",
+			},
+		);
+
+		return result || null;
+	}
+
+	public async decrementOptionVote(
+		_id: string,
+		optionId: number,
+	): Promise<PollEntity | null> {
+		const result = await this.collection.findOneAndUpdate(
+			{ _id },
+			{
+				$inc: {
+					"options.$[option].votes": -1,
+					votes: -1,
+				},
+				$set: {
+					updatedAt: getDate(),
+				},
+			},
+			{
+				arrayFilters: [{ "option.id": optionId }],
+				returnDocument: "after",
+			},
+		);
+
+		return result || null;
+	}
+
+	public async updateOptionVote(
+		_id: string,
+		oldOptionId: number,
+		newOptionId: number,
+	): Promise<PollEntity | null> {
+		// Decrement old option and increment new option in a single operation
+		// Note: total votes count doesn't change, only the distribution
+		const result = await this.collection.findOneAndUpdate(
+			{ _id },
+			{
+				$inc: {
+					"options.$[oldOption].votes": -1,
+					"options.$[newOption].votes": 1,
+				},
+				$set: {
+					updatedAt: getDate(),
+				},
+			},
+			{
+				arrayFilters: [
+					{ "oldOption.id": oldOptionId },
+					{ "newOption.id": newOptionId },
 				],
-			})
-			.toArray();
+				returnDocument: "after",
+			},
+		);
+
+		return result || null;
 	}
 }
 

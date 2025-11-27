@@ -276,6 +276,7 @@ export class AuthService {
 		token: string,
 	): Promise<
 		HttpResponse<{
+			id: string;
 			email: string;
 			name: string;
 			apartmentNumber: string;
@@ -309,6 +310,7 @@ export class AuthService {
 			success: true,
 			message: "Token válido",
 			data: {
+				id: resident._id,
 				email: resident.email,
 				name: resident.name,
 				apartmentNumber: resident.apartmentNumber,

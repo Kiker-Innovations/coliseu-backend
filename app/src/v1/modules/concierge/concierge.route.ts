@@ -2,14 +2,17 @@ import type { RouteHandlerMethod, RouteOptions } from "fastify";
 import type { MongoClient } from "mongodb";
 import { ConciergeController } from "./concierge.controller";
 import { ConciergeSchema } from "./concierge.schema";
+import { AuthMiddleware } from "../auth/auth.middleware";
 
 export class ConciergeRouteV1 {
 	private conciergeController: ConciergeController;
 	private conciergeSchema: ConciergeSchema;
+	private authMiddleware: AuthMiddleware;
 
 	constructor(mongoClient: MongoClient) {
 		this.conciergeController = new ConciergeController(mongoClient);
 		this.conciergeSchema = new ConciergeSchema();
+		this.authMiddleware = new AuthMiddleware(mongoClient);
 	}
 
 	private create = (): RouteOptions => {
@@ -20,9 +23,10 @@ export class ConciergeRouteV1 {
 				tags: ["Concierges"],
 				summary: "Create a new concierge",
 				description:
-					"Cria um novo porteiro no sistema",
+					"Cria um novo porteiro no sistema. O ID do edifício é obtido automaticamente do token de autenticação do administrador.",
 				...this.conciergeSchema.create,
 			},
+			preHandler: this.authMiddleware.authenticate,
 			handler: this.conciergeController.createConcierge.bind(
 				this.conciergeController,
 			) as RouteHandlerMethod,

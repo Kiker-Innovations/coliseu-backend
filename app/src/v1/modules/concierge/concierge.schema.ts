@@ -2,13 +2,8 @@ export class ConciergeSchema {
 	public create = {
 		body: {
 			type: "object",
-			required: ["buildingId", "email", "password", "phone", "status"],
+			required: ["email", "password", "phone", "status"],
 			properties: {
-				buildingId: {
-					type: "string",
-					description: "ID do edifício (UUID)",
-					example: "123e4567-e89b-12d3-a456-426614174000",
-				},
 				name: {
 					type: "string",
 					description: "Nome do porteiro",

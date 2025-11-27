@@ -7,9 +7,6 @@ export const packageConfirmDeliverySchema = z.object({
 		.max(100, "Nome deve ter no máximo 100 caracteres")
 		.trim()
 		.optional(),
-	deliveryConciergeId: z
-		.string({ required_error: "ID do porteiro que registrou a entrega é obrigatório" })
-		.uuid("ID do porteiro deve ser um UUID válido"),
 });
 
 export type PackageConfirmDeliveryDto = z.infer<typeof packageConfirmDeliverySchema>;

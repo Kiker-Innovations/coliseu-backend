@@ -31,7 +31,10 @@ export class ConciergeService {
         this.conciergeRepository = new ConciergeRepository(mongoClient);
     }
 
-    public async createConcierge(conciergeCreateDto: ConciergeCreateDto): Promise<
+    public async createConcierge(
+        conciergeCreateDto: ConciergeCreateDto,
+        buildingId: string,
+    ): Promise<
         HttpResponse<{
             email: string;
             phone: string;
@@ -52,7 +55,7 @@ export class ConciergeService {
         const conciergeCode = await generateCode();
 
         const conciergeEntity: CreateConciergeEntity = {
-            buildingId: conciergeCreateDto.buildingId,
+            buildingId: buildingId,
             name: conciergeCreateDto.name,
             email: conciergeCreateDto.email,
             passwordHash,

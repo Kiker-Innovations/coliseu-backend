@@ -68,6 +68,8 @@ export class PackageService {
 
 	public async createPackage(
 		packageCreateDto: PackageCreateDto,
+		conciergeId: string,
+		buildingId: string,
 	): Promise<
 		HttpResponse<{
 			id: string;
@@ -87,17 +89,31 @@ export class PackageService {
 			);
 		}
 
-		// Verify concierge exists
-		const concierge = await this.conciergeRepository.findById(
-			packageCreateDto.receiverConciergeId,
-		);
+		// Verify apartment belongs to the same building
+		if (apartment.buildingId !== buildingId) {
+			throw httpException(
+				"O apartamento não pertence ao mesmo edifício do porteiro",
+				httpStatus.FORBIDDEN,
+			);
+		}
+
+		// Verify concierge exists and belongs to the same building
+		const concierge = await this.conciergeRepository.findById(conciergeId);
 		if (!concierge) {
 			throw httpException("Porteiro não encontrado", httpStatus.NOT_FOUND);
 		}
 
+		if (concierge.buildingId !== buildingId) {
+			throw httpException(
+				"O porteiro não pertence ao mesmo edifício",
+				httpStatus.FORBIDDEN,
+			);
+		}
+
 		const packageEntity: CreatePackageEntity = {
 			apartmentId: packageCreateDto.apartmentId,
-			receiverConciergeId: packageCreateDto.receiverConciergeId,
+			buildingId: buildingId,
+			receiverConciergeId: conciergeId,
 			ownerName: packageCreateDto.ownerName,
 			description: packageCreateDto.description,
 			courierName: packageCreateDto.courierName,
@@ -201,10 +217,10 @@ export class PackageService {
 		}
 	}
 
-	public async getPendingPackages(): Promise<
+	public async getPendingPackages(buildingId: string): Promise<
 		HttpResponse<PendingPackageListItem[]>
 	> {
-		const packages = await this.packageRepository.findPending();
+		const packages = await this.packageRepository.findPending(buildingId);
 
 		const packagesWithDetails = await Promise.all(
 			packages.map(async (pkg) => {
@@ -234,10 +250,10 @@ export class PackageService {
 		};
 	}
 
-	public async getDeliveredPackages(): Promise<
+	public async getDeliveredPackages(buildingId: string): Promise<
 		HttpResponse<DeliveredPackageListItem[]>
 	> {
-		const packages = await this.packageRepository.findDeliveredLast7Days();
+		const packages = await this.packageRepository.findDeliveredLast7Days(buildingId);
 
 		const packagesWithDetails = await Promise.all(
 			packages.map(async (pkg) => {
@@ -270,13 +286,21 @@ export class PackageService {
 		};
 	}
 
-	public async getPackageById(packageId: string): Promise<
+	public async getPackageById(packageId: string, buildingId: string): Promise<
 		HttpResponse<PackageEntity & { apartmentNumber?: string; receiverConciergeName?: string; deliveryConciergeName?: string }>
 	> {
 		const packageEntity = await this.packageRepository.findById(packageId);
 
 		if (!packageEntity) {
 			throw httpException("Encomenda não encontrada", httpStatus.NOT_FOUND);
+		}
+
+		// Verify package belongs to the same building
+		if (packageEntity.buildingId !== buildingId) {
+			throw httpException(
+				"Encomenda não pertence ao mesmo edifício do porteiro",
+				httpStatus.FORBIDDEN,
+			);
 		}
 
 		const apartment = await this.apartmentRepository.findById(
@@ -306,11 +330,21 @@ export class PackageService {
 	public async confirmDelivery(
 		packageId: string,
 		confirmDeliveryDto: PackageConfirmDeliveryDto,
+		conciergeId: string,
+		buildingId: string,
 	): Promise<HttpResponse<PackageEntity>> {
 		const packageEntity = await this.packageRepository.findById(packageId);
 
 		if (!packageEntity) {
 			throw httpException("Encomenda não encontrada", httpStatus.NOT_FOUND);
+		}
+
+		// Verify package belongs to the same building
+		if (packageEntity.buildingId !== buildingId) {
+			throw httpException(
+				"Encomenda não pertence ao mesmo edifício do porteiro",
+				httpStatus.FORBIDDEN,
+			);
 		}
 
 		if (packageEntity.status === PackageStatusEnum.ENTREGUE) {
@@ -320,17 +354,22 @@ export class PackageService {
 			);
 		}
 
-		// Verify concierge exists
-		const concierge = await this.conciergeRepository.findById(
-			confirmDeliveryDto.deliveryConciergeId,
-		);
+		// Verify concierge exists and belongs to the same building
+		const concierge = await this.conciergeRepository.findById(conciergeId);
 		if (!concierge) {
 			throw httpException("Porteiro não encontrado", httpStatus.NOT_FOUND);
 		}
 
+		if (concierge.buildingId !== buildingId) {
+			throw httpException(
+				"O porteiro não pertence ao mesmo edifício",
+				httpStatus.FORBIDDEN,
+			);
+		}
+
 		const updatedPackage = await this.packageRepository.update(packageId, {
 			recipientName: confirmDeliveryDto.recipientName,
-			deliveryConciergeId: confirmDeliveryDto.deliveryConciergeId,
+			deliveryConciergeId: conciergeId,
 			deliveryDate: getDate(),
 			status: PackageStatusEnum.ENTREGUE,
 		});
@@ -349,7 +388,7 @@ export class PackageService {
 		};
 	}
 
-	public async getPackageStats(): Promise<
+	public async getPackageStats(buildingId: string): Promise<
 		HttpResponse<{
 			totalPendings: number;
 			totalConfirmed: number;
@@ -357,9 +396,9 @@ export class PackageService {
 		}>
 	> {
 		const [totalPendings, totalConfirmed, totalPendingsWeek] = await Promise.all([
-			this.packageRepository.countPending(),
-			this.packageRepository.countDeliveredToday(),
-			this.packageRepository.countDeliveredThisWeek(),
+			this.packageRepository.countPending(buildingId),
+			this.packageRepository.countDeliveredToday(buildingId),
+			this.packageRepository.countDeliveredThisWeek(buildingId),
 		]);
 
 		return {
@@ -376,11 +415,21 @@ export class PackageService {
 	public async cancelPackage(
 		packageId: string,
 		cancelDto: PackageCancelDto,
+		conciergeId: string,
+		buildingId: string,
 	): Promise<HttpResponse<PackageEntity>> {
 		const packageEntity = await this.packageRepository.findById(packageId);
 
 		if (!packageEntity) {
 			throw httpException("Encomenda não encontrada", httpStatus.NOT_FOUND);
+		}
+
+		// Verify package belongs to the same building
+		if (packageEntity.buildingId !== buildingId) {
+			throw httpException(
+				"Encomenda não pertence ao mesmo edifício do porteiro",
+				httpStatus.FORBIDDEN,
+			);
 		}
 
 		if (packageEntity.status === PackageStatusEnum.ENTREGUE) {
@@ -397,14 +446,23 @@ export class PackageService {
 			);
 		}
 
-		const concierge = await this.conciergeRepository.findById(cancelDto.cancelledConciergeId);
+		// Verify concierge exists and belongs to the same building
+		const concierge = await this.conciergeRepository.findById(conciergeId);
 		if (!concierge) {
+			throw httpException("Porteiro não encontrado", httpStatus.NOT_FOUND);
+		}
+
+		if (concierge.buildingId !== buildingId) {
+			throw httpException(
+				"O porteiro não pertence ao mesmo edifício",
+				httpStatus.FORBIDDEN,
+			);
 		}
 
 		const updatedPackage = await this.packageRepository.update(packageId, {
 			status: PackageStatusEnum.CANCELADO,
 			cancelReason: cancelDto.cancelReason,
-			cancelledConciergeId: cancelDto.cancelledConciergeId,
+			cancelledConciergeId: conciergeId,
 			cancelledAt: getDate(),
 		});
 
@@ -422,10 +480,10 @@ export class PackageService {
 		};
 	}
 
-	public async getCancelledPackages(days: number = 7): Promise<
+	public async getCancelledPackages(days: number = 7, buildingId: string): Promise<
 		HttpResponse<CancelledPackageListItem[]>
 	> {
-		const packages = await this.packageRepository.findCancelledLastDays(days);
+		const packages = await this.packageRepository.findCancelledLastDays(days, buildingId);
 
 		const packagesWithDetails = await Promise.all(
 			packages.map(async (pkg) => {

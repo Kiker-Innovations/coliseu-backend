@@ -99,4 +99,11 @@ export class ResidentRepository
 	public async countByBuildingId(buildingId: string): Promise<number> {
 		return await this.collection.countDocuments({ buildingId });
 	}
+
+	public async countActiveByBuildingId(buildingId: string): Promise<number> {
+		return await this.collection.countDocuments({
+			buildingId,
+			status: "ATIVO",
+		});
+	}
 }

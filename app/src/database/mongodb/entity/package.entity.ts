@@ -3,6 +3,7 @@ import { PackageStatusEnumType } from "@/v1/enum/packageStatus.enum";
 export interface PackageEntity {
   _id: string;
   apartmentId: string;
+  buildingId: string;
   receiverConciergeId: string;
   deliveryConciergeId?: string;
   ownerName?: string;
@@ -25,7 +26,7 @@ export type CreatePackageEntity = Omit<
 >;
 
 export type UpdatePackageEntity = Partial<
-  Pick<PackageEntity, "apartmentId" | "receiverConciergeId" | "deliveryConciergeId" | "ownerName" | "recipientName" | "courierName" | "description" | "receiverDate" | "deliveryDate" | "status" | "cancelReason" | "cancelledConciergeId" | "cancelledAt" | "updatedAt">
+  Pick<PackageEntity, "apartmentId" | "buildingId" | "receiverConciergeId" | "deliveryConciergeId" | "ownerName" | "recipientName" | "courierName" | "description" | "receiverDate" | "deliveryDate" | "status" | "cancelReason" | "cancelledConciergeId" | "cancelledAt" | "updatedAt">
 >;
 
 export type ConfirmDeliveryPackageEntity = Pick<

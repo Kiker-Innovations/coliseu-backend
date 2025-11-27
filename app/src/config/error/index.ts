@@ -34,9 +34,17 @@ export const errorHandler = (
 		const validationContext = error.validationContext
 			? `${error.validationContext} `
 			: "";
+		const validationErrors = error.validation
+			? error.validation.map((err: any) => ({
+					field: err.instancePath || err.params?.missingProperty || err.params?.additionalProperty,
+					message: err.message,
+				}))
+			: [];
+		
 		return reply.status(400).send({
 			statusCode: error.statusCode,
 			message: `Invalid request ${validationContext}input`,
+			...(validationErrors.length > 0 && { errors: validationErrors }),
 			timestamp: getDate(),
 		});
 	}

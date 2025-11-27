@@ -16,12 +16,36 @@ export const pollCreateSchema = z.object({
 		.max(10, "Máximo de 10 opções permitidas"),
 	startDate: z
 		.string({ required_error: "Data de início é obrigatória" })
-		.datetime("Data de início deve estar no formato ISO 8601")
-		.transform((str) => new Date(str)),
+		.regex(/^\d{4}-\d{2}-\d{2}$/, "Data de início deve estar no formato YYYY-MM-DD")
+		.refine((str) => {
+			const [year, month, day] = str.split("-").map(Number);
+			const date = new Date(year, month - 1, day);
+			return (
+				date.getFullYear() === year &&
+				date.getMonth() === month - 1 &&
+				date.getDate() === day
+			);
+		}, "Data de início inválida")
+		.transform((str) => {
+			const [year, month, day] = str.split("-").map(Number);
+			return new Date(year, month - 1, day, 0, 0, 0, 0);
+		}),
 	endDate: z
 		.string({ required_error: "Data de término é obrigatória" })
-		.datetime("Data de término deve estar no formato ISO 8601")
-		.transform((str) => new Date(str)),
+		.regex(/^\d{4}-\d{2}-\d{2}$/, "Data de término deve estar no formato YYYY-MM-DD")
+		.refine((str) => {
+			const [year, month, day] = str.split("-").map(Number);
+			const date = new Date(year, month - 1, day);
+			return (
+				date.getFullYear() === year &&
+				date.getMonth() === month - 1 &&
+				date.getDate() === day
+			);
+		}, "Data de término inválida")
+		.transform((str) => {
+			const [year, month, day] = str.split("-").map(Number);
+			return new Date(year, month - 1, day, 23, 59, 59, 999);
+		}),
 }).refine(
 	(data) => {
 		return data.endDate > data.startDate;

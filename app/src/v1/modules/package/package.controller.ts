@@ -1,6 +1,8 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import httpStatus from "http-status";
 import type { MongoClient } from "mongodb";
+import { httpException } from "../../../config/error";
+import { UserTypeEnum } from "../../enum/userType.enum";
 import {
 	transformCreatePackageDto,
 	transformConfirmDeliveryPackageDto,
@@ -19,11 +21,32 @@ export class PackageController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
+		if (!request.user) {
+			throw httpException(
+				"Usuário não autenticado",
+				httpStatus.UNAUTHORIZED,
+			);
+		}
+
+		// Verifica se o usuário é um concierge
+		if (request.user.userType !== UserTypeEnum.CONCIERGE) {
+			throw httpException(
+				"Apenas porteiros podem criar encomendas",
+				httpStatus.FORBIDDEN,
+			);
+		}
+
+		// Obtém o ID do concierge e buildingId do token
+		const conciergeId = request.user.userId;
+		const buildingId = request.user.buildingId;
+
 		return reply
 			.code(httpStatus.CREATED)
 			.send(
 				await this.packageService.createPackage(
 					transformCreatePackageDto(request.body),
+					conciergeId,
+					buildingId,
 				),
 			);
 	}
@@ -32,41 +55,115 @@ export class PackageController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
+		if (!request.user) {
+			throw httpException(
+				"Usuário não autenticado",
+				httpStatus.UNAUTHORIZED,
+			);
+		}
+
+		// Verifica se o usuário é um concierge
+		if (request.user.userType !== UserTypeEnum.CONCIERGE) {
+			throw httpException(
+				"Apenas porteiros podem visualizar encomendas pendentes",
+				httpStatus.FORBIDDEN,
+			);
+		}
+
+		// Obtém o buildingId do token
+		const buildingId = request.user.buildingId;
+
 		return reply
 			.status(httpStatus.OK)
-			.send(await this.packageService.getPendingPackages());
+			.send(await this.packageService.getPendingPackages(buildingId));
 	}
 
 	public async getDeliveredPackages(
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
+		if (!request.user) {
+			throw httpException(
+				"Usuário não autenticado",
+				httpStatus.UNAUTHORIZED,
+			);
+		}
+
+		// Verifica se o usuário é um concierge
+		if (request.user.userType !== UserTypeEnum.CONCIERGE) {
+			throw httpException(
+				"Apenas porteiros podem visualizar encomendas entregues",
+				httpStatus.FORBIDDEN,
+			);
+		}
+
+		// Obtém o buildingId do token
+		const buildingId = request.user.buildingId;
+
 		return reply
 			.status(httpStatus.OK)
-			.send(await this.packageService.getDeliveredPackages());
+			.send(await this.packageService.getDeliveredPackages(buildingId));
 	}
 
 	public async getPackageById(
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
+		if (!request.user) {
+			throw httpException(
+				"Usuário não autenticado",
+				httpStatus.UNAUTHORIZED,
+			);
+		}
+
+		// Verifica se o usuário é um concierge
+		if (request.user.userType !== UserTypeEnum.CONCIERGE) {
+			throw httpException(
+				"Apenas porteiros podem visualizar encomendas",
+				httpStatus.FORBIDDEN,
+			);
+		}
+
 		const { id } = request.params as { id: string };
+		const buildingId = request.user.buildingId;
+
 		return reply
 			.status(httpStatus.OK)
-			.send(await this.packageService.getPackageById(id));
+			.send(await this.packageService.getPackageById(id, buildingId));
 	}
 
 	public async confirmDelivery(
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
+		if (!request.user) {
+			throw httpException(
+				"Usuário não autenticado",
+				httpStatus.UNAUTHORIZED,
+			);
+		}
+
+		// Verifica se o usuário é um concierge
+		if (request.user.userType !== UserTypeEnum.CONCIERGE) {
+			throw httpException(
+				"Apenas porteiros podem confirmar entregas",
+				httpStatus.FORBIDDEN,
+			);
+		}
+
+		// Obtém o ID do concierge e buildingId do token
+		const conciergeId = request.user.userId;
+		const buildingId = request.user.buildingId;
 		const { id } = request.params as { id: string };
+
 		return reply
 			.status(httpStatus.OK)
 			.send(
 				await this.packageService.confirmDelivery(
 					id,
 					transformConfirmDeliveryPackageDto(request.body),
+					conciergeId,
+					buildingId,
 				),
 			);
 	}
@@ -75,22 +172,61 @@ export class PackageController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
+		if (!request.user) {
+			throw httpException(
+				"Usuário não autenticado",
+				httpStatus.UNAUTHORIZED,
+			);
+		}
+
+		// Verifica se o usuário é um concierge
+		if (request.user.userType !== UserTypeEnum.CONCIERGE) {
+			throw httpException(
+				"Apenas porteiros podem visualizar estatísticas",
+				httpStatus.FORBIDDEN,
+			);
+		}
+
+		// Obtém o buildingId do token
+		const buildingId = request.user.buildingId;
+
 		return reply
 			.status(httpStatus.OK)
-			.send(await this.packageService.getPackageStats());
+			.send(await this.packageService.getPackageStats(buildingId));
 	}
 
 	public async cancelPackage(
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
+		if (!request.user) {
+			throw httpException(
+				"Usuário não autenticado",
+				httpStatus.UNAUTHORIZED,
+			);
+		}
+
+		// Verifica se o usuário é um concierge
+		if (request.user.userType !== UserTypeEnum.CONCIERGE) {
+			throw httpException(
+				"Apenas porteiros podem cancelar encomendas",
+				httpStatus.FORBIDDEN,
+			);
+		}
+
+		// Obtém o ID do concierge e buildingId do token
+		const conciergeId = request.user.userId;
+		const buildingId = request.user.buildingId;
 		const { id } = request.params as { id: string };
+
 		return reply
 			.status(httpStatus.OK)
 			.send(
 				await this.packageService.cancelPackage(
 					id,
 					transformCancelPackageDto(request.body),
+					conciergeId,
+					buildingId,
 				),
 			);
 	}
@@ -99,11 +235,29 @@ export class PackageController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
+		if (!request.user) {
+			throw httpException(
+				"Usuário não autenticado",
+				httpStatus.UNAUTHORIZED,
+			);
+		}
+
+		// Verifica se o usuário é um concierge
+		if (request.user.userType !== UserTypeEnum.CONCIERGE) {
+			throw httpException(
+				"Apenas porteiros podem visualizar encomendas canceladas",
+				httpStatus.FORBIDDEN,
+			);
+		}
+
+		// Obtém o buildingId do token
+		const buildingId = request.user.buildingId;
 		const { days } = request.query as { days?: string };
 		const daysNumber = days ? parseInt(days, 10) : 7;
+
 		return reply
 			.status(httpStatus.OK)
-			.send(await this.packageService.getCancelledPackages(daysNumber));
+			.send(await this.packageService.getCancelledPackages(daysNumber, buildingId));
 	}
 }
 

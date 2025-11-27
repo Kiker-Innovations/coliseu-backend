@@ -5,7 +5,6 @@ export class PackageSchema {
 			required: [
 				"apartmentId",
 				"receiverDate",
-				"receiverConciergeId",
 			],
 			properties: {
 				ownerName: {
@@ -34,12 +33,6 @@ export class PackageSchema {
 					format: "date-time",
 					description: "Data e hora de chegada",
 					example: "2025-01-15T10:30:00Z",
-				},
-				receiverConciergeId: {
-					type: "string",
-					format: "uuid",
-					description: "ID do porteiro que registrou",
-					example: "4bb39bb7-1baf-4593-be81-76a38ba3b807",
 				},
 			},
 		},
@@ -214,18 +207,11 @@ export class PackageSchema {
 		},
 		body: {
 			type: "object",
-			required: ["deliveryConciergeId"],
 			properties: {
 				recipientName: {
 					type: "string",
 					description: "Nome de quem recebeu a encomenda",
 					example: "Maria Silva",
-				},
-				deliveryConciergeId: {
-					type: "string",
-					format: "uuid",
-					description: "ID do porteiro que registrou a entrega",
-					example: "4bb39bb7-1baf-4593-be81-76a38ba3b807",
 				},
 			},
 		},
@@ -320,18 +306,12 @@ export class PackageSchema {
 		},
 		body: {
 			type: "object",
-			required: ["cancelReason", "cancelledConciergeId"],
+			required: ["cancelReason"],
 			properties: {
 				cancelReason: {
 					type: "string",
 					description: "Justificativa do cancelamento",
 					example: "Encomenda retornada ao remetente",
-				},
-				cancelledConciergeId: {
-					type: "string",
-					format: "uuid",
-					description: "ID do porteiro que está cancelando",
-					example: "4bb39bb7-1baf-4593-be81-76a38ba3b807",
 				},
 			},
 		},

@@ -21,14 +21,6 @@ export class ConciergeController {
         request: FastifyRequest,
         reply: FastifyReply,
     ): Promise<void> {
-        if (!request.user) {
-            throw httpException(
-                "Usuário não autenticado",
-                httpStatus.UNAUTHORIZED,
-            );
-        }
-
-        // Verifica se o usuário é um admin
         if (request.user.userType !== UserTypeEnum.ADMIN) {
             throw httpException(
                 "Apenas administradores podem criar porteiros",

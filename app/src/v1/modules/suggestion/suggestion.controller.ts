@@ -20,13 +20,6 @@ export class SuggestionController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
-		if (!request.user) {
-			throw httpException(
-				"Usuário não autenticado",
-				httpStatus.UNAUTHORIZED,
-			);
-		}
-
 		if (request.user.userType !== UserTypeEnum.RESIDENT) {
 			throw httpException(
 				"Apenas moradores podem criar sugestões",
@@ -56,13 +49,6 @@ export class SuggestionController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
-		if (!request.user) {
-			throw httpException(
-				"Usuário não autenticado",
-				httpStatus.UNAUTHORIZED,
-			);
-		}
-
 		if (request.user.userType !== UserTypeEnum.RESIDENT) {
 			throw httpException(
 				"Apenas moradores podem visualizar suas sugestões",
@@ -90,13 +76,6 @@ export class SuggestionController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
-		if (!request.user) {
-			throw httpException(
-				"Usuário não autenticado",
-				httpStatus.UNAUTHORIZED,
-			);
-		}
-
 		if (request.user.userType !== UserTypeEnum.RESIDENT) {
 			throw httpException(
 				"Apenas moradores podem visualizar suas sugestões",
@@ -126,13 +105,6 @@ export class SuggestionController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
-		if (!request.user) {
-			throw httpException(
-				"Usuário não autenticado",
-				httpStatus.UNAUTHORIZED,
-			);
-		}
-
 		if (request.user.userType !== UserTypeEnum.RESIDENT) {
 			throw httpException(
 				"Apenas moradores podem atualizar suas sugestões",
@@ -163,13 +135,6 @@ export class SuggestionController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
-		if (!request.user) {
-			throw httpException(
-				"Usuário não autenticado",
-				httpStatus.UNAUTHORIZED,
-			);
-		}
-
 		if (request.user.userType !== UserTypeEnum.RESIDENT) {
 			throw httpException(
 				"Apenas moradores podem deletar suas sugestões",
@@ -199,13 +164,6 @@ export class SuggestionController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
-		if (!request.user) {
-			throw httpException(
-				"Usuário não autenticado",
-				httpStatus.UNAUTHORIZED,
-			);
-		}
-
 		if (request.user.userType !== UserTypeEnum.ADMIN) {
 			throw httpException(
 				"Apenas administradores podem visualizar todas as sugestões",

@@ -33,6 +33,7 @@
 		"bcrypt": "^6.0.0",
 		"dayjs": "^1.11.19",
 		"fastify": "^4.28",
+		"fastify-plugin": "^5.1.0",
 		"handlebars": "^4.7.8",
 		"http-status": "^1.7.4",
 		"jsonwebtoken": "^9.0.2",

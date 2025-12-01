@@ -17,14 +17,6 @@ export class PollVoteController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
-		if (!request.user) {
-			throw httpException(
-				"Usuário não autenticado",
-				httpStatus.UNAUTHORIZED,
-			);
-		}
-
-		// Verifica se o usuário é um residente
 		if (request.user.userType !== UserTypeEnum.RESIDENT) {
 			throw httpException(
 				"Apenas moradores podem votar em enquetes",
@@ -49,14 +41,6 @@ export class PollVoteController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
-		if (!request.user) {
-			throw httpException(
-				"Usuário não autenticado",
-				httpStatus.UNAUTHORIZED,
-			);
-		}
-
-		// Verifica se o usuário é um residente
 		if (request.user.userType !== UserTypeEnum.RESIDENT) {
 			throw httpException(
 				"Apenas moradores podem deletar votos em enquetes",
@@ -79,14 +63,6 @@ export class PollVoteController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
-		if (!request.user) {
-			throw httpException(
-				"Usuário não autenticado",
-				httpStatus.UNAUTHORIZED,
-			);
-		}
-
-		// Verifica se o usuário é um residente
 		if (request.user.userType !== UserTypeEnum.RESIDENT) {
 			throw httpException(
 				"Apenas moradores podem visualizar seus votos",

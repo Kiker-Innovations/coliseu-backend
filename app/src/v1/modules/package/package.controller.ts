@@ -21,14 +21,6 @@ export class PackageController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
-		if (!request.user) {
-			throw httpException(
-				"Usuário não autenticado",
-				httpStatus.UNAUTHORIZED,
-			);
-		}
-
-		// Verifica se o usuário é um concierge
 		if (request.user.userType !== UserTypeEnum.CONCIERGE) {
 			throw httpException(
 				"Apenas porteiros podem criar encomendas",
@@ -55,14 +47,6 @@ export class PackageController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
-		if (!request.user) {
-			throw httpException(
-				"Usuário não autenticado",
-				httpStatus.UNAUTHORIZED,
-			);
-		}
-
-		// Verifica se o usuário é um concierge
 		if (request.user.userType !== UserTypeEnum.CONCIERGE) {
 			throw httpException(
 				"Apenas porteiros podem visualizar encomendas pendentes",
@@ -82,14 +66,6 @@ export class PackageController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
-		if (!request.user) {
-			throw httpException(
-				"Usuário não autenticado",
-				httpStatus.UNAUTHORIZED,
-			);
-		}
-
-		// Verifica se o usuário é um concierge
 		if (request.user.userType !== UserTypeEnum.CONCIERGE) {
 			throw httpException(
 				"Apenas porteiros podem visualizar encomendas entregues",
@@ -109,14 +85,6 @@ export class PackageController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
-		if (!request.user) {
-			throw httpException(
-				"Usuário não autenticado",
-				httpStatus.UNAUTHORIZED,
-			);
-		}
-
-		// Verifica se o usuário é um concierge
 		if (request.user.userType !== UserTypeEnum.CONCIERGE) {
 			throw httpException(
 				"Apenas porteiros podem visualizar encomendas",
@@ -136,14 +104,6 @@ export class PackageController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
-		if (!request.user) {
-			throw httpException(
-				"Usuário não autenticado",
-				httpStatus.UNAUTHORIZED,
-			);
-		}
-
-		// Verifica se o usuário é um concierge
 		if (request.user.userType !== UserTypeEnum.CONCIERGE) {
 			throw httpException(
 				"Apenas porteiros podem confirmar entregas",
@@ -172,14 +132,6 @@ export class PackageController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
-		if (!request.user) {
-			throw httpException(
-				"Usuário não autenticado",
-				httpStatus.UNAUTHORIZED,
-			);
-		}
-
-		// Verifica se o usuário é um concierge
 		if (request.user.userType !== UserTypeEnum.CONCIERGE) {
 			throw httpException(
 				"Apenas porteiros podem visualizar estatísticas",
@@ -199,14 +151,6 @@ export class PackageController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
-		if (!request.user) {
-			throw httpException(
-				"Usuário não autenticado",
-				httpStatus.UNAUTHORIZED,
-			);
-		}
-
-		// Verifica se o usuário é um concierge
 		if (request.user.userType !== UserTypeEnum.CONCIERGE) {
 			throw httpException(
 				"Apenas porteiros podem cancelar encomendas",
@@ -235,14 +179,6 @@ export class PackageController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
-		if (!request.user) {
-			throw httpException(
-				"Usuário não autenticado",
-				httpStatus.UNAUTHORIZED,
-			);
-		}
-
-		// Verifica se o usuário é um concierge
 		if (request.user.userType !== UserTypeEnum.CONCIERGE) {
 			throw httpException(
 				"Apenas porteiros podem visualizar encomendas canceladas",

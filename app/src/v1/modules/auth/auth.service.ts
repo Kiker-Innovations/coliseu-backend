@@ -111,7 +111,7 @@ export class AuthService {
 			apartmentNumber: apartment?.number,
 			blockName: apartment?.block,
 			buildingName: building.name,
-			actualSeasonId: seasons[0]._id ? seasons[0]._id : null,
+			actualSeasonId: seasons[0]?._id ?? null,
 		});
 
 		const refreshToken = await this.generateRefreshToken({
@@ -268,7 +268,7 @@ export class AuthService {
 			email: admin.email,
 			name: admin.name,
 			buildingName: building.name,
-			actualSeasonId: seasons[0]._id ? seasons[0]._id : null,
+			actualSeasonId: seasons[0]?._id ?? null,
 		});
 
 		const refreshToken = await this.generateRefreshToken({

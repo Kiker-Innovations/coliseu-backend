@@ -3,30 +3,32 @@ import { httpException } from "../../../config/error";
 import httpStatus from "http-status";
 import type { HttpResponse } from "../../../interface/httpResponse.interface";
 import type {
-	CreateSuggestionEntity,
-	SuggestionEntity,
-} from "../../../database/mongodb/entity/suggestion.entity";
-import { SuggestionRepository } from "../../../database/mongodb/repositories/suggestion.repository";
+	CreateResidentSuggestionEntity,
+	ResidentSuggestionEntity,
+} from "../../../database/mongodb/entity/residentSuggestion.entity";
+import { ResidentSuggestionRepository } from "../../../database/mongodb/repositories/residentSuggestion.repository";
 import { ApartmentRepository } from "../../../database/mongodb/repositories/apartment.repository";
 import type {
-	SuggestionCreateDto,
-	SuggestionUpdateDto,
+	ResidentSuggestionCreateDto,
+	ResidentSuggestionUpdateDto,
 } from "./dto";
 
-export class SuggestionService {
-	private suggestionRepository: SuggestionRepository;
+export class ResidentSuggestionService {
+	private residentSuggestionRepository: ResidentSuggestionRepository;
 	private apartmentRepository: ApartmentRepository;
 
 	constructor(mongoClient: MongoClient) {
-		this.suggestionRepository = new SuggestionRepository(mongoClient);
+		this.residentSuggestionRepository = new ResidentSuggestionRepository(mongoClient);
 		this.apartmentRepository = new ApartmentRepository(mongoClient);
 	}
 
 	public async createSuggestion(
-		suggestionCreateDto: SuggestionCreateDto,
+		residentSuggestionCreateDto: ResidentSuggestionCreateDto,
 		apartmentId: string,
 		buildingId: string,
-	): Promise<HttpResponse<SuggestionEntity>> {
+		actualSeasonId: string,
+		fromSeasonId: string,
+	): Promise<HttpResponse<ResidentSuggestionEntity>> {
 		const apartment = await this.apartmentRepository.findById(apartmentId);
 		if (!apartment) {
 			throw httpException("Apartamento não encontrado", httpStatus.NOT_FOUND);
@@ -40,7 +42,7 @@ export class SuggestionService {
 		}
 
 		const currentSuggestionsCount =
-			await this.suggestionRepository.countByApartmentId(apartmentId);
+			await this.residentSuggestionRepository.countByApartmentId(apartmentId);
 
 		if (currentSuggestionsCount >= 5) {
 			throw httpException(
@@ -49,47 +51,50 @@ export class SuggestionService {
 			);
 		}
 
-		const suggestionEntity: CreateSuggestionEntity = {
+		const residentSuggestionEntity: CreateResidentSuggestionEntity = {
 			apartmentId,
 			buildingId,
-			title: suggestionCreateDto.title,
-			description: suggestionCreateDto.description,
+			title: residentSuggestionCreateDto.title,
+			description: residentSuggestionCreateDto.description,
+			fromSeasonId,
+			actualSeasonId,
 		};
 
-		const createdSuggestion =
-			await this.suggestionRepository.create(suggestionEntity);
+		const createdResidentSuggestion =
+			await this.residentSuggestionRepository.create(residentSuggestionEntity);
 
 		return {
 			success: true,
 			message: "Sugestão cadastrada com sucesso!",
-			data: createdSuggestion,
+			data: createdResidentSuggestion,
 		};
 	}
 
 	public async getAllSuggestionsByApartment(
 		apartmentId: string,
-	): Promise<HttpResponse<SuggestionEntity[]>> {
-		const suggestions =
-			await this.suggestionRepository.findManyByApartmentId(apartmentId);
+		actualSeasonId: string,
+	): Promise<HttpResponse<ResidentSuggestionEntity[]>> {
+		const residentSuggestions =
+			await this.residentSuggestionRepository.findManyByApartmentId(apartmentId, actualSeasonId);
 
 		return {
 			success: true,
 			message: "Sugestões encontradas com sucesso",
-			data: suggestions,
+			data: residentSuggestions,
 		};
 	}
 
 	public async getSuggestionById(
-		suggestionId: string,
+		residentSuggestionId: string,
 		apartmentId: string,
-	): Promise<HttpResponse<SuggestionEntity>> {
-		const suggestion = await this.suggestionRepository.findById(suggestionId);
+	): Promise<HttpResponse<ResidentSuggestionEntity>> {
+		const residentSuggestion = await this.residentSuggestionRepository.findById(residentSuggestionId);
 
-		if (!suggestion) {
+		if (!residentSuggestion) {
 			throw httpException("Sugestão não encontrada", httpStatus.NOT_FOUND);
 		}
 
-		if (suggestion.apartmentId !== apartmentId) {
+		if (residentSuggestion.apartmentId !== apartmentId) {
 			throw httpException(
 				"Você não tem permissão para acessar esta sugestão",
 				httpStatus.FORBIDDEN,
@@ -99,34 +104,34 @@ export class SuggestionService {
 		return {
 			success: true,
 			message: "Sugestão encontrada com sucesso",
-			data: suggestion,
+			data: residentSuggestion,
 		};
 	}
 
 	public async updateSuggestion(
-		suggestionId: string,
-		suggestionUpdateDto: SuggestionUpdateDto,
+		residentSuggestionId: string,
+		residentSuggestionUpdateDto: ResidentSuggestionUpdateDto,
 		apartmentId: string,
-	): Promise<HttpResponse<SuggestionEntity>> {
-		const suggestion = await this.suggestionRepository.findById(suggestionId);
+	): Promise<HttpResponse<ResidentSuggestionEntity>> {
+		const residentSuggestion = await this.residentSuggestionRepository.findById(residentSuggestionId);
 
-		if (!suggestion) {
+		if (!residentSuggestion) {
 			throw httpException("Sugestão não encontrada", httpStatus.NOT_FOUND);
 		}
 
-		if (suggestion.apartmentId !== apartmentId) {
+		if (residentSuggestion.apartmentId !== apartmentId) {
 			throw httpException(
 				"Você não tem permissão para atualizar esta sugestão",
 				httpStatus.FORBIDDEN,
 			);
 		}
 
-		const updatedSuggestion = await this.suggestionRepository.update(
-			suggestionId,
-			suggestionUpdateDto,
+		const updatedResidentSuggestion = await this.residentSuggestionRepository.update(
+			residentSuggestionId,
+			residentSuggestionUpdateDto,
 		);
 
-		if (!updatedSuggestion) {
+		if (!updatedResidentSuggestion) {
 			throw httpException(
 				"Erro ao atualizar sugestão",
 				httpStatus.INTERNAL_SERVER_ERROR,
@@ -136,28 +141,28 @@ export class SuggestionService {
 		return {
 			success: true,
 			message: "Sugestão atualizada com sucesso",
-			data: updatedSuggestion,
+			data: updatedResidentSuggestion,
 		};
 	}
 
 	public async deleteSuggestion(
-		suggestionId: string,
+		residentSuggestionId: string,
 		apartmentId: string,
 	): Promise<HttpResponse<null>> {
-		const suggestion = await this.suggestionRepository.findById(suggestionId);
+		const residentSuggestion = await this.residentSuggestionRepository.findById(residentSuggestionId);
 
-		if (!suggestion) {
+		if (!residentSuggestion) {
 			throw httpException("Sugestão não encontrada", httpStatus.NOT_FOUND);
 		}
 
-		if (suggestion.apartmentId !== apartmentId) {
+		if (residentSuggestion.apartmentId !== apartmentId) {
 			throw httpException(
 				"Você não tem permissão para deletar esta sugestão",
 				httpStatus.FORBIDDEN,
 			);
 		}
 
-		const deleted = await this.suggestionRepository.delete(suggestionId);
+		const deleted = await this.residentSuggestionRepository.delete(residentSuggestionId);
 
 		if (!deleted) {
 			throw httpException(
@@ -173,14 +178,13 @@ export class SuggestionService {
 		};
 	}
 
-	public async getAllSuggestions(): Promise<HttpResponse<SuggestionEntity[]>> {
-		const suggestions = await this.suggestionRepository.findMany();
+	public async getAllSuggestions(): Promise<HttpResponse<ResidentSuggestionEntity[]>> {
+		const residentSuggestions = await this.residentSuggestionRepository.findMany();
 
 		return {
 			success: true,
 			message: "Todas as sugestões encontradas com sucesso",
-			data: suggestions,
+			data: residentSuggestions,
 		};
 	}
 }
-

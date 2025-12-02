@@ -2,63 +2,64 @@ import { randomUUID } from "node:crypto";
 import type { Collection, MongoClient } from "mongodb";
 import { env } from "../../../config/env";
 import type {
-	CreateSuggestionEntity,
-	SuggestionEntity,
-	UpdateSuggestionEntity,
-} from "../entity/suggestion.entity";
+	CreateResidentSuggestionEntity,
+	ResidentSuggestionEntity,
+	UpdateResidentSuggestionEntity,
+} from "../entity/residentSuggestion.entity";
 import type { IRepository } from "../interfaces/IRepository";
 import { getDate } from "@/v1/utils/utils";
 
-export class SuggestionRepository
+export class ResidentSuggestionRepository
 	implements
 		IRepository<
-			SuggestionEntity,
-			CreateSuggestionEntity,
-			UpdateSuggestionEntity
+			ResidentSuggestionEntity,
+			CreateResidentSuggestionEntity,
+			UpdateResidentSuggestionEntity
 		>
 {
-	private collection: Collection<SuggestionEntity>;
+	private collection: Collection<ResidentSuggestionEntity>;
 
 	constructor(mongoClient: MongoClient) {
 		const database = mongoClient.db(env.databases.mongodb.database);
-		this.collection = database.collection<SuggestionEntity>(
+		this.collection = database.collection<ResidentSuggestionEntity>(
 			env.databases.mongodb.collections.suggestions,
 		);
 	}
 
-	public async create(data: CreateSuggestionEntity): Promise<SuggestionEntity> {
+	public async create(data: CreateResidentSuggestionEntity): Promise<ResidentSuggestionEntity> {
 		const now = getDate();
-		const suggestionEntity: SuggestionEntity = {
+		const residentSuggestionEntity: ResidentSuggestionEntity = {
 			_id: randomUUID(),
 			...data,
 			createdAt: now,
 			updatedAt: now,
 		};
 
-		await this.collection.insertOne(suggestionEntity);
-		return suggestionEntity;
+		await this.collection.insertOne(residentSuggestionEntity);
+		return residentSuggestionEntity;
 	}
 
-	public async findById(_id: string): Promise<SuggestionEntity | null> {
+	public async findById(_id: string): Promise<ResidentSuggestionEntity | null> {
 		return await this.collection.findOne({ _id });
 	}
 
 	public async findOne(
-		filter: Partial<SuggestionEntity>,
-	): Promise<SuggestionEntity | null> {
+		filter: Partial<ResidentSuggestionEntity>,
+	): Promise<ResidentSuggestionEntity | null> {
 		return await this.collection.findOne(filter);
 	}
 
 	public async findMany(
-		filter?: Partial<SuggestionEntity>,
-	): Promise<SuggestionEntity[]> {
+		filter?: Partial<ResidentSuggestionEntity>,
+	): Promise<ResidentSuggestionEntity[]> {
 		return await this.collection.find(filter || {}).toArray();
 	}
 
 	public async findManyByApartmentId(
 		apartmentId: string,
-	): Promise<SuggestionEntity[]> {
-		return await this.collection.find({ apartmentId }).toArray();
+		actualSeasonId: string,
+	): Promise<ResidentSuggestionEntity[]> {
+		return await this.collection.find({ apartmentId, actualSeasonId }).toArray();
 	}
 
 	public async countByApartmentId(apartmentId: string): Promise<number> {
@@ -67,8 +68,8 @@ export class SuggestionRepository
 
 	public async update(
 		_id: string,
-		data: UpdateSuggestionEntity,
-	): Promise<SuggestionEntity | null> {
+		data: UpdateResidentSuggestionEntity,
+	): Promise<ResidentSuggestionEntity | null> {
 		const updateData = {
 			...data,
 			updatedAt: getDate(),
@@ -88,4 +89,3 @@ export class SuggestionRepository
 		return result.deletedCount > 0;
 	}
 }
-

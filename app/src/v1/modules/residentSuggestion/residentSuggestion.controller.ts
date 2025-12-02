@@ -3,17 +3,17 @@ import httpStatus from "http-status";
 import type { MongoClient } from "mongodb";
 import { httpException } from "../../../config/error";
 import {
-	transformCreateSuggestionDto,
-	transformUpdateSuggestionDto,
+	transformCreateResidentSuggestionDto,
+	transformUpdateResidentSuggestionDto,
 } from "./dto";
-import { SuggestionService } from "./suggestion.service";
+import { ResidentSuggestionService } from "./residentSuggestion.service";
 import { UserTypeEnum } from "../../enum/userType.enum";
 
-export class SuggestionController {
-	private suggestionService: SuggestionService;
+export class ResidentSuggestionController {
+	private residentSuggestionService: ResidentSuggestionService;
 
 	constructor(mongoClient: MongoClient) {
-		this.suggestionService = new SuggestionService(mongoClient);
+		this.residentSuggestionService = new ResidentSuggestionService(mongoClient);
 	}
 
 	public async createSuggestion(
@@ -34,13 +34,22 @@ export class SuggestionController {
 			);
 		}
 
+		if (!request.user.actualSeasonId) {
+			throw httpException(
+				"Temporada atual não encontrada no token",
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
 		return reply
 			.code(httpStatus.CREATED)
 			.send(
-				await this.suggestionService.createSuggestion(
-					transformCreateSuggestionDto(request.body),
+				await this.residentSuggestionService.createSuggestion(
+					transformCreateResidentSuggestionDto(request.body),
 					request.user.apartmentId,
 					request.user.buildingId,
+					request.user.actualSeasonId,
+					request.user.actualSeasonId,
 				),
 			);
 	}
@@ -66,8 +75,9 @@ export class SuggestionController {
 		return reply
 			.status(httpStatus.OK)
 			.send(
-				await this.suggestionService.getAllSuggestionsByApartment(
+				await this.residentSuggestionService.getAllSuggestionsByApartment(
 					request.user.apartmentId,
+					request.user.actualSeasonId,
 				),
 			);
 	}
@@ -94,7 +104,7 @@ export class SuggestionController {
 		return reply
 			.status(httpStatus.OK)
 			.send(
-				await this.suggestionService.getSuggestionById(
+				await this.residentSuggestionService.getSuggestionById(
 					id,
 					request.user.apartmentId,
 				),
@@ -123,9 +133,9 @@ export class SuggestionController {
 		return reply
 			.status(httpStatus.OK)
 			.send(
-				await this.suggestionService.updateSuggestion(
+				await this.residentSuggestionService.updateSuggestion(
 					id,
-					transformUpdateSuggestionDto(request.body),
+					transformUpdateResidentSuggestionDto(request.body),
 					request.user.apartmentId,
 				),
 			);
@@ -153,7 +163,7 @@ export class SuggestionController {
 		return reply
 			.status(httpStatus.OK)
 			.send(
-				await this.suggestionService.deleteSuggestion(
+				await this.residentSuggestionService.deleteSuggestion(
 					id,
 					request.user.apartmentId,
 				),
@@ -173,7 +183,7 @@ export class SuggestionController {
 
 		return reply
 			.status(httpStatus.OK)
-			.send(await this.suggestionService.getAllSuggestions());
+			.send(await this.residentSuggestionService.getAllSuggestions());
 	}
 }
 

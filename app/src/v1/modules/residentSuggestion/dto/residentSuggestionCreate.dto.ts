@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const suggestionCreateSchema = z.object({
+export const residentSuggestionCreateSchema = z.object({
 	title: z
 		.string({ required_error: "Título é obrigatório" })
 		.min(3, "Título deve ter no mínimo 3 caracteres")
@@ -13,11 +13,11 @@ export const suggestionCreateSchema = z.object({
 		.trim(),
 });
 
-export type SuggestionCreateDto = z.infer<typeof suggestionCreateSchema>;
+export type ResidentSuggestionCreateDto = z.infer<typeof residentSuggestionCreateSchema>;
 
-export const transformCreateSuggestionDto = (
-	data: SuggestionCreateDto,
-): SuggestionCreateDto => {
-	return suggestionCreateSchema.parse(data);
+export const transformCreateResidentSuggestionDto = (
+	data: ResidentSuggestionCreateDto,
+): ResidentSuggestionCreateDto => {
+	return residentSuggestionCreateSchema.parse(data);
 };
 

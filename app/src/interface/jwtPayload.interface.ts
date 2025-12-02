@@ -4,6 +4,7 @@ export interface JwtPayload {
 	userId: string;
 	userType: UserTypeEnumType;
 	buildingId: string;
+	actualSeasonId: string;
 	email: string;
 	name?: string;
 	apartmentId?: string;

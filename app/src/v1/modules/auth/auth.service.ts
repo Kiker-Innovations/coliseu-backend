@@ -20,6 +20,7 @@ import type {
 } from "./dto";
 import { ConciergeStatusEnum } from "@/v1/enum/conciergeStatus.enum";
 import { AdminStatusEnum } from "@/v1/enum/adminStatus.enum";
+import { SeasonRepository } from "@/database/mongodb/repositories/season.repository";
 
 export class AuthService {
 	private residentRepository: ResidentRepository;
@@ -27,6 +28,7 @@ export class AuthService {
 	private adminRepository: AdminRepository;
 	private buildingRepository: BuildingRepository;
 	private apartmentRepository: ApartmentRepository;
+	private seasonRepository: SeasonRepository;
 
 	constructor(mongoClient: MongoClient) {
 		this.residentRepository = new ResidentRepository(mongoClient);
@@ -34,6 +36,7 @@ export class AuthService {
 		this.adminRepository = new AdminRepository(mongoClient);
 		this.buildingRepository = new BuildingRepository(mongoClient);
 		this.apartmentRepository = new ApartmentRepository(mongoClient);
+		this.seasonRepository = new SeasonRepository(mongoClient);
 	}
 
 	public async loginResident(
@@ -94,9 +97,10 @@ export class AuthService {
 			);
 		}
 
-		// Get apartment information
 		const apartment = await this.apartmentRepository.findById(resident.apartmentId);
 		
+		const seasons = await this.seasonRepository.findManyByBuildingId(resident.buildingId);
+
 		const token = await this.generateToken({
 			userId: resident._id,
 			userType: UserTypeEnum.RESIDENT,
@@ -107,6 +111,7 @@ export class AuthService {
 			apartmentNumber: apartment?.number,
 			blockName: apartment?.block,
 			buildingName: building.name,
+			actualSeasonId: seasons[0]._id ? seasons[0]._id : null,
 		});
 
 		const refreshToken = await this.generateRefreshToken({
@@ -185,6 +190,7 @@ export class AuthService {
 			name: concierge.name,
 			shift: concierge.shift,
 			buildingName: building.name,
+			actualSeasonId: null,
 		});
 
 		const refreshToken = await this.generateRefreshToken({
@@ -253,6 +259,8 @@ export class AuthService {
 			);
 		}
 
+		const seasons = await this.seasonRepository.findManyByBuildingId(admin.buildingId);
+
 		const token = await this.generateToken({
 			userId: admin._id,
 			userType: UserTypeEnum.ADMIN,
@@ -260,6 +268,7 @@ export class AuthService {
 			email: admin.email,
 			name: admin.name,
 			buildingName: building.name,
+			actualSeasonId: seasons[0]._id ? seasons[0]._id : null,
 		});
 
 		const refreshToken = await this.generateRefreshToken({

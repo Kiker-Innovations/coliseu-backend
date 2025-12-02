@@ -19,7 +19,7 @@ export class SeasonService {
 	public async createSeason(
 		seasonCreateDto: SeasonCreateDto,
 		buildingId: string,
-	): Promise<HttpResponse<SeasonEntity>> {
+	): Promise<HttpResponse<SeasonEntity>> {		
 		const openSeasonsCount =
 			await this.seasonRepository.countOpenSeasonsByBuildingId(buildingId);
 

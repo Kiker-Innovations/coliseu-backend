@@ -8,7 +8,7 @@ import { BuildingRouteV1 } from "./v1/modules/building/building.route";
 import { PackageRouteV1 } from "./v1/modules/package/package.route";
 import { ApartmentRouteV1 } from "./v1/modules/apartment/apartment.route";
 import { PollRouteV1 } from "./v1/modules/poll/poll.route";
-import { SuggestionRouteV1 } from "./v1/modules/suggestion/suggestion.route";
+import { ResidentSuggestionRouteV1 } from "./v1/modules/residentSuggestion/residentSuggestion.route";
 import { SeasonRouteV1 } from "./v1/modules/season/season.route";
 
 export class Route {
@@ -24,7 +24,7 @@ export class Route {
 			...new PackageRouteV1(mongoClient).routes(),
 			...new ApartmentRouteV1(mongoClient).routes(),
 			...new PollRouteV1(mongoClient).routes(),
-			...new SuggestionRouteV1(mongoClient).routes(),
+			...new ResidentSuggestionRouteV1(mongoClient).routes(),
 			...new SeasonRouteV1(mongoClient).routes(),
 		]) {
 			server.route(route);

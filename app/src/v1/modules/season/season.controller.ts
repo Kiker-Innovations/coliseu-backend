@@ -38,13 +38,6 @@ export class SeasonController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
-		if (request.user.userType !== UserTypeEnum.ADMIN) {
-			throw httpException(
-				"Apenas administradores podem visualizar as seasons",
-				httpStatus.FORBIDDEN,
-			);
-		}
-
 		return reply
 			.status(httpStatus.OK)
 			.send(

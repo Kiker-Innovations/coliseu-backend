@@ -5,6 +5,10 @@ export interface ProjectEntity {
     chosenOfferId?: string;
 	title: string;
 	description: string;
+	offerStartDate?: Date;
+	offerEndDate?: Date;
+	votes?: number;
+	rank?: number;
 	createdAt: Date;
 	updatedAt: Date;
 }

@@ -28,17 +28,17 @@ export class ResidentSuggestionRouteV1 {
 		};
 	};
 
-	private getAllByApartment = (): RouteOptions => {
+	private getAll = (): RouteOptions => {
 		return {
 			method: "GET",
 			url: "/v1/resident-suggestions/apartment",
 			schema: {
 				tags: ["Resident Suggestions"],
-				summary: "Get all resident suggestions by apartment",
+				summary: "Get all resident suggestions by apartment and season",
 				description: "Lista todas as sugestões do apartamento do morador",
-				...this.residentSuggestionSchema.getAllByApartment,
+				...this.residentSuggestionSchema.getAll,
 			},
-			handler: this.residentSuggestionController.getAllSuggestionsByApartment.bind(
+			handler: this.residentSuggestionController.getAllSuggestionsByApartmentAndSeason.bind(
 				this.residentSuggestionController,
 			) as RouteHandlerMethod,
 		};
@@ -92,27 +92,9 @@ export class ResidentSuggestionRouteV1 {
 		};
 	};
 
-	private getAll = (): RouteOptions => {
-		return {
-			method: "GET",
-			url: "/v1/resident-suggestions",
-			schema: {
-				tags: ["Resident Suggestions"],
-				summary: "Get all resident suggestions (Admin only)",
-				description:
-					"Lista todas as sugestões de todos os apartamentos (apenas administradores)",
-				...this.residentSuggestionSchema.getAll,
-			},
-			handler: this.residentSuggestionController.getAllSuggestions.bind(
-				this.residentSuggestionController,
-			) as RouteHandlerMethod,
-		};
-	};
-
 	public routes = (): RouteOptions[] => {
 		return [
 			this.create(),
-			this.getAllByApartment(),
 			this.getAll(),
 			this.getById(),
 			this.update(),

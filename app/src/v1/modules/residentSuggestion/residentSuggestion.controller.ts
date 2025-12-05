@@ -54,7 +54,7 @@ export class ResidentSuggestionController {
 			);
 	}
 
-	public async getAllSuggestionsByApartment(
+	public async getAllSuggestionsByApartmentAndSeason(
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
@@ -72,10 +72,17 @@ export class ResidentSuggestionController {
 			);
 		}
 
+		if (!request.user.actualSeasonId) {
+			throw httpException(
+				"Não há temporadas ativas para colocar sugestões.",
+				httpStatus.BAD_REQUEST
+			)
+		}
+
 		return reply
 			.status(httpStatus.OK)
 			.send(
-				await this.residentSuggestionService.getAllSuggestionsByApartment(
+				await this.residentSuggestionService.getAllSuggestionsByApartmentAndSeason(
 					request.user.apartmentId,
 					request.user.actualSeasonId,
 				),

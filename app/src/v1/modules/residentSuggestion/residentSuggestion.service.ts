@@ -70,12 +70,12 @@ export class ResidentSuggestionService {
 		};
 	}
 
-	public async getAllSuggestionsByApartment(
+	public async getAllSuggestionsByApartmentAndSeason(
 		apartmentId: string,
 		actualSeasonId: string,
 	): Promise<HttpResponse<ResidentSuggestionEntity[]>> {
 		const residentSuggestions =
-			await this.residentSuggestionRepository.findManyByApartmentId(apartmentId, actualSeasonId);
+			await this.residentSuggestionRepository.findManyByApartmentIdAndSeason(apartmentId, actualSeasonId);
 
 		return {
 			success: true,

@@ -119,6 +119,7 @@ export class AuthService {
 			userType: UserTypeEnum.RESIDENT,
 			buildingId: resident.buildingId,
 			tokenType: "refresh",
+			actualSeasonId: seasons[0]?._id ?? null,
 		});
 
 		return {
@@ -198,6 +199,7 @@ export class AuthService {
 			userType: UserTypeEnum.CONCIERGE,
 			buildingId: concierge.buildingId,
 			tokenType: "refresh",
+			actualSeasonId: null,
 		});
 
 		return {
@@ -276,6 +278,7 @@ export class AuthService {
 			userType: UserTypeEnum.ADMIN,
 			buildingId: admin.buildingId,
 			tokenType: "refresh",
+			actualSeasonId: seasons[0]?._id ?? null,
 		});
 
 		return {
@@ -298,6 +301,7 @@ export class AuthService {
 			apartmentNumber: string;
 			blockName: string;
 			buildingName: string;
+			actualSeasonId: string | null;
 		}>
 	> {
 		const decoded = await this.verifyToken(token);
@@ -324,6 +328,8 @@ export class AuthService {
 
 		const apartment = await this.apartmentRepository.findById(resident.apartmentId);
 
+		const seasons = await this.seasonRepository.findManyByBuildingId(resident.buildingId);
+
 		return {
 			success: true,
 			message: "Token válido",
@@ -334,6 +340,7 @@ export class AuthService {
 				apartmentNumber: apartment?.number,
 				blockName: apartment?.block,
 				buildingName: building.name,
+				actualSeasonId: seasons[0]?._id ?? null,
 			},
 		};
 	}
@@ -346,6 +353,7 @@ export class AuthService {
 			name: string;
 			shift: string;
 			buildingName: string;
+			actualSeasonId: string | null;
 		}>
 	> {
 		const decoded = await this.verifyToken(token);
@@ -370,6 +378,8 @@ export class AuthService {
 			throw httpException("Edifício não encontrado", httpStatus.NOT_FOUND);
 		}
 
+		const seasons = await this.seasonRepository.findManyByBuildingId(concierge.buildingId);
+
 		return {
 			success: true,
 			message: "Token válido",
@@ -378,6 +388,7 @@ export class AuthService {
 				name: concierge.name,
 				shift: concierge.shift,
 				buildingName: building.name,
+				actualSeasonId: seasons[0]?._id ?? null,
 			},
 		};
 	}
@@ -389,6 +400,7 @@ export class AuthService {
 			email: string;
 			name: string;
 			buildingName: string;
+			actualSeasonId: string | null;
 		}>
 	> {
 		const decoded = await this.verifyToken(token);
@@ -413,6 +425,8 @@ export class AuthService {
 			throw httpException("Edifício não encontrado", httpStatus.NOT_FOUND);
 		}
 
+		const seasons = await this.seasonRepository.findManyByBuildingId(admin.buildingId);
+
 		return {
 			success: true,
 			message: "Token válido",
@@ -420,6 +434,7 @@ export class AuthService {
 				email: admin.email,
 				name: admin.name,
 				buildingName: building.name,
+				actualSeasonId: seasons[0]?._id ?? null,
 			},
 		};
 	}
@@ -458,6 +473,7 @@ export class AuthService {
 						tokenPayload.apartmentNumber = apartment?.number;
 						tokenPayload.blockName = apartment?.block;
 						tokenPayload.buildingName = building.name;
+						tokenPayload.actualSeasonId = decoded.actualSeasonId ?? null;
 						isValid = true;
 					}
 				}
@@ -502,6 +518,7 @@ export class AuthService {
 				userType: decoded.userType,
 				buildingId: decoded.buildingId,
 				tokenType: "refresh",
+				actualSeasonId: decoded.actualSeasonId ?? null,
 			});
 
 			return {

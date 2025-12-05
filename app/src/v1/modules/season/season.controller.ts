@@ -7,140 +7,164 @@ import { SeasonService } from "./season.service";
 import { UserTypeEnum } from "../../enum/userType.enum";
 
 export class SeasonController {
-	private seasonService: SeasonService;
+  private seasonService: SeasonService;
 
-	constructor(mongoClient: MongoClient) {
-		this.seasonService = new SeasonService(mongoClient);
-	}
+  constructor(mongoClient: MongoClient) {
+    this.seasonService = new SeasonService(mongoClient);
+  }
 
-	public async createSeason(
-		request: FastifyRequest,
-		reply: FastifyReply,
-	): Promise<void> {
-		if (request.user.userType !== UserTypeEnum.ADMIN) {
-			throw httpException(
-				"Apenas administradores podem criar seasons",
-				httpStatus.FORBIDDEN,
-			);
-		}
+  public async createSeason(
+    request: FastifyRequest,
+    reply: FastifyReply
+  ): Promise<void> {
+    if (request.user.userType !== UserTypeEnum.ADMIN) {
+      throw httpException(
+        "Apenas administradores podem criar seasons",
+        httpStatus.FORBIDDEN
+      );
+    }
 
-		return reply
-			.code(httpStatus.CREATED)
-			.send(
-				await this.seasonService.createSeason(
-					transformCreateSeasonDto(request.body),
-					request.user.buildingId,
-				),
-			);
-	}
+    return reply
+      .code(httpStatus.CREATED)
+      .send(
+        await this.seasonService.createSeason(
+          transformCreateSeasonDto(request.body),
+          request.user.buildingId
+        )
+      );
+  }
 
-	public async getAllSeasonsByBuilding(
-		request: FastifyRequest,
-		reply: FastifyReply,
-	): Promise<void> {
-		if (request.user.userType !== UserTypeEnum.ADMIN) {
-			throw httpException(
-				"Apenas administradores podem visualizar as seasons",
-				httpStatus.FORBIDDEN,
-			);
-		}
+  public async getAllSeasonsByBuilding(
+    request: FastifyRequest,
+    reply: FastifyReply
+  ): Promise<void> {
+    return reply
+      .status(httpStatus.OK)
+      .send(
+        await this.seasonService.getAllSeasonsByBuilding(
+          request.user.buildingId
+        )
+      );
+  }
 
-		return reply
-			.status(httpStatus.OK)
-			.send(
-				await this.seasonService.getAllSeasonsByBuilding(
-					request.user.buildingId,
-				),
-			);
-	}
+  public async getSeasonById(
+    request: FastifyRequest,
+    reply: FastifyReply
+  ): Promise<void> {
+    if (request.user.userType !== UserTypeEnum.ADMIN) {
+      throw httpException(
+        "Apenas administradores podem visualizar seasons",
+        httpStatus.FORBIDDEN
+      );
+    }
 
-	public async getSeasonById(
-		request: FastifyRequest,
-		reply: FastifyReply,
-	): Promise<void> {
-		if (request.user.userType !== UserTypeEnum.ADMIN) {
-			throw httpException(
-				"Apenas administradores podem visualizar seasons",
-				httpStatus.FORBIDDEN,
-			);
-		}
+    const { id } = request.params as { id: string };
+    return reply
+      .status(httpStatus.OK)
+      .send(
+        await this.seasonService.getSeasonById(id, request.user.buildingId)
+      );
+  }
 
-		const { id } = request.params as { id: string };
-		return reply
-			.status(httpStatus.OK)
-			.send(
-				await this.seasonService.getSeasonById(
-					id,
-					request.user.buildingId,
-				),
-			);
-	}
+  public async updateSeason(
+    request: FastifyRequest,
+    reply: FastifyReply
+  ): Promise<void> {
+    if (request.user.userType !== UserTypeEnum.ADMIN) {
+      throw httpException(
+        "Apenas administradores podem atualizar seasons",
+        httpStatus.FORBIDDEN
+      );
+    }
 
-	public async updateSeason(
-		request: FastifyRequest,
-		reply: FastifyReply,
-	): Promise<void> {
-		if (request.user.userType !== UserTypeEnum.ADMIN) {
-			throw httpException(
-				"Apenas administradores podem atualizar seasons",
-				httpStatus.FORBIDDEN,
-			);
-		}
+    const { id } = request.params as { id: string };
+    return reply
+      .status(httpStatus.OK)
+      .send(
+        await this.seasonService.updateSeason(
+          id,
+          transformUpdateSeasonDto(request.body),
+          request.user.buildingId
+        )
+      );
+  }
 
-		const { id } = request.params as { id: string };
-		return reply
-			.status(httpStatus.OK)
-			.send(
-				await this.seasonService.updateSeason(
-					id,
-					transformUpdateSeasonDto(request.body),
-					request.user.buildingId,
-				),
-			);
-	}
+  public async finishSeason(
+    request: FastifyRequest,
+    reply: FastifyReply
+  ): Promise<void> {
+    if (request.user.userType !== UserTypeEnum.ADMIN) {
+      throw httpException(
+        "Apenas administradores podem finalizar seasons",
+        httpStatus.FORBIDDEN
+      );
+    }
 
-	public async finishSeason(
-		request: FastifyRequest,
-		reply: FastifyReply,
-	): Promise<void> {
-		if (request.user.userType !== UserTypeEnum.ADMIN) {
-			throw httpException(
-				"Apenas administradores podem finalizar seasons",
-				httpStatus.FORBIDDEN,
-			);
-		}
+    const { id } = request.params as { id: string };
+    return reply
+      .status(httpStatus.OK)
+      .send(await this.seasonService.finishSeason(id, request.user.buildingId));
+  }
 
-		const { id } = request.params as { id: string };
-		return reply
-			.status(httpStatus.OK)
-			.send(
-				await this.seasonService.finishSeason(
-					id,
-					request.user.buildingId,
-				),
-			);
-	}
+  public async deleteSeason(
+    request: FastifyRequest,
+    reply: FastifyReply
+  ): Promise<void> {
+    if (request.user.userType !== UserTypeEnum.ADMIN) {
+      throw httpException(
+        "Apenas administradores podem deletar seasons",
+        httpStatus.FORBIDDEN
+      );
+    }
 
-	public async deleteSeason(
-		request: FastifyRequest,
-		reply: FastifyReply,
-	): Promise<void> {
-		if (request.user.userType !== UserTypeEnum.ADMIN) {
-			throw httpException(
-				"Apenas administradores podem deletar seasons",
-				httpStatus.FORBIDDEN,
-			);
-		}
+    const { id } = request.params as { id: string };
+    return reply
+      .status(httpStatus.OK)
+      .send(await this.seasonService.deleteSeason(id, request.user.buildingId));
+  }
 
-		const { id } = request.params as { id: string };
-		return reply
-			.status(httpStatus.OK)
-			.send(
-				await this.seasonService.deleteSeason(
-					id,
-					request.user.buildingId,
-				),
-			);
-	}
+  public async rankSuggestions(
+    request: FastifyRequest,
+    reply: FastifyReply
+  ): Promise<void> {
+    if (request.user.userType !== UserTypeEnum.ADMIN) {
+      throw httpException(
+        "Apenas administradores podem processar sugestões",
+        httpStatus.FORBIDDEN
+      );
+    }
+
+    const { id } = request.params as { id: string };
+    return reply
+      .status(httpStatus.OK)
+      .send(
+        await this.seasonService.rankSuggestions(id, request.user.buildingId)
+      );
+  }
+
+  public async promoteToProjects(
+    request: FastifyRequest,
+    reply: FastifyReply
+  ): Promise<void> {
+    if (request.user.userType !== UserTypeEnum.ADMIN) {
+      throw httpException(
+        "Apenas administradores podem promover sugestões para projetos",
+        httpStatus.FORBIDDEN
+      );
+    }
+
+    const { id } = request.params as { id: string };
+    const { topCount } = request.query as { topCount?: string };
+    const top = topCount ? Number.parseInt(topCount, 10) : 3;
+
+    return reply
+      .status(httpStatus.OK)
+      .send(
+        await this.seasonService.promoteToProjects(
+          id,
+          request.user.buildingId,
+          top
+        )
+      );
+  }
 }
-

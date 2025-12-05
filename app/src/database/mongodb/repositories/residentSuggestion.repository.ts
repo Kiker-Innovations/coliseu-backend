@@ -55,11 +55,11 @@ export class ResidentSuggestionRepository
 		return await this.collection.find(filter || {}).toArray();
 	}
 
-	public async findManyByApartmentId(
+	public async findManyByApartmentIdAndSeason(
 		apartmentId: string,
 		actualSeasonId: string,
 	): Promise<ResidentSuggestionEntity[]> {
-		return await this.collection.find({ apartmentId, actualSeasonId }).toArray();
+		return await this.collection.find({ apartmentId, actualSeasonId}).toArray();
 	}
 
 	public async countByApartmentId(apartmentId: string): Promise<number> {

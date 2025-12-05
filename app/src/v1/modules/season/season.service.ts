@@ -9,17 +9,26 @@ import type {
 import { SeasonRepository } from "../../../database/mongodb/repositories/season.repository";
 import type { SeasonCreateDto, SeasonUpdateDto } from "./dto";
 
+import type {
+	CreateResidentSuggestionEntity,
+	ResidentSuggestionEntity,
+} from "../../../database/mongodb/entity/residentSuggestion.entity";
+import { ResidentSuggestionRepository } from "../../../database/mongodb/repositories/residentSuggestion.repository";
+import { getDate } from "@/v1/utils/utils"; // Needed to set createdAt, updatedAt
+
 export class SeasonService {
 	private seasonRepository: SeasonRepository;
+	private residentSuggestionRepository: ResidentSuggestionRepository;
 
 	constructor(mongoClient: MongoClient) {
 		this.seasonRepository = new SeasonRepository(mongoClient);
+		this.residentSuggestionRepository = new ResidentSuggestionRepository(mongoClient);
 	}
 
 	public async createSeason(
 		seasonCreateDto: SeasonCreateDto,
 		buildingId: string,
-	): Promise<HttpResponse<SeasonEntity>> {		
+	): Promise<HttpResponse<SeasonEntity>> {
 		const openSeasonsCount =
 			await this.seasonRepository.countOpenSeasonsByBuildingId(buildingId);
 
@@ -37,11 +46,50 @@ export class SeasonService {
 
 		const createdSeason = await this.seasonRepository.create(seasonEntity);
 
+		if (seasonCreateDto.reusedSuggestions) {
+			await this.duplicatePreviousSeasonSuggestions(buildingId, createdSeason);
+		}
+
 		return {
 			success: true,
 			message: "Season cadastrada com sucesso!",
 			data: createdSeason,
 		};
+	}
+
+	private async duplicatePreviousSeasonSuggestions(
+		buildingId: string,
+		createdSeason: SeasonEntity
+	): Promise<void> {
+		const previousSeasonNumber = createdSeason.seasonNumber - 1;
+		let previousSeason = null;
+		if (previousSeasonNumber > 0) {
+			previousSeason = await this.seasonRepository.findByBuildingIdAndSeasonNumber(
+				buildingId,
+				previousSeasonNumber
+			);
+		}
+		
+		if (previousSeason) {
+			const previousSuggestions: ResidentSuggestionEntity[] =
+				await this.residentSuggestionRepository.findMany({
+					actualSeasonId: previousSeason._id,
+					buildingId: buildingId,
+				});
+
+			const duplicatedSuggestions: CreateResidentSuggestionEntity[] = previousSuggestions.map(s => ({
+				apartmentId: s.apartmentId,
+				buildingId: s.buildingId,
+				fromSeasonId: previousSeason._id,
+				actualSeasonId: createdSeason._id,
+				title: s.title,
+				description: s.description,
+			}));
+
+			await Promise.all(
+				duplicatedSuggestions.map((data) => this.residentSuggestionRepository.create(data))
+			);
+		}
 	}
 
 	public async getAllSeasonsByBuilding(
@@ -164,38 +212,4 @@ export class SeasonService {
 			data: finishedSeason,
 		};
 	}
-
-	public async deleteSeason(
-		seasonId: string,
-		buildingId: string,
-	): Promise<HttpResponse<null>> {
-		const season = await this.seasonRepository.findById(seasonId);
-
-		if (!season) {
-			throw httpException("Season não encontrada", httpStatus.NOT_FOUND);
-		}
-
-		if (season.buildingId !== buildingId) {
-			throw httpException(
-				"Você não tem permissão para deletar esta season",
-				httpStatus.FORBIDDEN,
-			);
-		}
-
-		const deleted = await this.seasonRepository.delete(seasonId);
-
-		if (!deleted) {
-			throw httpException(
-				"Erro ao deletar season",
-				httpStatus.INTERNAL_SERVER_ERROR,
-			);
-		}
-
-		return {
-			success: true,
-			message: "Season deletada com sucesso",
-			data: null,
-		};
-	}
 }
-

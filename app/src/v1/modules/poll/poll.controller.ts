@@ -9,6 +9,8 @@ import {
 } from "./dto";
 import { PollService } from "./poll.service";
 import { PollStatusEnum } from "@/v1/enum/pollStatus.enum";
+import { httpException } from "@/config/error";
+import { UserTypeEnum } from "@/v1/enum/userType.enum";
 
 export class PollController {
 	private pollService: PollService;
@@ -21,11 +23,21 @@ export class PollController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
+		if (request.user.userType !== UserTypeEnum.ADMIN) {
+            throw httpException(
+                "Apenas administradores podem criar enquetes",
+                httpStatus.FORBIDDEN,
+            );
+        }
+
+		const buildingId = request.user.buildingId;
+		
 		return reply
 			.code(httpStatus.CREATED)
 			.send(
 				await this.pollService.createPoll(
 					transformCreatePollDto(request.body),
+					buildingId,
 				),
 			);
 	}
@@ -34,14 +46,20 @@ export class PollController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
-		const { buildingId, month, year, status } = request.query as {
-			buildingId: string;
+		if (request.user.userType !== UserTypeEnum.ADMIN) {
+            throw httpException(
+                "Apenas administradores podem visualizar enquetes",
+                httpStatus.FORBIDDEN,
+            );
+        }
+
+		const buildingId = request.user.buildingId;
+		const { month, year, status } = request.query as {
 			month: string;
 			year: string;
 			status?: string | string[];
 		};
 
-		// Normalize status to array - simples
 		let statusArray: string[] = [];
 		if (Array.isArray(status)) {
 			statusArray = status;
@@ -73,17 +91,24 @@ export class PollController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
+		if (request.user.userType !== UserTypeEnum.ADMIN) {
+            throw httpException(
+                "Apenas administradores podem visualizar estatísticas de enquetes",
+                httpStatus.FORBIDDEN,
+            );
+        }
+
 		try {
-			const { buildingId, month, year } = request.query as {
-				buildingId: string;
+			const buildingId = request.user.buildingId;
+			const { month, year } = request.query as {
 				month: string | number;
 				year: string | number;
 			};
 
-			if (!buildingId || !month || !year) {
+			if (!month || !year) {
 				return reply.status(httpStatus.BAD_REQUEST).send({
 					success: false,
-					message: "buildingId, month e year são obrigatórios",
+					message: "month e year são obrigatórios",
 				});
 			}
 
@@ -98,7 +123,6 @@ export class PollController {
 			}
 
 			const validatedData = transformPollListByMonthYearDto({
-				buildingId,
 				month: monthNum,
 				year: yearNum,
 			});
@@ -106,7 +130,7 @@ export class PollController {
 			return reply
 				.status(httpStatus.OK)
 				.send(
-					await this.pollService.getActivePollsStats(validatedData),
+					await this.pollService.getActivePollsStats(validatedData, buildingId),
 				);
 		} catch (error: any) {
 			if (error.issues) {
@@ -128,7 +152,15 @@ export class PollController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
+		if (request.user.userType !== UserTypeEnum.ADMIN) {
+            throw httpException(
+                "Apenas administradores podem cancelar enquetes",
+                httpStatus.FORBIDDEN,
+            );
+        }
+
 		const { id } = request.params as { id: string };
+		const buildingId = request.user.buildingId;
 
 		return reply
 			.status(httpStatus.OK)
@@ -136,6 +168,7 @@ export class PollController {
 				await this.pollService.cancelPoll(
 					id,
 					transformCancelPollDto(request.body),
+					buildingId,
 				),
 			);
 	}

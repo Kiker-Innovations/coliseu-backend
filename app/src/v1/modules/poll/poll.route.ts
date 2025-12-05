@@ -25,9 +25,10 @@ export class PollRouteV1 {
 			schema: {
 				tags: ["Polls"],
 				summary: "Create a new poll",
-				description: "Cria uma nova enquete no sistema",
+				description: "Cria uma nova enquete no sistema. O ID do edifício é obtido automaticamente do token de autenticação do administrador.",
 				...this.pollSchema.create,
 			},
+			preHandler: this.authMiddleware.authenticate,
 			handler: this.pollController.createPoll.bind(
 				this.pollController,
 			) as RouteHandlerMethod,
@@ -41,92 +42,10 @@ export class PollRouteV1 {
 			schema: {
 				tags: ["Polls"],
 				summary: "Get polls by status",
-				description: "Lista enquetes filtradas por status(es). Pode passar um ou mais status: ATIVO, PROGRAMADO, FINALIZADO, CANCELADO",
-				querystring: {
-					type: "object",
-					required: ["buildingId", "month", "year", "status"],
-					properties: {
-						buildingId: {
-							type: "string",
-							format: "uuid",
-							description: "ID do edifício",
-							example: "b2ce3bcd-6309-42a5-861c-33bdefb7ab33",
-						},
-						month: {
-							type: "integer",
-							minimum: 1,
-							maximum: 12,
-							description: "Mês (1-12)",
-							example: 11,
-						},
-						year: {
-							type: "integer",
-							minimum: 2000,
-							maximum: 2100,
-							description: "Ano",
-							example: 2025,
-						},
-						status: {
-							anyOf: [
-								{
-									type: "string",
-									enum: ["ATIVO", "PROGRAMADO", "FINALIZADO", "CANCELADO"],
-									description: "Status único",
-									example: "ATIVO",
-								},
-								{
-									type: "array",
-									items: {
-										type: "string",
-										enum: ["ATIVO", "PROGRAMADO", "FINALIZADO", "CANCELADO"],
-									},
-									description: "Array de status",
-									example: ["ATIVO", "PROGRAMADO"],
-								},
-							],
-							description: "Status para filtrar. Pode ser string única, array, ou string separada por vírgula",
-						},
-					},
-				},
-				response: {
-					200: {
-						description: "Enquetes encontradas",
-						type: "object",
-						properties: {
-							success: { type: "boolean", example: true },
-							message: { type: "string", example: "Enquetes encontradas com sucesso" },
-							data: {
-								type: "array",
-								items: {
-									type: "object",
-									properties: {
-										id: { type: "string", example: "8a02e8c9-cd30-44fb-b209-02e5b66434fb" },
-										description: { type: "string", example: "Qual seria o horário ideal para o funcionamento da academia" },
-										startDate: { type: "string", format: "date-time", example: "2025-11-23T03:00:00.000Z" },
-										endDate: { type: "string", format: "date-time", example: "2025-11-25T02:59:59.999Z" },
-										votes: { type: "integer", example: 0 },
-										options: {
-											type: "array",
-											items: {
-												type: "object",
-												properties: {
-													id: { type: "integer", example: 0 },
-													description: { type: "string", example: "Opção 1" },
-													votes: { type: "integer", example: 0 },
-													percent: { type: "number", example: 0 },
-												},
-											},
-										},
-										status: { type: "string", example: "ATIVO" },
-										cancelReason: { type: "string" },
-										cancelledAt: { type: "string", format: "date-time" },
-									},
-								},
-							},
-						},
-					},
-				},
+				description: "Lista enquetes filtradas por status(es) do prédio do administrador. O ID do edifício é obtido automaticamente do token de autenticação. Pode passar um ou mais status: ATIVO, PROGRAMADO, FINALIZADO, CANCELADO",
+				...this.pollSchema.getPollsByStatus,
 			},
+			preHandler: this.authMiddleware.authenticate,
 			handler: this.pollController.getPollsByStatus.bind(
 				this.pollController,
 			) as RouteHandlerMethod,
@@ -140,10 +59,11 @@ export class PollRouteV1 {
 			schema: {
 				tags: ["Polls"],
 				summary: "Get active polls statistics",
-				description: "Retorna estatísticas das enquetes ativas: total de polls, total de votos e percentual em relação aos residents",
+				description: "Retorna estatísticas das enquetes ativas do prédio do administrador. O ID do edifício é obtido automaticamente do token de autenticação. Retorna: total de polls, total de votos e percentual em relação aos residents",
 				querystring: this.pollSchema.getActiveStats.querystring,
 				response: this.pollSchema.getActiveStats.response,
 			},
+			preHandler: this.authMiddleware.authenticate,
 			handler: this.pollController.getActivePollsStats.bind(
 				this.pollController,
 			) as RouteHandlerMethod,
@@ -157,9 +77,10 @@ export class PollRouteV1 {
 			schema: {
 				tags: ["Polls"],
 				summary: "Cancel a poll",
-				description: "Cancela uma enquete (safe delete). A enquete não é deletada, apenas muda o status para CANCELADO e registra o motivo do cancelamento",
+				description: "Cancela uma enquete do prédio do administrador (safe delete). O ID do edifício é obtido automaticamente do token de autenticação. A enquete não é deletada, apenas muda o status para CANCELADO e registra o motivo do cancelamento",
 				...this.pollSchema.cancel,
 			},
+			preHandler: this.authMiddleware.authenticate,
 			handler: this.pollController.cancelPoll.bind(
 				this.pollController,
 			) as RouteHandlerMethod,

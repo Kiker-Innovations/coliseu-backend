@@ -19,8 +19,7 @@ export const conciergeCreateSchema = z.object({
       "Senha deve conter pelo menos um caractere especial",
     ),
   phone: z
-    .string({ required_error: "Telefone é obrigatório" })
-    .regex(/^\+\d{11,15}$/, "Telefone deve estar no formato internacional (ex: +5511999999999)"),
+    .string({ required_error: "Telefone é obrigatório" }),
   shift: z.enum(["MANHA", "TARDE", "NOITE"], {
     required_error: "Turno é obrigatório",
   }) as unknown as z.ZodType<ConciergeShiftEnumType>,

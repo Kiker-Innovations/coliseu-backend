@@ -8,19 +8,12 @@ export class PollSchema {
 		body: {
 			type: "object",
 			required: [
-				"buildingId",
 				"description",
 				"options",
 				"startDate",
 				"endDate",
 			],
 			properties: {
-				buildingId: {
-					type: "string",
-					format: "uuid",
-					description: "ID do edifício",
-					example: "b2ce3bcd-6309-42a5-861c-33bdefb7ab33",
-				},
 				description: {
 					type: "string",
 					description: "Descrição da enquete",
@@ -99,14 +92,8 @@ export class PollSchema {
 	public getPollsByStatus = {
 		querystring: {
 			type: "object",
-			required: ["buildingId", "month", "year", "status"],
+			required: ["month", "year", "status"],
 			properties: {
-				buildingId: {
-					type: "string",
-					format: "uuid",
-					description: "ID do edifício",
-					example: "b2ce3bcd-6309-42a5-861c-33bdefb7ab33",
-				},
 				month: {
 					type: "integer",
 					minimum: 1,
@@ -215,14 +202,8 @@ export class PollSchema {
 	public getActive = {
 		querystring: {
 			type: "object",
-			required: ["buildingId", "month", "year"],
+			required: ["month", "year"],
 			properties: {
-				buildingId: {
-					type: "string",
-					format: "uuid",
-					description: "ID do edifício",
-					example: "b2ce3bcd-6309-42a5-861c-33bdefb7ab33",
-				},
 				month: {
 					type: "integer",
 					minimum: 1,
@@ -293,14 +274,8 @@ export class PollSchema {
 	public getFinishedAndCancelled = {
 		querystring: {
 			type: "object",
-			required: ["buildingId", "month", "year"],
+			required: ["month", "year"],
 			properties: {
-				buildingId: {
-					type: "string",
-					format: "uuid",
-					description: "ID do edifício",
-					example: "b2ce3bcd-6309-42a5-861c-33bdefb7ab33",
-				},
 				month: {
 					type: "integer",
 					minimum: 1,
@@ -373,14 +348,8 @@ export class PollSchema {
 	public getActiveStats = {
 		querystring: {
 			type: "object",
-			required: ["buildingId", "month", "year"],
+			required: ["month", "year"],
 			properties: {
-				buildingId: {
-					type: "string",
-					format: "uuid",
-					description: "ID do edifício (UUID)",
-					example: "b2ce3bcd-6309-42a5-861c-33bdefb7ab33",
-				},
 				month: {
 					type: "string",
 					description: "Mês (1-12)",

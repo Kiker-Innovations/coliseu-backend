@@ -50,4 +50,19 @@ export class S3Provider {
 	public getPublicUrl(key: string): string {
 		return `https://${this.bucketName}.s3.${env.providers.aws.config.region}.amazonaws.com/${key}`;
 	}
+
+	public async uploadFile(
+		key: string,
+		buffer: Buffer,
+		contentType: string,
+	): Promise<void> {
+		const command = new PutObjectCommand({
+			Bucket: this.bucketName,
+			Key: key,
+			Body: buffer,
+			ContentType: contentType,
+		});
+
+		await this.s3Client.send(command);
+	}
 }

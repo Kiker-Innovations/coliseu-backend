@@ -1,9 +1,6 @@
 import { z } from "zod";
 
 export const pollCreateSchema = z.object({
-	buildingId: z
-		.string({ required_error: "ID do edifício é obrigatório" })
-		.uuid("ID do edifício deve ser um UUID válido"),
 	description: z
 		.string({ required_error: "Descrição é obrigatória" })
 		.min(3, "Descrição deve ter no mínimo 3 caracteres")

@@ -28,7 +28,6 @@ export class PackageController {
 			);
 		}
 
-		// Obtém o ID do concierge e buildingId do token
 		const conciergeId = request.user.userId;
 		const buildingId = request.user.buildingId;
 
@@ -54,7 +53,6 @@ export class PackageController {
 			);
 		}
 
-		// Obtém o buildingId do token
 		const buildingId = request.user.buildingId;
 
 		return reply
@@ -73,7 +71,6 @@ export class PackageController {
 			);
 		}
 
-		// Obtém o buildingId do token
 		const buildingId = request.user.buildingId;
 
 		return reply
@@ -111,7 +108,6 @@ export class PackageController {
 			);
 		}
 
-		// Obtém o ID do concierge e buildingId do token
 		const conciergeId = request.user.userId;
 		const buildingId = request.user.buildingId;
 		const { id } = request.params as { id: string };
@@ -139,7 +135,6 @@ export class PackageController {
 			);
 		}
 
-		// Obtém o buildingId do token
 		const buildingId = request.user.buildingId;
 
 		return reply
@@ -158,7 +153,6 @@ export class PackageController {
 			);
 		}
 
-		// Obtém o ID do concierge e buildingId do token
 		const conciergeId = request.user.userId;
 		const buildingId = request.user.buildingId;
 		const { id } = request.params as { id: string };
@@ -186,7 +180,6 @@ export class PackageController {
 			);
 		}
 
-		// Obtém o buildingId do token
 		const buildingId = request.user.buildingId;
 		const { days } = request.query as { days?: string };
 		const daysNumber = days ? parseInt(days, 10) : 7;

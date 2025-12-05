@@ -57,6 +57,7 @@ export class PollService {
 
 	public async createPoll(
 		pollCreateDto: PollCreateDto,
+		buildingId: string,
 	): Promise<
 		HttpResponse<{
 			id: string;
@@ -64,30 +65,22 @@ export class PollService {
 			status: string;
 		}>
 	> {
-		// Verify building exists
-		await this.validateBuildingExists(pollCreateDto.buildingId);
-
-		// Determine status based on startDate
+		await this.validateBuildingExists(buildingId);
 		const now = getDate();
 		const startDate = pollCreateDto.startDate;
 		const startDateOnly = toDate(startDate).startOf("day").toDate();
 		const nowDateOnly = toDate(now).startOf("day").toDate();
-
-		// If startDate is today or in the past, status is ATIVO
-		// Otherwise, status is PROGRAMADO
 		let finalStatus: PollStatusEnumType;
 		if (startDateOnly.getTime() <= nowDateOnly.getTime()) {
 			finalStatus = PollStatusEnum.ATIVO;
 		} else {
 			finalStatus = PollStatusEnum.PROGRAMADO;
 		}
-
-		// Normalize dates to start and end of day (only date, no time)
 		const normalizedStartDate = toDate(startDate).startOf("day").toDate();
 		const normalizedEndDate = toDate(pollCreateDto.endDate).endOf("day").toDate();
 
 		const pollEntity: CreatePollEntity = {
-			buildingId: pollCreateDto.buildingId,
+			buildingId,
 			description: pollCreateDto.description,
 			options: pollCreateDto.options as string[],
 			status: finalStatus,
@@ -172,9 +165,10 @@ export class PollService {
 	// Keep old methods for backward compatibility (can be removed later)
 	public async getActivePolls(
 		pollListDto: PollListByMonthYearDto,
+		buildingId: string,
 	): Promise<HttpResponse<PollResponse[]>> {
 		return this.getPollsByStatus({
-			buildingId: pollListDto.buildingId,
+			buildingId,
 			month: pollListDto.month,
 			year: pollListDto.year,
 			status: [PollStatusEnum.ATIVO, PollStatusEnum.PROGRAMADO],
@@ -183,9 +177,10 @@ export class PollService {
 
 	public async getFinishedAndCancelledPolls(
 		pollListDto: PollListByMonthYearDto,
+		buildingId: string,
 	): Promise<HttpResponse<PollResponse[]>> {
 		return this.getPollsByStatus({
-			buildingId: pollListDto.buildingId,
+			buildingId,
 			month: pollListDto.month,
 			year: pollListDto.year,
 			status: [PollStatusEnum.FINALIZADO, PollStatusEnum.CANCELADO],
@@ -194,6 +189,7 @@ export class PollService {
 
 	public async getActivePollsStats(
 		pollListDto: PollListByMonthYearDto,
+		buildingId: string,
 	): Promise<
 		HttpResponse<{
 			totalPolls: number;
@@ -203,11 +199,11 @@ export class PollService {
 	> {
 		try {
 			// Verify building exists
-			await this.validateBuildingExists(pollListDto.buildingId);
+			await this.validateBuildingExists(buildingId);
 
 			// Get only ACTIVE polls (not PROGRAMADO) for the month/year
 			const polls = await this.pollRepository.findByStatusAndMonthYear(
-				pollListDto.buildingId,
+				buildingId,
 				[PollStatusEnum.ATIVO],
 				pollListDto.month,
 				pollListDto.year,
@@ -222,7 +218,7 @@ export class PollService {
 			// Get total active residents count for the building
 			const totalActiveResidents =
 				await this.residentRepository.countActiveByBuildingId(
-					pollListDto.buildingId,
+					buildingId,
 				);
 
 			// Get poll IDs from active polls
@@ -324,6 +320,7 @@ export class PollService {
 	public async cancelPoll(
 		pollId: string,
 		pollCancelDto: PollCancelDto,
+		buildingId: string,
 	): Promise<
 		HttpResponse<{
 			id: string;
@@ -339,6 +336,14 @@ export class PollService {
 			throw httpException(
 				"Enquete não encontrada",
 				httpStatus.NOT_FOUND,
+			);
+		}
+
+		// Check if poll belongs to the building
+		if (poll.buildingId !== buildingId) {
+			throw httpException(
+				"Você não tem permissão para cancelar esta enquete",
+				httpStatus.FORBIDDEN,
 			);
 		}
 

@@ -10,12 +10,8 @@ export const conciergeUpdateSchema = z.object({
 
 	phone: z
 		.string()
-		.regex(
-			/^\+\d{11,15}$/,
-			"Telefone deve estar no formato internacional (ex: +5513974080222)",
-		)
 		.optional()
-		.refine((val) => val !== "", "Telefone não pode estar vazio"),
+		.refine((val) => val === undefined || val !== "", "Telefone não pode estar vazio"),
 
 	name: z
 		.string()

@@ -2,9 +2,6 @@ import { z } from "zod";
 import { PollStatusEnum } from "@/v1/enum/pollStatus.enum";
 
 const basePollListSchema = z.object({
-	buildingId: z
-		.string({ required_error: "ID do edifício é obrigatório" })
-		.uuid("ID do edifício deve ser um UUID válido"),
 	month: z
 		.number({ required_error: "Mês é obrigatório" })
 		.int("Mês deve ser um número inteiro")

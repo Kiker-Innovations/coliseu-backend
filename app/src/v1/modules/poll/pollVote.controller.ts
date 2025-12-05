@@ -24,7 +24,6 @@ export class PollVoteController {
 			);
 		}
 
-		// Obtém o ID do residente do token
 		const residentId = request.user.userId;
 
 		return reply
@@ -48,7 +47,6 @@ export class PollVoteController {
 			);
 		}
 
-		// Obtém o ID do residente do token
 		const residentId = request.user.userId;
 		const { pollId } = request.params as { pollId: string };
 
@@ -70,7 +68,6 @@ export class PollVoteController {
 			);
 		}
 
-		// Obtém o ID do residente do token
 		const residentId = request.user.userId;
 		const { pollId } = request.params as { pollId: string };
 

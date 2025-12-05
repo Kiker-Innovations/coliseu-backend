@@ -22,8 +22,8 @@ export class ConciergeSchema {
 				},
 				phone: {
 					type: "string",
-					description: "Telefone no formato internacional",
-					example: "+5513974080222",
+					description: "Telefone de contato",
+					example: "13996662857",
 				},
 				shift: {
 					type: "string",
@@ -158,8 +158,8 @@ export class ConciergeSchema {
 				},
 				phone: {
 					type: "string",
-					description: "Telefone no formato internacional",
-					example: "+5513974080222",
+					description: "Telefone de contato",
+					example: "13996662857",
 				},
 				shift: {
 					type: "string",

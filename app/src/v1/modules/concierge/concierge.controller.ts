@@ -28,7 +28,6 @@ export class ConciergeController {
             );
         }
 
-        // Obtém o buildingId do token
         const buildingId = request.user.buildingId;
 
         return reply
@@ -45,6 +44,13 @@ export class ConciergeController {
         request: FastifyRequest,
         reply: FastifyReply,
     ): Promise<void> {
+        if (request.user.userType !== UserTypeEnum.ADMIN) {
+            throw httpException(
+                "Apenas administradores podem visualizar os porteiros",
+                httpStatus.FORBIDDEN,
+            );
+        }
+
         const { id } = request.params as { id: string };
         return reply
             .status(httpStatus.OK)
@@ -55,6 +61,13 @@ export class ConciergeController {
         request: FastifyRequest,
         reply: FastifyReply,
     ): Promise<void> {
+        if (request.user.userType !== UserTypeEnum.ADMIN) {
+            throw httpException(
+                "Apenas administradores podem atualizar os porteiros",
+                httpStatus.FORBIDDEN,
+            );
+        }
+
         const { id } = request.params as { id: string };
         return reply
             .status(httpStatus.OK)
@@ -70,19 +83,37 @@ export class ConciergeController {
         request: FastifyRequest,
         reply: FastifyReply,
     ): Promise<void> {
+        if (request.user.userType !== UserTypeEnum.ADMIN) {
+            throw httpException(
+                "Apenas administradores podem deletar os porteiros",
+                httpStatus.FORBIDDEN,
+            );
+        }
+
         const { id } = request.params as { id: string };
         return reply
             .status(httpStatus.OK)
             .send(await this.conciergeService.deleteConcierge(id));
     }
 
-    public async getManyConcierges(
+    public async getAllConciergesByBuilding(
         request: FastifyRequest,
         reply: FastifyReply,
     ): Promise<void> {
+        if (request.user.userType !== UserTypeEnum.ADMIN) {
+            throw httpException(
+                "Apenas administradores podem visualizar os porteiros",
+                httpStatus.FORBIDDEN,
+            );
+        }
+
         return reply
             .status(httpStatus.OK)
-            .send(await this.conciergeService.getManyConcierges());
+            .send(
+                await this.conciergeService.getAllConciergesByBuilding(
+                    request.user.buildingId,
+                ),
+            );
     }
 
     public async confirmConcierge(

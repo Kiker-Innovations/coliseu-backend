@@ -221,7 +221,7 @@ export class ConciergeService {
     }
 
 
-    public async getManyConcierges(): Promise<
+    public async getAllConciergesByBuilding(buildingId: string): Promise<
         HttpResponse<{
             name: string;
             email: string;
@@ -230,11 +230,7 @@ export class ConciergeService {
             status: string;
         }[]>
     > {
-        const concierges = await this.conciergeRepository.findMany();
-
-        if (!concierges || concierges.length === 0) {
-            throw httpException("Nenhum porteiro encontrado", httpStatus.NOT_FOUND);
-        }
+        const concierges = await this.conciergeRepository.findManyByBuildingId(buildingId);
 
         return {
             success: true,

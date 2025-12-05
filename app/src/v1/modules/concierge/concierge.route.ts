@@ -43,6 +43,7 @@ export class ConciergeRouteV1 {
 				description: "Busca um porteiro específico por ID",
 				...this.conciergeSchema.getById,
 			},
+			preHandler: this.authMiddleware.authenticate,
 			handler: this.conciergeController.getConcierge.bind(
 				this.conciergeController,
 			) as RouteHandlerMethod,
@@ -59,6 +60,7 @@ export class ConciergeRouteV1 {
 				description: "Atualiza dados de um porteiro (phone, photoUrl)",
 				...this.conciergeSchema.update,
 			},
+			preHandler: this.authMiddleware.authenticate,
 			handler: this.conciergeController.updateConcierge.bind(
 				this.conciergeController,
 			) as RouteHandlerMethod,
@@ -75,6 +77,7 @@ export class ConciergeRouteV1 {
 				description: "Remove um porteiro do sistema",
 				...this.conciergeSchema.remove,
 			},
+			preHandler: this.authMiddleware.authenticate,
 			handler: this.conciergeController.deleteConcierge.bind(
 				this.conciergeController,
 			) as RouteHandlerMethod,
@@ -87,11 +90,12 @@ export class ConciergeRouteV1 {
 			url: "/v1/concierges",
 			schema: {
 				tags: ["Concierges"],
-				summary: "Get all concierges",
-				description: "Retorna todos os porteiros cadastrados no sistema",
+				summary: "Get all concierges by building",
+				description: "Lista todos os porteiros do prédio do administrador",
 				...this.conciergeSchema.getMany,
 			},
-			handler: this.conciergeController.getManyConcierges.bind(
+			preHandler: this.authMiddleware.authenticate,
+			handler: this.conciergeController.getAllConciergesByBuilding.bind(
 				this.conciergeController,
 			) as RouteHandlerMethod,
 		};

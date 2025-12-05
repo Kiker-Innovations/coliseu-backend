@@ -50,6 +50,10 @@ export class ConciergeRepository
         return await this.collection.find({}).toArray();
     }
 
+    public async findManyByBuildingId(buildingId: string): Promise<ConciergeEntity[]> {
+        return await this.collection.find({ buildingId }).toArray();
+    }
+
     public async update(
         _id: string,
         data: UpdateConciergeEntity,

@@ -40,7 +40,10 @@ const envSchema = z.object({
         polls: z.string().min(1),
         pollVotes: z.string().min(1),
         seasons: z.string().min(1),
-        visitors: z.string().min(1),
+        projects: z.string().min(1),
+        projectOffers: z.string().min(1),
+        projectSuggestions: z.string().min(1),
+        projectSuggestionPolls: z.string().min(1),
       }),
     }),
   }),
@@ -60,7 +63,6 @@ const envSchema = z.object({
         presignedUrlExpiration: z.number().int().positive(),
         folders: z.object({
           resident: z.string().min(1),
-          visitor: z.string().min(1),
         }),
       }),
       ses: z.object({
@@ -114,7 +116,6 @@ export const env = envSchema.parse({
         projectSuggestionPolls:
           process.env.MONGODB_COLLECTION_PROJECT_SUGGESTION_POLLS ||
           "project_suggestion_polls",
-        visitors: process.env.MONGODB_COLLECTION_VISITORS || "visitors",
       },
     },
   },
@@ -135,7 +136,6 @@ export const env = envSchema.parse({
         ),
         folders: {
           resident: process.env.AWS_S3_FOLDER_RESIDENT,
-          visitor: process.env.AWS_S3_FOLDER_VISITOR,
         },
       },
       ses: {

@@ -69,6 +69,9 @@ export class ProjectService {
         fromSeasonId
       );
 
+	  console.log(projects);
+	  
+
     const projectsWithOffers = await Promise.all(
       projects.map(async (project) => {
         if (project?.chosenOfferId && project.chosenOfferId !== null) {

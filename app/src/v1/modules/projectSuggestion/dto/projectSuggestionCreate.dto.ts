@@ -1,28 +1,30 @@
 import { z } from "zod";
 
-export const projectSuggestionCreateSchema = z.object({
-  title: z
+export const projectSuggestionStartVotingSchema = z.object({
+  votingStartDate: z
     .string({
-      required_error: "Campo title é obrigatório",
+      required_error: "Data e hora de início da votação é obrigatória",
     })
-    .min(3, "Título deve ter pelo menos 3 caracteres")
-    .max(100, "Título deve ter no máximo 100 caracteres"),
-  description: z
+    .refine(
+      (val) => !isNaN(Date.parse(val)),
+      "Data e hora de início da votação deve ser uma data válida (ISO 8601)"
+    ),
+  votingEndDate: z
     .string({
-      required_error: "Campo description é obrigatório",
+      required_error: "Data e hora de fim da votação é obrigatória",
     })
-    .min(10, "Descrição deve ter pelo menos 10 caracteres")
-    .max(1000, "Descrição deve ter no máximo 1000 caracteres"),
-  duplicateCount: z.number().int().min(0).default(0),
-  rank: z.number().int().min(1),
+    .refine(
+      (val) => !isNaN(Date.parse(val)),
+      "Data e hora de fim da votação deve ser uma data válida (ISO 8601)"
+    ),
 });
 
-export type ProjectSuggestionCreateDto = z.infer<
-  typeof projectSuggestionCreateSchema
+export type ProjectSuggestionStartVotingDto = z.infer<
+  typeof projectSuggestionStartVotingSchema
 >;
 
-export const transformCreateProjectSuggestionDto = (
-  data: ProjectSuggestionCreateDto
-): ProjectSuggestionCreateDto => {
-  return projectSuggestionCreateSchema.parse(data);
+export const transformProjectSuggestionStartVotingDto = (
+  data: ProjectSuggestionStartVotingDto
+): ProjectSuggestionStartVotingDto => {
+  return projectSuggestionStartVotingSchema.parse(data);
 };

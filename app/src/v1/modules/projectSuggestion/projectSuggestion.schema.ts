@@ -10,17 +10,87 @@ export class ProjectSuggestionSchema {
       duplicateCount: { type: "number" },
       rank: { type: "number" },
       votes: { type: "number" },
-      votingStartDate: { type: ["string", "null"], format: "date-time" },
-      votingEndDate: { type: ["string", "null"], format: "date-time" },
-      createdAt: { type: "string", format: "date-time" },
-      updatedAt: { type: "string", format: "date-time" },
+      votingStartDate: { type: ["string", "null"] },
+      votingEndDate: { type: ["string", "null"] },
+      status: { type: "string" },
+      createdAt: { type: "string" },
+      updatedAt: { type: "string" },
     },
   };
 
-  public getAllByBuildingAndSeason = {
+  public rankSuggestions = {
+    params: {
+      type: "object",
+      required: ["seasonId"],
+      properties: {
+        seasonId: {
+          type: "string",
+          description: "ID da season",
+        },
+      },
+    },
+    response: {
+      201: {
+        description: "Sugestões rankeadas com sucesso",
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+          data: {
+            type: "array",
+            items: this.projectSuggestionResponse,
+          },
+        },
+      },
+      400: {
+        description: "Dados inválidos ou sugestões já rankeadas",
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+        },
+      },
+      401: {
+        description: "Usuário não autenticado",
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+        },
+      },
+      403: {
+        description: "Acesso negado",
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+        },
+      },
+      404: {
+        description: "Season não encontrada",
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+        },
+      },
+    },
+  };
+
+  public getBySeasonId = {
+    params: {
+      type: "object",
+      required: ["seasonId"],
+      properties: {
+        seasonId: {
+          type: "string",
+          description: "ID da season",
+        },
+      },
+    },
     response: {
       200: {
-        description: "Sugestões de projeto encontradas",
+        description: "Sugestões encontradas com sucesso",
         type: "object",
         properties: {
           success: { type: "boolean" },
@@ -47,49 +117,8 @@ export class ProjectSuggestionSchema {
           message: { type: "string" },
         },
       },
-    },
-  };
-
-  public getById = {
-    params: {
-      type: "object",
-      required: ["id"],
-      properties: {
-        id: {
-          type: "string",
-          format: "uuid",
-          description: "ID da sugestão de projeto",
-        },
-      },
-    },
-    response: {
-      200: {
-        description: "Sugestão de projeto encontrada",
-        type: "object",
-        properties: {
-          success: { type: "boolean" },
-          message: { type: "string" },
-          data: this.projectSuggestionResponse,
-        },
-      },
-      401: {
-        description: "Usuário não autenticado",
-        type: "object",
-        properties: {
-          success: { type: "boolean" },
-          message: { type: "string" },
-        },
-      },
-      403: {
-        description: "Acesso negado",
-        type: "object",
-        properties: {
-          success: { type: "boolean" },
-          message: { type: "string" },
-        },
-      },
       404: {
-        description: "Sugestão de projeto não encontrada",
+        description: "Season não encontrada",
         type: "object",
         properties: {
           success: { type: "boolean" },
@@ -99,46 +128,44 @@ export class ProjectSuggestionSchema {
     },
   };
 
-  public update = {
+  public startVoting = {
     params: {
       type: "object",
-      required: ["id"],
+      required: ["seasonId"],
       properties: {
-        id: {
+        seasonId: {
           type: "string",
-          format: "uuid",
-          description: "ID da sugestão de projeto",
+          description: "ID da season",
         },
       },
     },
     body: {
       type: "object",
+      required: ["votingStartDate", "votingEndDate"],
       properties: {
-        title: {
+        votingStartDate: {
           type: "string",
-          minLength: 3,
-          maxLength: 100,
-          description: "Título da sugestão de projeto",
-          example: "Instalar câmeras de segurança",
+          description: "Data e hora de início da votação (ISO 8601)",
+          example: "2025-01-15T09:00:00.000Z",
         },
-        description: {
+        votingEndDate: {
           type: "string",
-          minLength: 10,
-          maxLength: 1000,
-          description: "Descrição detalhada da sugestão",
-          example:
-            "Instalar câmeras de segurança em todas as áreas comuns do prédio",
+          description: "Data e hora de fim da votação (ISO 8601)",
+          example: "2025-01-30T18:00:00.000Z",
         },
       },
     },
     response: {
       200: {
-        description: "Sugestão de projeto atualizada com sucesso",
+        description: "Votação iniciada com sucesso",
         type: "object",
         properties: {
           success: { type: "boolean" },
           message: { type: "string" },
-          data: this.projectSuggestionResponse,
+          data: {
+            type: "array",
+            items: this.projectSuggestionResponse,
+          },
         },
       },
       400: {
@@ -166,7 +193,7 @@ export class ProjectSuggestionSchema {
         },
       },
       404: {
-        description: "Sugestão de projeto não encontrada",
+        description: "Season não encontrada",
         type: "object",
         properties: {
           success: { type: "boolean" },
@@ -176,39 +203,20 @@ export class ProjectSuggestionSchema {
     },
   };
 
-  public startVoting = {
+  public endVoting = {
     params: {
       type: "object",
       required: ["seasonId"],
       properties: {
         seasonId: {
           type: "string",
-          format: "uuid",
-          description: "ID da temporada",
-        },
-      },
-    },
-    body: {
-      type: "object",
-      required: ["votingStartDate", "votingEndDate"],
-      properties: {
-        votingStartDate: {
-          type: "string",
-          format: "date-time",
-          description: "Data de início do período de votação",
-          example: "2025-01-01T00:00:00.000Z",
-        },
-        votingEndDate: {
-          type: "string",
-          format: "date-time",
-          description: "Data de fim do período de votação",
-          example: "2025-01-15T23:59:59.999Z",
+          description: "ID da season",
         },
       },
     },
     response: {
       200: {
-        description: "Período de votação iniciado com sucesso",
+        description: "Votação encerrada com sucesso",
         type: "object",
         properties: {
           success: { type: "boolean" },
@@ -220,7 +228,7 @@ export class ProjectSuggestionSchema {
         },
       },
       400: {
-        description: "Dados inválidos ou nenhuma sugestão encontrada",
+        description: "Votação não está em andamento",
         type: "object",
         properties: {
           success: { type: "boolean" },
@@ -244,7 +252,7 @@ export class ProjectSuggestionSchema {
         },
       },
       404: {
-        description: "Temporada não encontrada",
+        description: "Season não encontrada",
         type: "object",
         properties: {
           success: { type: "boolean" },
@@ -254,26 +262,48 @@ export class ProjectSuggestionSchema {
     },
   };
 
-  public delete = {
-    params: {
+  public vote = {
+    body: {
       type: "object",
-      required: ["id"],
+      required: ["projectSuggestionId", "voteCount"],
       properties: {
-        id: {
+        projectSuggestionId: {
           type: "string",
-          format: "uuid",
           description: "ID da sugestão de projeto",
+          example: "b2ce3bcd-6309-42a5-861c-33bdefb7ab33",
+        },
+        voteCount: {
+          type: "integer",
+          description:
+            "Quantidade de votos (1 a 3). O total de votos do morador na season não pode exceder 3",
+          example: 2,
         },
       },
     },
     response: {
       200: {
-        description: "Sugestão de projeto deletada com sucesso",
+        description: "Voto registrado ou atualizado com sucesso",
         type: "object",
         properties: {
           success: { type: "boolean" },
           message: { type: "string" },
-          data: { type: "null" },
+          data: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              projectSuggestionId: { type: "string" },
+              voteCount: { type: "integer" },
+            },
+          },
+        },
+      },
+      400: {
+        description:
+          "Dados inválidos ou período de votação inválido ou votos insuficientes",
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
         },
       },
       401: {
@@ -293,7 +323,198 @@ export class ProjectSuggestionSchema {
         },
       },
       404: {
-        description: "Sugestão de projeto não encontrada",
+        description: "Sugestão não encontrada",
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+        },
+      },
+    },
+  };
+
+  public deleteVote = {
+    params: {
+      type: "object",
+      required: ["projectSuggestionId"],
+      properties: {
+        projectSuggestionId: {
+          type: "string",
+          description: "ID da sugestão de projeto",
+        },
+      },
+    },
+    response: {
+      200: {
+        description: "Voto removido com sucesso",
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+          data: { type: "null" },
+        },
+      },
+      400: {
+        description: "Período de votação inválido",
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+        },
+      },
+      401: {
+        description: "Usuário não autenticado",
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+        },
+      },
+      403: {
+        description: "Acesso negado",
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+        },
+      },
+      404: {
+        description: "Sugestão ou voto não encontrado",
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+        },
+      },
+    },
+  };
+
+  public getMyVotes = {
+    params: {
+      type: "object",
+      required: ["seasonId"],
+      properties: {
+        seasonId: {
+          type: "string",
+          description: "ID da season",
+        },
+      },
+    },
+    response: {
+      200: {
+        description: "Votos do morador encontrados com sucesso",
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+          data: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                projectSuggestionId: { type: "string" },
+                voteCount: { type: "integer" },
+              },
+            },
+          },
+        },
+      },
+      401: {
+        description: "Usuário não autenticado",
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+        },
+      },
+      403: {
+        description: "Acesso negado",
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+        },
+      },
+      404: {
+        description: "Season ou morador não encontrado",
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+        },
+      },
+    },
+  };
+
+  public createProjectsFromTopSuggestions = {
+    params: {
+      type: "object",
+      required: ["seasonId"],
+      properties: {
+        seasonId: {
+          type: "string",
+          description: "ID da season",
+        },
+      },
+    },
+    body: {
+      type: "object",
+      properties: {
+        top: {
+          type: "integer",
+          description:
+            "Quantidade de projetos a serem criados a partir das sugestões mais votadas (default: 3)",
+          example: 3,
+        },
+      },
+    },
+    response: {
+      201: {
+        description: "Projetos criados com sucesso",
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+          data: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                id: { type: "string" },
+                title: { type: "string" },
+                description: { type: "string" },
+                votes: { type: "integer" },
+              },
+            },
+          },
+        },
+      },
+      400: {
+        description: "Votação não encerrada ou dados inválidos",
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+        },
+      },
+      401: {
+        description: "Usuário não autenticado",
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+        },
+      },
+      403: {
+        description: "Acesso negado",
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+        },
+      },
+      404: {
+        description: "Season não encontrada",
         type: "object",
         properties: {
           success: { type: "boolean" },

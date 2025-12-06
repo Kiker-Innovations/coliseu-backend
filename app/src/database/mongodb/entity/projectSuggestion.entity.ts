@@ -1,3 +1,5 @@
+import type { ProjectSuggestionStatusEnumType } from "@/v1/enum/projectSuggestionStatus.enum";
+
 export interface ProjectSuggestionEntity {
   _id: string;
   buildingId: string;
@@ -7,15 +9,21 @@ export interface ProjectSuggestionEntity {
   duplicateCount: number;
   rank: number;
   votes: number;
-  votingStartDate?: Date;
-  votingEndDate?: Date;
+  votingStartDate: Date | null;
+  votingEndDate: Date | null;
+  status: ProjectSuggestionStatusEnumType;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export type CreateProjectSuggestionEntity = Omit<
   ProjectSuggestionEntity,
-  "_id" | "votes" | "createdAt" | "updatedAt"
+  | "_id"
+  | "votes"
+  | "votingStartDate"
+  | "votingEndDate"
+  | "createdAt"
+  | "updatedAt"
 >;
 
 export type UpdateProjectSuggestionEntity = Partial<
@@ -23,9 +31,11 @@ export type UpdateProjectSuggestionEntity = Partial<
     ProjectSuggestionEntity,
     | "title"
     | "description"
+    | "rank"
     | "votes"
     | "votingStartDate"
     | "votingEndDate"
+    | "status"
     | "updatedAt"
   >
 >;

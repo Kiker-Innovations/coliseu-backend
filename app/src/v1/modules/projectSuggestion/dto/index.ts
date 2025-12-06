@@ -1,17 +1,17 @@
 export {
-  projectSuggestionCreateSchema,
-  transformCreateProjectSuggestionDto,
-  type ProjectSuggestionCreateDto,
+  projectSuggestionStartVotingSchema,
+  transformProjectSuggestionStartVotingDto,
+  type ProjectSuggestionStartVotingDto,
 } from "./projectSuggestionCreate.dto";
 
 export {
-  projectSuggestionUpdateSchema,
-  transformUpdateProjectSuggestionDto,
-  type ProjectSuggestionUpdateDto,
-} from "./projectSuggestionUpdate.dto";
+  projectSuggestionVoteSchema,
+  transformProjectSuggestionVoteDto,
+  type ProjectSuggestionVoteDto,
+} from "./projectSuggestionVote.dto";
 
 export {
-  projectSuggestionStartVotingSchema,
-  transformStartVotingDto,
-  type ProjectSuggestionStartVotingDto,
-} from "./projectSuggestionStartVoting.dto";
+  projectSuggestionCreateProjectsSchema,
+  transformProjectSuggestionCreateProjectsDto,
+  type ProjectSuggestionCreateProjectsDto,
+} from "./projectSuggestionCreateProjects.dto";

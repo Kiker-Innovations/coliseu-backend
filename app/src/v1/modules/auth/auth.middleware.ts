@@ -25,7 +25,7 @@ export class AuthMiddleware {
 	): Promise<void> => {
 		try {
 			const authHeader = request.headers.authorization;
-
+			
 			if (!authHeader) {
 				throw httpException(
 					"Token de autenticação não fornecido",
@@ -42,9 +42,12 @@ export class AuthMiddleware {
 				);
 			}
 
+			console.log("token", parts[1]);
+
 			const token = parts[1];
 			const decoded = await this.authService.verifyToken(token);
 
+			console.log("decoded", decoded);
 			request.user = decoded;
 		} catch (error) {
 			throw error;

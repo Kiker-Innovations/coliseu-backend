@@ -122,49 +122,4 @@ export class SeasonController {
       .status(httpStatus.OK)
       .send(await this.seasonService.deleteSeason(id, request.user.buildingId));
   }
-
-  public async rankSuggestions(
-    request: FastifyRequest,
-    reply: FastifyReply
-  ): Promise<void> {
-    if (request.user.userType !== UserTypeEnum.ADMIN) {
-      throw httpException(
-        "Apenas administradores podem processar sugestões",
-        httpStatus.FORBIDDEN
-      );
-    }
-
-    const { id } = request.params as { id: string };
-    return reply
-      .status(httpStatus.OK)
-      .send(
-        await this.seasonService.rankSuggestions(id, request.user.buildingId)
-      );
-  }
-
-  public async promoteToProjects(
-    request: FastifyRequest,
-    reply: FastifyReply
-  ): Promise<void> {
-    if (request.user.userType !== UserTypeEnum.ADMIN) {
-      throw httpException(
-        "Apenas administradores podem promover sugestões para projetos",
-        httpStatus.FORBIDDEN
-      );
-    }
-
-    const { id } = request.params as { id: string };
-    const { topCount } = request.query as { topCount?: string };
-    const top = topCount ? Number.parseInt(topCount, 10) : 3;
-
-    return reply
-      .status(httpStatus.OK)
-      .send(
-        await this.seasonService.promoteToProjects(
-          id,
-          request.user.buildingId,
-          top
-        )
-      );
-  }
 }

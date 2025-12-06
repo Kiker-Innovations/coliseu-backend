@@ -30,15 +30,15 @@ export class ProjectSuggestionPollRepository
     data: CreateProjectSuggestionPollEntity
   ): Promise<ProjectSuggestionPollEntity> {
     const now = getDate();
-    const pollEntity: ProjectSuggestionPollEntity = {
+    const entity: ProjectSuggestionPollEntity = {
       _id: randomUUID(),
       ...data,
       createdAt: now,
       updatedAt: now,
     };
 
-    await this.collection.insertOne(pollEntity);
-    return pollEntity;
+    await this.collection.insertOne(entity);
+    return entity;
   }
 
   public async findById(
@@ -69,21 +69,19 @@ export class ProjectSuggestionPollRepository
     });
   }
 
-  public async findManyByResidentId(
+  public async findByResidentId(
     residentId: string
   ): Promise<ProjectSuggestionPollEntity[]> {
     return await this.collection.find({ residentId }).toArray();
   }
 
-  public async findManyByProjectSuggestionIds(
-    projectSuggestionIds: string[]
+  public async findByProjectSuggestionId(
+    projectSuggestionId: string
   ): Promise<ProjectSuggestionPollEntity[]> {
-    return await this.collection
-      .find({ projectSuggestionId: { $in: projectSuggestionIds } })
-      .toArray();
+    return await this.collection.find({ projectSuggestionId }).toArray();
   }
 
-  public async sumVotesByResidentIdAndProjectSuggestionIds(
+  public async countVotesByResidentAndSuggestionIds(
     residentId: string,
     projectSuggestionIds: string[]
   ): Promise<number> {
@@ -125,22 +123,6 @@ export class ProjectSuggestionPollRepository
     return result || null;
   }
 
-  public async incrementVoteCount(
-    _id: string,
-    count: number = 1
-  ): Promise<ProjectSuggestionPollEntity | null> {
-    const result = await this.collection.findOneAndUpdate(
-      { _id },
-      {
-        $inc: { voteCount: count },
-        $set: { updatedAt: getDate() },
-      },
-      { returnDocument: "after" }
-    );
-
-    return result || null;
-  }
-
   public async delete(_id: string): Promise<boolean> {
     const result = await this.collection.deleteOne({ _id });
     return result.deletedCount > 0;
@@ -148,17 +130,17 @@ export class ProjectSuggestionPollRepository
 
   public async deleteByProjectSuggestionId(
     projectSuggestionId: string
-  ): Promise<number> {
+  ): Promise<boolean> {
     const result = await this.collection.deleteMany({ projectSuggestionId });
-    return result.deletedCount;
+    return result.deletedCount > 0;
   }
 
   public async deleteByProjectSuggestionIds(
     projectSuggestionIds: string[]
-  ): Promise<number> {
+  ): Promise<boolean> {
     const result = await this.collection.deleteMany({
       projectSuggestionId: { $in: projectSuggestionIds },
     });
-    return result.deletedCount;
+    return result.deletedCount > 0;
   }
 }

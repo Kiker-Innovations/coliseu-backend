@@ -8,6 +8,7 @@ import type {
 } from "../entity/projectSuggestion.entity";
 import type { IRepository } from "../interfaces/IRepository";
 import { getDate } from "@/v1/utils/utils";
+import { ProjectSuggestionStatusEnum } from "@/v1/enum/projectSuggestionStatus.enum";
 
 export class ProjectSuggestionRepository
   implements
@@ -34,6 +35,8 @@ export class ProjectSuggestionRepository
       _id: randomUUID(),
       ...data,
       votes: 0,
+      votingStartDate: null,
+      votingEndDate: null,
       createdAt: now,
       updatedAt: now,
     };
@@ -50,6 +53,8 @@ export class ProjectSuggestionRepository
       _id: randomUUID(),
       ...item,
       votes: 0,
+      votingStartDate: null,
+      votingEndDate: null,
       createdAt: now,
       updatedAt: now,
     }));
@@ -74,7 +79,23 @@ export class ProjectSuggestionRepository
     return await this.collection.find(filter || {}).toArray();
   }
 
-  public async findManyByBuildingIdAndSeasonId(
+  public async findBySeasonId(
+    seasonId: string
+  ): Promise<ProjectSuggestionEntity[]> {
+    return await this.collection.find({ seasonId }).sort({ rank: 1 }).toArray();
+  }
+
+  public async findBySeasonIdAndStatus(
+    seasonId: string,
+    status: string
+  ): Promise<ProjectSuggestionEntity[]> {
+    return await this.collection
+      .find({ seasonId, status })
+      .sort({ rank: 1 })
+      .toArray();
+  }
+
+  public async findByBuildingIdAndSeasonId(
     buildingId: string,
     seasonId: string
   ): Promise<ProjectSuggestionEntity[]> {
@@ -84,12 +105,14 @@ export class ProjectSuggestionRepository
       .toArray();
   }
 
-  public async findManyBySeasonIdOrderedByVotes(
-    seasonId: string
+  public async findTopByVotes(
+    seasonId: string,
+    limit: number
   ): Promise<ProjectSuggestionEntity[]> {
     return await this.collection
-      .find({ seasonId })
+      .find({ seasonId, status: ProjectSuggestionStatusEnum.VOTACAO_ENCERRADA })
       .sort({ votes: -1, rank: 1 })
+      .limit(limit)
       .toArray();
   }
 
@@ -111,9 +134,26 @@ export class ProjectSuggestionRepository
     return result || null;
   }
 
+  public async updateManyBySeasonId(
+    seasonId: string,
+    data: UpdateProjectSuggestionEntity
+  ): Promise<boolean> {
+    const updateData = {
+      ...data,
+      updatedAt: getDate(),
+    };
+
+    const result = await this.collection.updateMany(
+      { seasonId },
+      { $set: updateData }
+    );
+
+    return result.modifiedCount > 0;
+  }
+
   public async incrementVotes(
     _id: string,
-    count: number = 1
+    count: number
   ): Promise<ProjectSuggestionEntity | null> {
     const result = await this.collection.findOneAndUpdate(
       { _id },
@@ -129,7 +169,7 @@ export class ProjectSuggestionRepository
 
   public async decrementVotes(
     _id: string,
-    count: number = 1
+    count: number
   ): Promise<ProjectSuggestionEntity | null> {
     const result = await this.collection.findOneAndUpdate(
       { _id },
@@ -148,9 +188,9 @@ export class ProjectSuggestionRepository
     return result.deletedCount > 0;
   }
 
-  public async deleteBySeasonId(seasonId: string): Promise<number> {
+  public async deleteBySeasonId(seasonId: string): Promise<boolean> {
     const result = await this.collection.deleteMany({ seasonId });
-    return result.deletedCount;
+    return result.deletedCount > 0;
   }
 
   public async countBySeasonId(seasonId: string): Promise<number> {

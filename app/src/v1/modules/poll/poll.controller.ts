@@ -92,9 +92,9 @@ export class PollController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
-		if (request.user.userType !== UserTypeEnum.ADMIN) {
+		if (request.user.userType === UserTypeEnum.CONCIERGE) {
             throw httpException(
-                "Apenas administradores podem visualizar estatísticas de enquetes",
+                "Apenas administradores e residentes podem visualizar estatísticas de enquetes",
                 httpStatus.FORBIDDEN,
             );
         }

@@ -46,13 +46,14 @@ export class PollController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
-		if (request.user.userType !== UserTypeEnum.ADMIN) {
+		if (request.user.userType === UserTypeEnum.CONCIERGE) {
             throw httpException(
-                "Apenas administradores podem visualizar enquetes",
+                `${request.user.userType} não tem permissão para visualizar enquetes`,
                 httpStatus.FORBIDDEN,
             );
         }
-
+		console.log(request.user.userType);
+		
 		const buildingId = request.user.buildingId;
 		const { month, year, status } = request.query as {
 			month: string;
@@ -91,9 +92,9 @@ export class PollController {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
-		if (request.user.userType !== UserTypeEnum.ADMIN) {
+		if (request.user.userType === UserTypeEnum.CONCIERGE) {
             throw httpException(
-                "Apenas administradores podem visualizar estatísticas de enquetes",
+                "Apenas administradores e residentes podem visualizar estatísticas de enquetes",
                 httpStatus.FORBIDDEN,
             );
         }

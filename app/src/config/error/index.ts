@@ -51,11 +51,12 @@ export const errorHandler = (
 
 	if (isZodError(error)) {
 		const zodError = error as ZodError;
+		console.log("zodError", zodError);
 		const errors = zodError.issues.map((issue) => ({
 			field: issue.path.join("."),
 			message: issue.message,
 		}));
-
+		console.log("errors", errors);
 		return reply.status(400).send({
 			statusCode: 400,
 			message: "Erro de validação nos dados fornecidos",

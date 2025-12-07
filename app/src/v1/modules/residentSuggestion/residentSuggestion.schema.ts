@@ -7,15 +7,11 @@ export class ResidentSuggestionSchema {
 				title: {
 					type: "string",
 					description: "Título da sugestão",
-					minLength: 3,
-					maxLength: 100,
 					example: "Melhorias no sistema de coleta de lixo",
 				},
 				description: {
 					type: "string",
 					description: "Descrição detalhada da sugestão",
-					minLength: 10,
-					maxLength: 1000,
 					example:
 						"Sugiro a implementação de um sistema de coleta seletiva mais eficiente, com horários específicos para cada tipo de resíduo.",
 				},

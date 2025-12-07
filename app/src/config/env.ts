@@ -36,7 +36,7 @@ const envSchema = z.object({
         buildings: z.string().min(1),
         packages: z.string().min(1),
         apartments: z.string().min(1),
-        suggestions: z.string().min(1),
+        residentSuggestions: z.string().min(1),
         polls: z.string().min(1),
         pollVotes: z.string().min(1),
         seasons: z.string().min(1),
@@ -102,8 +102,8 @@ export const env = envSchema.parse({
         buildings: process.env.MONGODB_COLLECTION_BUILDINGS || "buildings",
         packages: process.env.MONGODB_COLLECTION_PACKAGES || "packages",
         apartments: process.env.MONGODB_COLLECTION_APARTMENTS || "apartments",
-        suggestions:
-          process.env.MONGODB_COLLECTION_SUGGESTIONS || "suggestions",
+        residentSuggestions:
+          process.env.MONGODB_COLLECTION_RESIDENT_SUGGESTIONS || "resident_suggestions",
         polls: process.env.MONGODB_COLLECTION_POLLS || "polls",
         pollVotes: process.env.MONGODB_COLLECTION_POLL_VOTES || "poll_votes",
         seasons: process.env.MONGODB_COLLECTION_SEASONS || "seasons",

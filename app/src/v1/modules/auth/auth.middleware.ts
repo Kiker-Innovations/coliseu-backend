@@ -42,12 +42,9 @@ export class AuthMiddleware {
 				);
 			}
 
-			console.log("token", parts[1]);
-
 			const token = parts[1];
 			const decoded = await this.authService.verifyToken(token);
 
-			console.log("decoded", decoded);
 			request.user = decoded;
 		} catch (error) {
 			throw error;

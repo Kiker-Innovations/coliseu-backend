@@ -22,7 +22,7 @@ export class ResidentSuggestionRepository
 	constructor(mongoClient: MongoClient) {
 		const database = mongoClient.db(env.databases.mongodb.database);
 		this.collection = database.collection<ResidentSuggestionEntity>(
-			env.databases.mongodb.collections.suggestions,
+			env.databases.mongodb.collections.residentSuggestions,
 		);
 	}
 

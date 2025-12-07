@@ -23,7 +23,6 @@ export interface VisitorListItem {
 	phone?: string;
 	vehicleType?: string;
 	vehiclePlate?: string;
-	apartmentId?: string;
 	types: string[];
 	photoUrl: string;
 	note?: string;
@@ -159,30 +158,35 @@ export class VisitorRepository
 		}
 
 		// Build aggregation pipeline
-		const pipeline: any[] = [
-			{ $match: matchFilter },
-			{
-				$lookup: {
-					from: env.databases.mongodb.collections.apartments,
-					localField: "apartmentId",
-					foreignField: "_id",
-					as: "apartment",
-				},
-			},
-			{
-				$unwind: {
-					path: "$apartment",
-					preserveNullAndEmptyArrays: true,
-				},
-			},
-		];
+		const pipeline: any[] = [{ $match: matchFilter }];
 
-		// Add apartment number filter if needed
+		// Always lookup visits to get apartment information
+		pipeline.push({
+			$lookup: {
+				from: env.databases.mongodb.collections.visits,
+				localField: "_id",
+				foreignField: "visitorId",
+				as: "visits",
+			},
+		});
+
+		// Lookup apartments from visits
+		pipeline.push({
+			$lookup: {
+				from: env.databases.mongodb.collections.apartments,
+				localField: "visits.apartmentId",
+				foreignField: "_id",
+				as: "apartments",
+			},
+		});
+
+		// Add apartment number filter if needed - search through visits
 		if (filters.filterBy === "apartment" && filters.search) {
+			// Filter by apartment number
 			pipeline.push({
 				$match: {
-					"apartment.number": filters.search,
-					"apartment.buildingId": filters.buildingId,
+					"apartments.number": filters.search,
+					"apartments.buildingId": filters.buildingId,
 				},
 			});
 		}
@@ -198,6 +202,7 @@ export class VisitorRepository
 		pipeline.push({ $sort: { createdAt: -1 } });
 
 		// Add projection, skip, and limit
+		// Get the apartment number from the first apartment in visits
 		pipeline.push(
 			{
 				$project: {
@@ -206,12 +211,11 @@ export class VisitorRepository
 					phone: 1,
 					vehicleType: 1,
 					vehiclePlate: 1,
-					apartmentId: 1,
 					types: 1,
 					photoUrl: 1,
 					note: 1,
 					active: 1,
-					apartmentNumber: "$apartment.number",
+					apartmentNumber: { $arrayElemAt: ["$apartments.number", 0] },
 				},
 			},
 			{ $skip: skip },
@@ -245,20 +249,6 @@ export class VisitorRepository
 					deletedAt: { $exists: false },
 				},
 			},
-			{
-				$lookup: {
-					from: env.databases.mongodb.collections.apartments,
-					localField: "apartmentId",
-					foreignField: "_id",
-					as: "apartment",
-				},
-			},
-			{
-				$unwind: {
-					path: "$apartment",
-					preserveNullAndEmptyArrays: true,
-				},
-			},
 			{ $sort: { createdAt: -1 } },
 			{
 				$project: {
@@ -267,12 +257,10 @@ export class VisitorRepository
 					phone: 1,
 					vehicleType: 1,
 					vehiclePlate: 1,
-					apartmentId: 1,
 					types: 1,
 					photoUrl: 1,
 					note: 1,
 					active: 1,
-					apartmentNumber: "$apartment.number",
 				},
 			},
 			{ $limit: limit },

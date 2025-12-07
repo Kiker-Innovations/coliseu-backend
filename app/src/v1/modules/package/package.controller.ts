@@ -3,6 +3,7 @@ import httpStatus from "http-status";
 import type { MongoClient } from "mongodb";
 import { httpException } from "../../../config/error";
 import { UserTypeEnum } from "../../enum/userType.enum";
+import type { PackageStatusEnumType } from "../../enum/packageStatus.enum";
 import {
 	transformCreatePackageDto,
 	transformConfirmDeliveryPackageDto,
@@ -42,40 +43,30 @@ export class PackageController {
 			);
 	}
 
-	public async getPendingPackages(
+	public async getPackages(
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
 		if (request.user.userType !== UserTypeEnum.CONCIERGE) {
 			throw httpException(
-				"Apenas porteiros podem visualizar encomendas pendentes",
+				"Apenas porteiros podem visualizar encomendas",
 				httpStatus.FORBIDDEN,
 			);
 		}
 
 		const buildingId = request.user.buildingId;
+		const { status, days } = request.query as { status?: string; days?: string };
+		const daysNumber = days ? parseInt(days, 10) : undefined;
 
 		return reply
 			.status(httpStatus.OK)
-			.send(await this.packageService.getPendingPackages(buildingId));
-	}
-
-	public async getDeliveredPackages(
-		request: FastifyRequest,
-		reply: FastifyReply,
-	): Promise<void> {
-		if (request.user.userType !== UserTypeEnum.CONCIERGE) {
-			throw httpException(
-				"Apenas porteiros podem visualizar encomendas entregues",
-				httpStatus.FORBIDDEN,
+			.send(
+				await this.packageService.getPackages(
+					buildingId,
+					status as PackageStatusEnumType | undefined,
+					daysNumber,
+				),
 			);
-		}
-
-		const buildingId = request.user.buildingId;
-
-		return reply
-			.status(httpStatus.OK)
-			.send(await this.packageService.getDeliveredPackages(buildingId));
 	}
 
 	public async getPackageById(
@@ -169,24 +160,57 @@ export class PackageController {
 			);
 	}
 
-	public async getCancelledPackages(
+	public async getMyPackages(
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
-		if (request.user.userType !== UserTypeEnum.CONCIERGE) {
+		if (request.user.userType !== UserTypeEnum.RESIDENT) {
 			throw httpException(
-				"Apenas porteiros podem visualizar encomendas canceladas",
+				"Apenas moradores podem visualizar suas encomendas",
 				httpStatus.FORBIDDEN,
 			);
 		}
 
-		const buildingId = request.user.buildingId;
-		const { days } = request.query as { days?: string };
-		const daysNumber = days ? parseInt(days, 10) : 7;
+		if (!request.user.apartmentId) {
+			throw httpException(
+				"Apartamento não encontrado no token",
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
+		const { status } = request.query as { status?: string };
 
 		return reply
 			.status(httpStatus.OK)
-			.send(await this.packageService.getCancelledPackages(daysNumber, buildingId));
+			.send(
+				await this.packageService.getMyPackages(
+					request.user.apartmentId,
+					status as PackageStatusEnumType | undefined,
+				),
+			);
+	}
+
+	public async getMyPackageStats(
+		request: FastifyRequest,
+		reply: FastifyReply,
+	): Promise<void> {
+		if (request.user.userType !== UserTypeEnum.RESIDENT) {
+			throw httpException(
+				"Apenas moradores podem visualizar suas estatísticas",
+				httpStatus.FORBIDDEN,
+			);
+		}
+
+		if (!request.user.apartmentId) {
+			throw httpException(
+				"Apartamento não encontrado no token",
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
+		return reply
+			.status(httpStatus.OK)
+			.send(await this.packageService.getMyPackageStats(request.user.apartmentId));
 	}
 }
 

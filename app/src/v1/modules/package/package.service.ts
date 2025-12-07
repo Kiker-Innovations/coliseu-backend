@@ -12,43 +12,27 @@ import type { PackageCreateDto, PackageConfirmDeliveryDto, PackageCancelDto } fr
 import { httpException } from "../../../config/error";
 import httpStatus from "http-status";
 import type { HttpResponse } from "../../../interface/httpResponse.interface";
-import { PackageStatusEnum } from "@/v1/enum/packageStatus.enum";
+import { PackageStatusEnum, type PackageStatusEnumType } from "@/v1/enum/packageStatus.enum";
 import { ResidentStatusEnum } from "@/v1/enum/residentStatus.enum";
 import { getDate, formatDate } from "@/v1/utils/utils";
 import { sendPackageArrivalEmail } from "@/v1/utils/emailHelper";
 
-interface PendingPackageListItem {
+interface PackageListItem {
 	_id: string;
 	ownerName: string;
 	description: string;
 	courierName?: string;
 	apartmentNumber: string;
+	apartmentFloor?: number;
+	apartmentBlock?: string;
 	receiverDate: Date;
-	receiverConciergeName: string;
-}
-
-interface DeliveredPackageListItem {
-	_id: string;
-	ownerName: string;
-	description: string;
-	courierName?: string;
-	apartmentNumber: string;
-	deliveryDate: Date;
-	recipientName: string;
-	deliveryConciergeName: string;
-}
-
-interface CancelledPackageListItem {
-	_id: string;
-	ownerName: string;
-	description: string;
-	courierName?: string;
-	apartmentNumber: string;
-	receiverDate: Date;
-	cancelReason: string;
-	cancelledConciergeId: string;
-	cancelledAt: Date;
-	cancelledByName: string;
+	receiverBy?: string;
+	deliveryDate?: Date;
+	recipientName?: string;
+	deliveryBy?: string;
+	cancelReason?: string;
+	canceledBy?: string;
+	cancelledAt?: Date;
 }
 
 export class PackageService {
@@ -113,7 +97,7 @@ export class PackageService {
 		const packageEntity: CreatePackageEntity = {
 			apartmentId: packageCreateDto.apartmentId,
 			buildingId: buildingId,
-			receiverConciergeId: conciergeId,
+			receiverBy: concierge.name,
 			ownerName: packageCreateDto.ownerName,
 			description: packageCreateDto.description,
 			courierName: packageCreateDto.courierName,
@@ -217,77 +201,97 @@ export class PackageService {
 		}
 	}
 
-	public async getPendingPackages(buildingId: string): Promise<
-		HttpResponse<PendingPackageListItem[]>
-	> {
-		const packages = await this.packageRepository.findPending(buildingId);
+	public async getPackages(
+		buildingId: string,
+		status?: PackageStatusEnumType,
+		days?: number,
+	): Promise<HttpResponse<PackageListItem[]>> {
+		let packages: PackageEntity[];
+
+		if (status === PackageStatusEnum.PENDENTE) {
+			packages = await this.packageRepository.findPending(buildingId);
+		} else if (status === PackageStatusEnum.ENTREGUE) {
+			packages = await this.packageRepository.findDeliveredLast7Days(buildingId);
+		} else if (status === PackageStatusEnum.CANCELADO) {
+			const daysToUse = days || 7;
+			packages = await this.packageRepository.findCancelledLastDays(daysToUse, buildingId);
+		} else {
+			packages = await this.packageRepository.findMany({ buildingId });
+		}
 
 		const packagesWithDetails = await Promise.all(
 			packages.map(async (pkg) => {
 				const apartment = await this.apartmentRepository.findById(
 					pkg.apartmentId,
 				);
-				const concierge = await this.conciergeRepository.findById(
-					pkg.receiverConciergeId,
-				);
 
-				return {
+				const baseItem: PackageListItem = {
 					_id: pkg._id,
-					ownerName: pkg.ownerName,
-					description: pkg.description,
+					ownerName: pkg.ownerName || "N/A",
+					description: pkg.description || "N/A",
 					courierName: pkg.courierName,
 					apartmentNumber: apartment?.number || "N/A",
+					apartmentFloor: apartment?.floor,
+					apartmentBlock: apartment?.block,
 					receiverDate: pkg.receiverDate,
-					receiverConciergeName: concierge?.name || "N/A",
 				};
+
+				if (pkg.receiverBy) {
+					baseItem.receiverBy = pkg.receiverBy;
+				}
+
+				if (pkg.deliveryDate) {
+					baseItem.deliveryDate = pkg.deliveryDate;
+				}
+
+				if (pkg.recipientName) {
+					baseItem.recipientName = pkg.recipientName;
+				}
+
+				if (pkg.deliveryBy) {
+					baseItem.deliveryBy = pkg.deliveryBy;
+				}
+
+				if (pkg.cancelReason) {
+					baseItem.cancelReason = pkg.cancelReason;
+				}
+
+				if (pkg.canceledBy) {
+					baseItem.canceledBy = pkg.canceledBy;
+				}
+
+				if (pkg.cancelledAt) {
+					baseItem.cancelledAt = pkg.cancelledAt;
+				}
+
+				return baseItem;
 			}),
 		);
 
-		return {
-			success: true,
-			message: "Encomendas pendentes encontradas com sucesso",
-			data: packagesWithDetails,
-		};
-	}
-
-	public async getDeliveredPackages(buildingId: string): Promise<
-		HttpResponse<DeliveredPackageListItem[]>
-	> {
-		const packages = await this.packageRepository.findDeliveredLast7Days(buildingId);
-
-		const packagesWithDetails = await Promise.all(
-			packages.map(async (pkg) => {
-				const apartment = await this.apartmentRepository.findById(
-					pkg.apartmentId,
-				);
-				const concierge = pkg.deliveryConciergeId
-					? await this.conciergeRepository.findById(
-							pkg.deliveryConciergeId,
-						)
-					: null;
-
-				return {
-					_id: pkg._id,
-					ownerName: pkg.ownerName,
-					description: pkg.description,
-					courierName: pkg.courierName,
-					apartmentNumber: apartment?.number || "N/A",
-					deliveryDate: pkg.deliveryDate || new Date(),
-					recipientName: pkg.recipientName || "N/A",
-					deliveryConciergeName: concierge?.name || "N/A",
-				};
-			}),
-		);
+		let message = "Encomendas encontradas com sucesso";
+		if (status === PackageStatusEnum.PENDENTE) {
+			message = "Encomendas pendentes encontradas com sucesso";
+		} else if (status === PackageStatusEnum.ENTREGUE) {
+			message = "Encomendas entregues encontradas com sucesso";
+		} else if (status === PackageStatusEnum.CANCELADO) {
+			message = "Encomendas canceladas encontradas com sucesso";
+		}
 
 		return {
 			success: true,
-			message: "Encomendas entregues encontradas com sucesso",
+			message,
 			data: packagesWithDetails,
 		};
 	}
 
 	public async getPackageById(packageId: string, buildingId: string): Promise<
-		HttpResponse<PackageEntity & { apartmentNumber?: string; receiverConciergeName?: string; deliveryConciergeName?: string }>
+		HttpResponse<
+			PackageEntity & {
+				apartmentNumber?: string;
+				apartmentFloor?: number;
+				apartmentBlock?: string;
+			}
+		>
 	> {
 		const packageEntity = await this.packageRepository.findById(packageId);
 
@@ -306,14 +310,6 @@ export class PackageService {
 		const apartment = await this.apartmentRepository.findById(
 			packageEntity.apartmentId,
 		);
-		const receiverConcierge = await this.conciergeRepository.findById(
-			packageEntity.receiverConciergeId,
-		);
-		const deliveryConcierge = packageEntity.deliveryConciergeId
-			? await this.conciergeRepository.findById(
-					packageEntity.deliveryConciergeId,
-				)
-			: null;
 
 		return {
 			success: true,
@@ -321,8 +317,8 @@ export class PackageService {
 			data: {
 				...packageEntity,
 				apartmentNumber: apartment?.number,
-				receiverConciergeName: receiverConcierge?.name,
-				deliveryConciergeName: deliveryConcierge?.name,
+				apartmentFloor: apartment?.floor,
+				apartmentBlock: apartment?.block,
 			},
 		};
 	}
@@ -369,7 +365,7 @@ export class PackageService {
 
 		const updatedPackage = await this.packageRepository.update(packageId, {
 			recipientName: confirmDeliveryDto.recipientName,
-			deliveryConciergeId: conciergeId,
+			deliveryBy: concierge.name,
 			deliveryDate: getDate(),
 			status: PackageStatusEnum.ENTREGUE,
 		});
@@ -462,7 +458,7 @@ export class PackageService {
 		const updatedPackage = await this.packageRepository.update(packageId, {
 			status: PackageStatusEnum.CANCELADO,
 			cancelReason: cancelDto.cancelReason,
-			cancelledConciergeId: conciergeId,
+			canceledBy: concierge.name,
 			cancelledAt: getDate(),
 		});
 
@@ -480,39 +476,79 @@ export class PackageService {
 		};
 	}
 
-	public async getCancelledPackages(days: number = 7, buildingId: string): Promise<
-		HttpResponse<CancelledPackageListItem[]>
+
+	public async getMyPackages(
+		apartmentId: string,
+		status?: PackageStatusEnumType,
+	): Promise<
+		HttpResponse<
+			(PackageEntity & {
+				apartmentNumber?: string;
+				apartmentFloor?: number;
+				apartmentBlock?: string;
+			})[]
+		>
 	> {
-		const packages = await this.packageRepository.findCancelledLastDays(days, buildingId);
+		let packages: PackageEntity[];
 
-		const packagesWithDetails = await Promise.all(
-			packages.map(async (pkg) => {
-				const apartment = await this.apartmentRepository.findById(
-					pkg.apartmentId,
-				);
-				const cancelledByConcierge = pkg.cancelledConciergeId
-					? await this.conciergeRepository.findById(pkg.cancelledConciergeId)
-					: null;
+		if (status) {
+			if (status === PackageStatusEnum.PENDENTE) {
+				packages = await this.packageRepository.findPendingByApartmentId(apartmentId);
+			} else if (status === PackageStatusEnum.ENTREGUE) {
+				packages = await this.packageRepository.findDeliveredByApartmentId(apartmentId);
+			} else if (status === PackageStatusEnum.CANCELADO) {
+				packages = await this.packageRepository.findMany({
+					apartmentId,
+					status: PackageStatusEnum.CANCELADO,
+				});
+			} else {
+				packages = await this.packageRepository.findByApartmentId(apartmentId);
+			}
+		} else {
+			packages = await this.packageRepository.findByApartmentId(apartmentId);
+		}
 
-				return {
-					_id: pkg._id,
-					ownerName: pkg.ownerName || "N/A",
-					description: pkg.description || "N/A",
-					courierName: pkg.courierName,
-					apartmentNumber: apartment?.number || "N/A",
-					receiverDate: pkg.receiverDate,
-					cancelReason: pkg.cancelReason || "N/A",
-					cancelledConciergeId: pkg.cancelledConciergeId || "N/A",
-					cancelledAt: pkg.cancelledAt || new Date(),
-					cancelledByName: cancelledByConcierge?.name || "N/A",
-				};
-			}),
-		);
+		// Get apartment info for all packages
+		const apartment = await this.apartmentRepository.findById(apartmentId);
+		const packagesWithDetails = packages.map((pkg) => ({
+			...pkg,
+			apartmentNumber: apartment?.number,
+			apartmentFloor: apartment?.floor,
+			apartmentBlock: apartment?.block,
+		}));
+
+		const statusMessage = status
+			? `Encomendas com status ${status} encontradas com sucesso`
+			: "Encomendas encontradas com sucesso";
 
 		return {
 			success: true,
-			message: "Encomendas canceladas encontradas com sucesso",
+			message: statusMessage,
 			data: packagesWithDetails,
+		};
+	}
+
+	public async getMyPackageStats(apartmentId: string): Promise<
+		HttpResponse<{
+			totalAguardandoRetiradaMes: number;
+			totalEntregues: number;
+			totalAguardandoRetirada: number;
+		}>
+	> {
+		const [totalAguardandoRetiradaMes, totalEntregues, totalAguardandoRetirada] = await Promise.all([
+			this.packageRepository.countPendingThisMonthByApartmentId(apartmentId),
+			this.packageRepository.countDeliveredAllByApartmentId(apartmentId),
+			this.packageRepository.countPendingAllByApartmentId(apartmentId),
+		]);
+
+		return {
+			success: true,
+			message: "Estatísticas de encomendas obtidas com sucesso",
+			data: {
+				totalAguardandoRetiradaMes,
+				totalEntregues,
+				totalAguardandoRetirada,
+			},
 		};
 	}
 }

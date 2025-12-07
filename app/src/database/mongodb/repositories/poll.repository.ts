@@ -113,57 +113,19 @@ export class PollRepository
 		return result.deletedCount > 0;
 	}
 
-	public async findByStatusAndMonthYear(
+	public async findByStatus(
 		buildingId: string,
 		status: string[],
-		month: number,
-		year: number,
 	): Promise<PollEntity[]> {
-		const startOfMonth = toDate(`${year}-${String(month).padStart(2, "0")}-01`)
-			.startOf("month")
-			.startOf("day")
-			.toDate();
-		const endOfMonth = toDate(`${year}-${String(month).padStart(2, "0")}-01`)
-			.endOf("month")
-			.endOf("day")
-			.toDate();
-
-		// Check if status includes FINALIZADO or CANCELADO to use different date filters
-		const hasFinishedOrCancelled = status.some(
-			(s) => s === PollStatusEnum.FINALIZADO || s === PollStatusEnum.CANCELADO,
-		);
-		const hasActiveOrProgrammed = status.some(
-			(s) => s === PollStatusEnum.ATIVO || s === PollStatusEnum.PROGRAMADO,
-		);
-
 		const query: any = {
 			buildingId,
 			status: { $in: status },
 		};
 
-		// If mixing status types, we need to handle dates differently
-		if (hasFinishedOrCancelled && hasActiveOrProgrammed) {
-			// Mixed: use OR condition for dates
-			query.$or = [
-				{ startDate: { $gte: startOfMonth, $lte: endOfMonth } },
-				{ endDate: { $gte: startOfMonth, $lte: endOfMonth } },
-				{ cancelledAt: { $gte: startOfMonth, $lte: endOfMonth } },
-			];
-		} else if (hasFinishedOrCancelled) {
-			// Only finished/cancelled: use endDate or cancelledAt
-			query.$or = [
-				{ endDate: { $gte: startOfMonth, $lte: endOfMonth } },
-				{ cancelledAt: { $gte: startOfMonth, $lte: endOfMonth } },
-			];
-		} else {
-			// Only active/programmed: use startDate
-			query.startDate = {
-				$gte: startOfMonth,
-				$lte: endOfMonth,
-			};
-		}
-
-		const polls = await this.collection.find(query).toArray();
+		const polls = await this.collection
+			.find(query)
+			.sort({ startDate: -1 })
+			.toArray();
 		
 		// Normalize dates to ensure they are Date objects
 		// Handle MongoDB date format { $date: "..." } or direct Date objects
@@ -188,6 +150,17 @@ export class PollRepository
 				}),
 			};
 		});
+	}
+
+	// Keep old method for backward compatibility (can be removed later)
+	public async findByStatusAndMonthYear(
+		buildingId: string,
+		status: string[],
+		month: number,
+		year: number,
+	): Promise<PollEntity[]> {
+		// Just call the new method without date filtering
+		return this.findByStatus(buildingId, status);
 	}
 
 	// Keep old methods for backward compatibility (can be removed later)

@@ -8,7 +8,6 @@ export interface VisitorEntity {
 	phone?: string;
 	vehicleType?: VehicleTypeEnumType;
 	vehiclePlate?: string;
-	apartmentId?: string;
 	types: string[]; // "CONVIDADO" | "PRESTADOR"
 	photoUrl: string;
 	note?: string;

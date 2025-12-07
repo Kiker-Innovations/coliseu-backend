@@ -37,11 +37,6 @@ export const visitorUpdateSchema = z.object({
 			"Placa deve estar no formato antigo (ABC1234) ou Mercosul (ABC1D23)",
 		)
 		.transform((val) => (val === "" ? undefined : val)),
-	apartmentId: z
-		.string()
-		.uuid("ID do apartamento deve ser um UUID válido")
-		.optional()
-		.transform((val) => (val === "" ? undefined : val)),
 	types: z
 		.array(z.enum(["CONVIDADO", "PRESTADOR"]))
 		.min(1, "Deve ter pelo menos um tipo de visitante")

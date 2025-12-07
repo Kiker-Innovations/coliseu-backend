@@ -68,16 +68,14 @@ export class PollService {
 		await this.validateBuildingExists(buildingId);
 		const now = getDate();
 		const startDate = pollCreateDto.startDate;
-		const startDateOnly = toDate(startDate).startOf("day").toDate();
-		const nowDateOnly = toDate(now).startOf("day").toDate();
 		let finalStatus: PollStatusEnumType;
-		if (startDateOnly.getTime() <= nowDateOnly.getTime()) {
+		if (startDate.getTime() <= now.getTime()) {
 			finalStatus = PollStatusEnum.ATIVO;
 		} else {
 			finalStatus = PollStatusEnum.PROGRAMADO;
 		}
-		const normalizedStartDate = toDate(startDate).startOf("day").toDate();
-		const normalizedEndDate = toDate(pollCreateDto.endDate).endOf("day").toDate();
+		const normalizedStartDate = startDate;
+		const normalizedEndDate = pollCreateDto.endDate;
 
 		const pollEntity: CreatePollEntity = {
 			buildingId,
@@ -111,21 +109,19 @@ export class PollService {
 				id: option.id,
 				description: option.description,
 				votes: option.votes,
-				percent: Math.round(percent * 100) / 100, // Round to 2 decimal places
+				percent: parseFloat(percent.toFixed(2)), // Round to 2 decimal places
 			};
 		});
 	}
 
 	public async getPollsByStatus(
-		pollListDto: { buildingId: string; month: number; year: number; status: string[] },
+		pollListDto: { buildingId: string; status: string[] },
 	): Promise<HttpResponse<PollResponse[]>> {
 		await this.validateBuildingExists(pollListDto.buildingId);
 
-		const polls = await this.pollRepository.findByStatusAndMonthYear(
+		const polls = await this.pollRepository.findByStatus(
 			pollListDto.buildingId,
 			pollListDto.status,
-			pollListDto.month,
-			pollListDto.year,
 		);
 
 		if (!polls || polls.length === 0) {
@@ -162,33 +158,8 @@ export class PollService {
 		};
 	}
 
-	// Keep old methods for backward compatibility (can be removed later)
-	public async getActivePolls(
-		pollListDto: PollListByMonthYearDto,
-		buildingId: string,
-	): Promise<HttpResponse<PollResponse[]>> {
-		return this.getPollsByStatus({
-			buildingId,
-			month: pollListDto.month,
-			year: pollListDto.year,
-			status: [PollStatusEnum.ATIVO, PollStatusEnum.PROGRAMADO],
-		});
-	}
-
-	public async getFinishedAndCancelledPolls(
-		pollListDto: PollListByMonthYearDto,
-		buildingId: string,
-	): Promise<HttpResponse<PollResponse[]>> {
-		return this.getPollsByStatus({
-			buildingId,
-			month: pollListDto.month,
-			year: pollListDto.year,
-			status: [PollStatusEnum.FINALIZADO, PollStatusEnum.CANCELADO],
-		});
-	}
 
 	public async getActivePollsStats(
-		pollListDto: PollListByMonthYearDto,
 		buildingId: string,
 	): Promise<
 		HttpResponse<{
@@ -201,12 +172,10 @@ export class PollService {
 			// Verify building exists
 			await this.validateBuildingExists(buildingId);
 
-			// Get only ACTIVE polls (not PROGRAMADO) for the month/year
-			const polls = await this.pollRepository.findByStatusAndMonthYear(
+			// Get only ACTIVE polls (not PROGRAMADO)
+			const polls = await this.pollRepository.findByStatus(
 				buildingId,
 				[PollStatusEnum.ATIVO],
-				pollListDto.month,
-				pollListDto.year,
 			);
 
 			// Calculate total polls
@@ -307,7 +276,7 @@ export class PollService {
 				data: {
 					totalPolls,
 					totalVotes,
-					totalPercent: Math.round(Math.min(totalPercent, 100) * 100) / 100, // Round to 2 decimal places, cap at 100%
+					totalPercent: parseFloat(Math.min(totalPercent, 100).toFixed(2)), // Round to 2 decimal places, cap at 100%
 				},
 			};
 		} catch (error) {

@@ -60,25 +60,6 @@ export class VisitorService {
 			}
 		}
 
-		// Validate apartment if provided
-		if (visitorCreateDto.apartmentId) {
-			const apartment = await this.apartmentRepository.findById(
-				visitorCreateDto.apartmentId,
-			);
-			if (!apartment) {
-				throw httpException(
-					"Apartamento não encontrado",
-					httpStatus.NOT_FOUND,
-				);
-			}
-			if (apartment.buildingId !== buildingId) {
-				throw httpException(
-					"O apartamento não pertence ao mesmo edifício",
-					httpStatus.FORBIDDEN,
-				);
-			}
-		}
-
 		// Get concierge name
 		const concierge = await this.conciergeRepository.findById(conciergeId);
 		if (!concierge) {
@@ -96,7 +77,6 @@ export class VisitorService {
 			phone: visitorCreateDto.phone,
 			vehicleType: visitorCreateDto.vehicleType,
 			vehiclePlate: visitorCreateDto.vehiclePlate,
-			apartmentId: visitorCreateDto.apartmentId,
 			types: visitorCreateDto.types,
 			photoUrl: "",
 			note: visitorCreateDto.note,
@@ -227,22 +207,10 @@ export class VisitorService {
 			);
 		}
 
-		// Get apartment number if apartmentId exists
-		let apartmentNumber: string | undefined;
-		if (visitor.apartmentId) {
-			const apartment = await this.apartmentRepository.findById(
-				visitor.apartmentId,
-			);
-			apartmentNumber = apartment?.number;
-		}
-
 		return {
 			success: true,
 			message: "Visitante encontrado com sucesso",
-			data: {
-				...visitor,
-				apartmentNumber,
-			},
+			data: visitor,
 		};
 	}
 
@@ -251,9 +219,7 @@ export class VisitorService {
 		visitorUpdateDto: VisitorUpdateDto,
 		buildingId: string,
 		conciergeId: string,
-	): Promise<
-		HttpResponse<VisitorEntity & { apartmentNumber?: string }>
-	> {
+	): Promise<HttpResponse<VisitorEntity>> {
 		// Check if visitor exists and belongs to the building
 		const visitor = await this.visitorRepository.findById(visitorId);
 
@@ -278,25 +244,6 @@ export class VisitorService {
 				throw httpException(
 					"Já existe um visitante com este documento neste edifício",
 					httpStatus.CONFLICT,
-				);
-			}
-		}
-
-		// Validate apartment if provided
-		if (visitorUpdateDto.apartmentId) {
-			const apartment = await this.apartmentRepository.findById(
-				visitorUpdateDto.apartmentId,
-			);
-			if (!apartment) {
-				throw httpException(
-					"Apartamento não encontrado",
-					httpStatus.NOT_FOUND,
-				);
-			}
-			if (apartment.buildingId !== buildingId) {
-				throw httpException(
-					"O apartamento não pertence ao mesmo edifício",
-					httpStatus.FORBIDDEN,
 				);
 			}
 		}
@@ -330,22 +277,10 @@ export class VisitorService {
 			);
 		}
 
-		// Get apartment number if apartmentId exists
-		let apartmentNumber: string | undefined;
-		if (updatedVisitor.apartmentId) {
-			const apartment = await this.apartmentRepository.findById(
-				updatedVisitor.apartmentId,
-			);
-			apartmentNumber = apartment?.number;
-		}
-
 		return {
 			success: true,
 			message: "Visitante atualizado com sucesso",
-			data: {
-				...updatedVisitor,
-				apartmentNumber,
-			},
+			data: updatedVisitor,
 		};
 	}
 
@@ -359,7 +294,6 @@ export class VisitorService {
 			phone?: string;
 			vehicleType?: string;
 			vehiclePlate?: string;
-			apartmentId?: string;
 			types: string[];
 			photoUrl: string;
 			note?: string;

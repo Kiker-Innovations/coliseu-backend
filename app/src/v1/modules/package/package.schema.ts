@@ -83,10 +83,27 @@ export class PackageSchema {
 		},
 	};
 
-	public getPending = {
+	public getPackages = {
+		query: {
+			type: "object",
+			properties: {
+				status: {
+					type: "string",
+					enum: ["PENDENTE", "ENTREGUE", "CANCELADO"],
+					description: "Filtro opcional por status da encomenda",
+					example: "PENDENTE",
+				},
+				days: {
+					type: "number",
+					description: "Número de dias para buscar cancelados (apenas quando status=CANCELADO, padrão: 7)",
+					example: 7,
+					default: 7,
+				},
+			},
+		},
 		response: {
 			200: {
-				description: "Encomendas pendentes encontradas",
+				description: "Encomendas encontradas",
 				type: "object",
 				properties: {
 					success: { type: "boolean" },
@@ -101,40 +118,34 @@ export class PackageSchema {
 								description: { type: "string" },
 								courierName: { type: "string" },
 								apartmentNumber: { type: "string" },
+								apartmentFloor: {
+									type: "number",
+									description: "Andar do apartamento",
+								},
+								apartmentBlock: {
+									type: "string",
+									description: "Bloco do apartamento (opcional)",
+								},
 								receiverDate: { type: "string", format: "date-time" },
-								receiverConciergeName: { type: "string" },
+								receiverBy: { type: "string" },
+								deliveryDate: { type: "string", format: "date-time" },
+								recipientName: { type: "string" },
+								deliveryBy: { type: "string" },
+								cancelReason: { type: "string" },
+								canceledBy: { type: "string" },
+								cancelledAt: { type: "string", format: "date-time" },
 							},
 						},
 					},
 				},
 			},
-		},
-	};
-
-	public getDelivered = {
-		response: {
-			200: {
-				description: "Encomendas entregues encontradas",
+			403: {
+				description: "Apenas porteiros podem visualizar encomendas",
 				type: "object",
 				properties: {
-					success: { type: "boolean" },
+					statusCode: { type: "number" },
 					message: { type: "string" },
-					data: {
-						type: "array",
-						items: {
-							type: "object",
-							properties: {
-								_id: { type: "string" },
-								ownerName: { type: "string" },
-								description: { type: "string" },
-								courierName: { type: "string" },
-								apartmentNumber: { type: "string" },
-								deliveryDate: { type: "string", format: "date-time" },
-								recipientName: { type: "string" },
-								deliveryConciergeName: { type: "string" },
-							},
-						},
-					},
+					timestamp: { type: "string" },
 				},
 			},
 		},
@@ -164,8 +175,8 @@ export class PackageSchema {
 						properties: {
 							_id: { type: "string" },
 							apartmentId: { type: "string" },
-							receiverConciergeId: { type: "string" },
-							deliveryConciergeId: { type: "string" },
+							receiverBy: { type: "string" },
+							deliveryBy: { type: "string" },
 							ownerName: { type: "string" },
 							courierName: { type: "string" },
 							recipientName: { type: "string" },
@@ -176,8 +187,14 @@ export class PackageSchema {
 							createdAt: { type: "string", format: "date-time" },
 							updatedAt: { type: "string", format: "date-time" },
 							apartmentNumber: { type: "string" },
-							receiverConciergeName: { type: "string" },
-							deliveryConciergeName: { type: "string" },
+							apartmentFloor: {
+								type: "number",
+								description: "Andar do apartamento",
+							},
+							apartmentBlock: {
+								type: "string",
+								description: "Bloco do apartamento (opcional)",
+							},
 						},
 					},
 				},
@@ -227,8 +244,8 @@ export class PackageSchema {
 						properties: {
 							_id: { type: "string" },
 							apartmentId: { type: "string" },
-							receiverConciergeId: { type: "string" },
-							deliveryConciergeId: { type: "string" },
+							receiverBy: { type: "string" },
+							deliveryBy: { type: "string" },
 							ownerName: { type: "string" },
 							courierName: { type: "string" },
 							recipientName: { type: "string" },
@@ -327,8 +344,8 @@ export class PackageSchema {
 						properties: {
 							_id: { type: "string" },
 							apartmentId: { type: "string" },
-							receiverConciergeId: { type: "string" },
-							deliveryConciergeId: { type: "string" },
+							receiverBy: { type: "string" },
+							deliveryBy: { type: "string" },
 							ownerName: { type: "string" },
 							courierName: { type: "string" },
 							recipientName: { type: "string" },
@@ -337,7 +354,7 @@ export class PackageSchema {
 							deliveryDate: { type: "string", format: "date-time" },
 							status: { type: "string" },
 							cancelReason: { type: "string" },
-							cancelledConciergeId: { type: "string" },
+							canceledBy: { type: "string" },
 							cancelledAt: { type: "string", format: "date-time" },
 							createdAt: { type: "string", format: "date-time" },
 							updatedAt: { type: "string", format: "date-time" },
@@ -364,21 +381,22 @@ export class PackageSchema {
 		},
 	};
 
-	public getCancelled = {
+
+	public getMyPackages = {
 		query: {
 			type: "object",
 			properties: {
-				days: {
-					type: "number",
-					description: "Número de dias para buscar cancelados (padrão: 7)",
-					example: 7,
-					default: 7,
+				status: {
+					type: "string",
+					enum: ["PENDENTE", "ENTREGUE", "CANCELADO"],
+					description: "Filtro opcional por status da encomenda",
+					example: "PENDENTE",
 				},
 			},
 		},
 		response: {
 			200: {
-				description: "Encomendas canceladas encontradas",
+				description: "Encomendas do morador encontradas",
 				type: "object",
 				properties: {
 					success: { type: "boolean" },
@@ -389,18 +407,118 @@ export class PackageSchema {
 							type: "object",
 							properties: {
 								_id: { type: "string" },
+								apartmentId: { type: "string" },
+								buildingId: { type: "string" },
+								receiverBy: { type: "string" },
+								deliveryBy: { type: "string" },
 								ownerName: { type: "string" },
-								description: { type: "string" },
 								courierName: { type: "string" },
-								apartmentNumber: { type: "string" },
+								recipientName: { type: "string" },
+								description: { type: "string" },
 								receiverDate: { type: "string", format: "date-time" },
+								deliveryDate: { type: "string", format: "date-time" },
+								status: { type: "string" },
 								cancelReason: { type: "string" },
-								cancelledConciergeId: { type: "string" },
+								canceledBy: { type: "string" },
 								cancelledAt: { type: "string", format: "date-time" },
-								cancelledByName: { type: "string" },
+								createdAt: { type: "string", format: "date-time" },
+								updatedAt: { type: "string", format: "date-time" },
+								apartmentNumber: { type: "string" },
+								apartmentFloor: {
+									type: "number",
+									description: "Andar do apartamento",
+								},
+								apartmentBlock: {
+									type: "string",
+									description: "Bloco do apartamento (opcional)",
+								},
 							},
 						},
 					},
+				},
+			},
+			401: {
+				description: "Não autenticado",
+				type: "object",
+				properties: {
+					statusCode: { type: "number" },
+					message: { type: "string" },
+					timestamp: { type: "string" },
+				},
+			},
+			403: {
+				description: "Apenas moradores podem visualizar suas encomendas",
+				type: "object",
+				properties: {
+					statusCode: { type: "number" },
+					message: { type: "string" },
+					timestamp: { type: "string" },
+				},
+			},
+			400: {
+				description: "Apartamento não encontrado no token",
+				type: "object",
+				properties: {
+					statusCode: { type: "number" },
+					message: { type: "string" },
+					timestamp: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public getMyPackageStats = {
+		response: {
+			200: {
+				description: "Estatísticas de encomendas do morador obtidas com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							totalAguardandoRetiradaMes: {
+								type: "number",
+								description: "Total de encomendas aguardando retirada no mês atual",
+							},
+							totalEntregues: {
+								type: "number",
+								description: "Total de encomendas entregues (todos os meses)",
+							},
+							totalAguardandoRetirada: {
+								type: "number",
+								description: "Total de encomendas aguardando retirada (todas)",
+							},
+						},
+					},
+				},
+			},
+			401: {
+				description: "Não autenticado",
+				type: "object",
+				properties: {
+					statusCode: { type: "number" },
+					message: { type: "string" },
+					timestamp: { type: "string" },
+				},
+			},
+			403: {
+				description: "Apenas moradores podem visualizar suas estatísticas",
+				type: "object",
+				properties: {
+					statusCode: { type: "number" },
+					message: { type: "string" },
+					timestamp: { type: "string" },
+				},
+			},
+			400: {
+				description: "Apartamento não encontrado no token",
+				type: "object",
+				properties: {
+					statusCode: { type: "number" },
+					message: { type: "string" },
+					timestamp: { type: "string" },
 				},
 			},
 		},

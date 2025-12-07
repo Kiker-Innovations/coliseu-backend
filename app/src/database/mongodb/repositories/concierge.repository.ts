@@ -4,6 +4,7 @@ import { IRepository } from "../interfaces/IRepository";
 import { env } from "@/config/env";
 import { randomUUID } from "node:crypto";
 import { getDate } from "@/v1/utils/utils";
+import { ConciergeStatusEnum } from "@/v1/enum/conciergeStatus.enum";
 
 
 export class ConciergeRepository
@@ -37,21 +38,32 @@ export class ConciergeRepository
     }
 
     public async findById(_id: string): Promise<ConciergeEntity | null> {
-        return await this.collection.findOne({ _id });
+        return await this.collection.findOne({ 
+            _id,
+            deletedAt: { $exists: false },
+        });
     }
 
     public async findOne(
         filter: Partial<ConciergeEntity>,
     ): Promise<ConciergeEntity | null> {
-        return await this.collection.findOne(filter);
+        return await this.collection.findOne({
+            ...filter,
+            deletedAt: { $exists: false },
+        });
     }
 
     public async findMany(): Promise<ConciergeEntity[]> {
-        return await this.collection.find({}).toArray();
+        return await this.collection.find({ 
+            deletedAt: { $exists: false },
+        }).toArray();
     }
 
     public async findManyByBuildingId(buildingId: string): Promise<ConciergeEntity[]> {
-        return await this.collection.find({ buildingId }).toArray();
+        return await this.collection.find({ 
+            buildingId,
+            deletedAt: { $exists: false },
+        }).toArray();
     }
 
     public async update(
@@ -73,8 +85,18 @@ export class ConciergeRepository
     }
 
     public async delete(_id: string): Promise<boolean> {
-        const result = await this.collection.deleteOne({ _id });
-        return result.deletedCount > 0;
+        const now = getDate();
+        const result = await this.collection.findOneAndUpdate(
+            { _id, deletedAt: { $exists: false } },
+            { 
+                $set: { 
+                    deletedAt: now,
+                    updatedAt: now,
+                    status: ConciergeStatusEnum.DELETADO,
+                } 
+            },
+        );
+        return result !== null;
     }
 
     public async updateByEmail(

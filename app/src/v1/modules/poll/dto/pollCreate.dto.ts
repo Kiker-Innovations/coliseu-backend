@@ -12,37 +12,63 @@ export const pollCreateSchema = z.object({
 		.min(2, "Deve haver pelo menos 2 opções")
 		.max(10, "Máximo de 10 opções permitidas"),
 	startDate: z
-		.string({ required_error: "Data de início é obrigatória" })
-		.regex(/^\d{4}-\d{2}-\d{2}$/, "Data de início deve estar no formato YYYY-MM-DD")
-		.refine((str) => {
-			const [year, month, day] = str.split("-").map(Number);
-			const date = new Date(year, month - 1, day);
-			return (
-				date.getFullYear() === year &&
-				date.getMonth() === month - 1 &&
-				date.getDate() === day
-			);
-		}, "Data de início inválida")
-		.transform((str) => {
-			const [year, month, day] = str.split("-").map(Number);
-			return new Date(year, month - 1, day, 0, 0, 0, 0);
-		}),
+		.preprocess((val) => {
+			// If already a Date object, return it
+			if (val instanceof Date) {
+				return val;
+			}
+			// If string, try to parse it
+			if (typeof val === "string") {
+				// Try ISO format first (YYYY-MM-DDTHH:mm:ss.sssZ or similar)
+				if (val.includes("T") || val.match(/^\d{4}-\d{2}-\d{2}/)) {
+					const date = new Date(val);
+					if (!isNaN(date.getTime())) {
+						return date;
+					}
+				}
+				// Try DD/MM/YYYY HH:mm format
+				if (val.includes("/") && val.includes(" ")) {
+					const [datePart, timePart] = val.split(" ");
+					if (datePart && timePart) {
+						const [day, month, year] = datePart.split("/").map(Number);
+						const [hour, minute] = timePart.split(":").map(Number);
+						if (day && month && year && hour !== undefined && minute !== undefined) {
+							return new Date(year, month - 1, day, hour, minute, 0, 0);
+						}
+					}
+				}
+			}
+			return val;
+		}, z.date({ required_error: "Data de início é obrigatória", invalid_type_error: "Data de início deve ser uma data válida" })),
 	endDate: z
-		.string({ required_error: "Data de término é obrigatória" })
-		.regex(/^\d{4}-\d{2}-\d{2}$/, "Data de término deve estar no formato YYYY-MM-DD")
-		.refine((str) => {
-			const [year, month, day] = str.split("-").map(Number);
-			const date = new Date(year, month - 1, day);
-			return (
-				date.getFullYear() === year &&
-				date.getMonth() === month - 1 &&
-				date.getDate() === day
-			);
-		}, "Data de término inválida")
-		.transform((str) => {
-			const [year, month, day] = str.split("-").map(Number);
-			return new Date(year, month - 1, day, 23, 59, 59, 999);
-		}),
+		.preprocess((val) => {
+			// If already a Date object, return it
+			if (val instanceof Date) {
+				return val;
+			}
+			// If string, try to parse it
+			if (typeof val === "string") {
+				// Try ISO format first (YYYY-MM-DDTHH:mm:ss.sssZ or similar)
+				if (val.includes("T") || val.match(/^\d{4}-\d{2}-\d{2}/)) {
+					const date = new Date(val);
+					if (!isNaN(date.getTime())) {
+						return date;
+					}
+				}
+				// Try DD/MM/YYYY HH:mm format
+				if (val.includes("/") && val.includes(" ")) {
+					const [datePart, timePart] = val.split(" ");
+					if (datePart && timePart) {
+						const [day, month, year] = datePart.split("/").map(Number);
+						const [hour, minute] = timePart.split(":").map(Number);
+						if (day && month && year && hour !== undefined && minute !== undefined) {
+							return new Date(year, month - 1, day, hour, minute, 0, 0);
+						}
+					}
+				}
+			}
+			return val;
+		}, z.date({ required_error: "Data de término é obrigatória", invalid_type_error: "Data de término deve ser uma data válida" })),
 }).refine(
 	(data) => {
 		return data.endDate > data.startDate;

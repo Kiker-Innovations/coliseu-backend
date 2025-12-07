@@ -89,6 +89,7 @@ export class ConciergeService {
 
     public async getConcierge(conciergeId: string): Promise<
         HttpResponse<{
+            _id: string;
             name: string;
             email: string;
             phone: string;
@@ -108,13 +109,14 @@ export class ConciergeService {
             success: true,
             message: "Porteiro encontrado com sucesso",
             data: {
+                _id: concierge._id,
                 name: concierge.name,
                 email: concierge.email,
                 phone: concierge.phone,
                 shift: concierge.shift,
                 status: concierge.status,
                 createdAt: concierge.createdAt,
-                updatedAt: concierge.createdAt,
+                updatedAt: concierge.updatedAt,
             },
         };
     }
@@ -223,6 +225,7 @@ export class ConciergeService {
 
     public async getAllConciergesByBuilding(buildingId: string): Promise<
         HttpResponse<{
+            _id: string;
             name: string;
             email: string;
             phone: string;
@@ -235,7 +238,14 @@ export class ConciergeService {
         return {
             success: true,
             message: "Porteiros encontrados com sucesso",
-            data: concierges
+            data: concierges.map((concierge) => ({
+                _id: concierge._id,
+                name: concierge.name,
+                email: concierge.email,
+                phone: concierge.phone,
+                shift: concierge.shift,
+                status: concierge.status,
+            })),
         };
     }
 

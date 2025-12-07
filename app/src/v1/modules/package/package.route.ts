@@ -32,35 +32,18 @@ export class PackageRouteV1 {
 		};
 	};
 
-	private getPending = (): RouteOptions => {
+	private getPackages = (): RouteOptions => {
 		return {
 			method: "GET",
-			url: "/v1/packages/pending",
+			url: "/v1/packages",
 			schema: {
 				tags: ["Packages"],
-				summary: "Get all pending packages",
-				description: "Lista todas as encomendas pendentes do edifício do porteiro autenticado",
-				...this.packageSchema.getPending,
+				summary: "Get packages",
+				description: "Lista as encomendas do edifício do porteiro autenticado. Opcionalmente filtra por status (PENDENTE, ENTREGUE, CANCELADO). Para CANCELADO, pode-se passar o parâmetro 'days' para filtrar por dias (padrão: 7).",
+				...this.packageSchema.getPackages,
 			},
 			preHandler: this.authMiddleware.authenticate,
-			handler: this.packageController.getPendingPackages.bind(
-				this.packageController,
-			) as RouteHandlerMethod,
-		};
-	};
-
-	private getDelivered = (): RouteOptions => {
-		return {
-			method: "GET",
-			url: "/v1/packages/delivered",
-			schema: {
-				tags: ["Packages"],
-				summary: "Get all delivered packages",
-				description: "Lista todas as encomendas entregues do edifício do porteiro autenticado",
-				...this.packageSchema.getDelivered,
-			},
-			preHandler: this.authMiddleware.authenticate,
-			handler: this.packageController.getDeliveredPackages.bind(
+			handler: this.packageController.getPackages.bind(
 				this.packageController,
 			) as RouteHandlerMethod,
 		};
@@ -135,18 +118,36 @@ export class PackageRouteV1 {
 		};
 	};
 
-	private getCancelled = (): RouteOptions => {
+
+	private getMyPackages = (): RouteOptions => {
 		return {
 			method: "GET",
-			url: "/v1/packages/cancelled",
+			url: "/v1/packages/my-packages",
 			schema: {
 				tags: ["Packages"],
-				summary: "Get all cancelled packages",
-				description: "Lista todas as encomendas canceladas nos últimos dias do edifício do porteiro autenticado",
-				...this.packageSchema.getCancelled,
+				summary: "Get my packages",
+				description: "Lista as encomendas do apartamento do morador autenticado. Opcionalmente filtra por status (PENDENTE, ENTREGUE, CANCELADO).",
+				...this.packageSchema.getMyPackages,
 			},
 			preHandler: this.authMiddleware.authenticate,
-			handler: this.packageController.getCancelledPackages.bind(
+			handler: this.packageController.getMyPackages.bind(
+				this.packageController,
+			) as RouteHandlerMethod,
+		};
+	};
+
+	private getMyPackageStats = (): RouteOptions => {
+		return {
+			method: "GET",
+			url: "/v1/packages/my-packages/stats",
+			schema: {
+				tags: ["Packages"],
+				summary: "Get my package statistics",
+				description: "Lista as estatísticas de encomendas do apartamento do morador autenticado",
+				...this.packageSchema.getMyPackageStats,
+			},
+			preHandler: this.authMiddleware.authenticate,
+			handler: this.packageController.getMyPackageStats.bind(
 				this.packageController,
 			) as RouteHandlerMethod,
 		};
@@ -155,13 +156,13 @@ export class PackageRouteV1 {
 	public routes = (): RouteOptions[] => {
 		return [
 			this.create(),
-			this.getPending(),
-			this.getDelivered(),
+			this.getPackages(),
 			this.getById(),
 			this.confirmDelivery(),
 			this.getStats(),
 			this.cancel(),
-			this.getCancelled(),
+			this.getMyPackages(),
+			this.getMyPackageStats(),
 		];
 	};
 }

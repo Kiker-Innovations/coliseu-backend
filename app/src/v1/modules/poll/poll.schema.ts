@@ -31,15 +31,13 @@ export class PollSchema {
 				},
 				startDate: {
 					type: "string",
-					format: "date",
-					description: "Data de início da enquete (YYYY-MM-DD). O status será determinado automaticamente: PROGRAMADO se a data for futura, ATIVO se for hoje ou passado",
-					example: "2025-01-15",
+					description: "Data de início da enquete (DD/MM/YYYY HH:mm). O status será determinado automaticamente: PROGRAMADO se a data for futura, ATIVO se for hoje ou passado",
+					example: "15/01/2025 10:30",
 				},
 				endDate: {
 					type: "string",
-					format: "date",
-					description: "Data de término da enquete (YYYY-MM-DD)",
-					example: "2025-01-20",
+					description: "Data de término da enquete (DD/MM/YYYY HH:mm)",
+					example: "20/01/2025 18:00",
 				},
 			},
 		},
@@ -92,22 +90,8 @@ export class PollSchema {
 	public getPollsByStatus = {
 		querystring: {
 			type: "object",
-			required: ["month", "year", "status"],
+			required: ["status"],
 			properties: {
-				month: {
-					type: "integer",
-					minimum: 1,
-					maximum: 12,
-					description: "Mês (1-12)",
-					example: 1,
-				},
-				year: {
-					type: "integer",
-					minimum: 2000,
-					maximum: 2100,
-					description: "Ano",
-					example: 2025,
-				},
 				status: {
 					anyOf: [
 						{
@@ -124,7 +108,7 @@ export class PollSchema {
 							maxItems: 4,
 						},
 					],
-					description: "Status para filtrar as enquetes. Pode ser uma string (ex: ATIVO), string separada por vírgula (ex: ATIVO,PROGRAMADO), ou array (ex: status=ATIVO&status=PROGRAMADO). Valores possíveis: ATIVO, PROGRAMADO, FINALIZADO, CANCELADO",
+					description: "Status para filtrar as enquetes. Pode ser uma string (ex: ATIVO), string separada por vírgula (ex: ATIVO,PROGRAMADO), ou array (ex: status=ATIVO&status=PROGRAMADO). Valores possíveis: ATIVO, PROGRAMADO, FINALIZADO, CANCELADO. As enquetes são ordenadas por data de início (mais recentes primeiro)",
 				},
 			},
 		},
@@ -348,19 +332,7 @@ export class PollSchema {
 	public getActiveStats = {
 		querystring: {
 			type: "object",
-			required: ["month", "year"],
-			properties: {
-				month: {
-					type: "string",
-					description: "Mês (1-12)",
-					example: "11",
-				},
-				year: {
-					type: "string",
-					description: "Ano",
-					example: "2025",
-				},
-			},
+			properties: {},
 		},
 		response: {
 			200: {

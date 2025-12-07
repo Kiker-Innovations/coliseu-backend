@@ -33,8 +33,8 @@ export class ConciergeSchema {
 				},
 				status: {
 					type: "string",
-					enum: ["INATIVO", "VALIDADO", "ATIVO", "DE_FERIAS"],
-					description: "Status do porteiro (INATIVO, VALIDADO, ATIVO, DE_FERIAS)",
+					enum: ["INATIVO", "VALIDADO", "ATIVO", "DE_FERIAS", "DELETADO"],
+					description: "Status do porteiro (INATIVO, VALIDADO, ATIVO, DE_FERIAS, DELETADO)",
 					example: "ATIVO",
 				},
 			},
@@ -169,8 +169,8 @@ export class ConciergeSchema {
 				},
 				status: {
 					type: "string",
-					enum: ["INATIVO", "VALIDADO", "ATIVO", "DE_FERIAS"],
-					description: "Status do porteiro (INATIVO, VALIDADO, ATIVO, DE_FERIAS)",
+					enum: ["INATIVO", "VALIDADO", "ATIVO", "DE_FERIAS", "DELETADO"],
+					description: "Status do porteiro (INATIVO, VALIDADO, ATIVO, DE_FERIAS, DELETADO)",
 					example: "ATIVO",
 				},
 			},

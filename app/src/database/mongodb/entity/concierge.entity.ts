@@ -13,6 +13,7 @@ export interface ConciergeEntity {
   code?: string;
   resetPasswordToken?: string;
   resetPasswordTokenExpiry?: Date;
+  deletedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }

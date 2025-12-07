@@ -3,8 +3,6 @@ import httpStatus from "http-status";
 import type { MongoClient } from "mongodb";
 import {
 	transformCreatePollDto,
-	transformPollListByMonthYearDto,
-	transformPollListByStatusDto,
 	transformCancelPollDto,
 } from "./dto";
 import { PollService } from "./poll.service";
@@ -55,9 +53,7 @@ export class PollController {
 		console.log(request.user.userType);
 		
 		const buildingId = request.user.buildingId;
-		const { month, year, status } = request.query as {
-			month: string;
-			year: string;
+		const { status } = request.query as {
 			status?: string | string[];
 		};
 
@@ -79,8 +75,6 @@ export class PollController {
 
 		const result = await this.pollService.getPollsByStatus({
 			buildingId,
-			month: Number(month),
-			year: Number(year),
 			status: statusArray,
 		});
 
@@ -101,37 +95,11 @@ export class PollController {
 
 		try {
 			const buildingId = request.user.buildingId;
-			const { month, year } = request.query as {
-				month: string | number;
-				year: string | number;
-			};
-
-			if (!month || !year) {
-				return reply.status(httpStatus.BAD_REQUEST).send({
-					success: false,
-					message: "month e year são obrigatórios",
-				});
-			}
-
-			const monthNum = typeof month === "string" ? Number(month) : month;
-			const yearNum = typeof year === "string" ? Number(year) : year;
-
-			if (isNaN(monthNum) || isNaN(yearNum)) {
-				return reply.status(httpStatus.BAD_REQUEST).send({
-					success: false,
-					message: "Mês e ano devem ser números válidos",
-				});
-			}
-
-			const validatedData = transformPollListByMonthYearDto({
-				month: monthNum,
-				year: yearNum,
-			});
 
 			return reply
 				.status(httpStatus.OK)
 				.send(
-					await this.pollService.getActivePollsStats(validatedData, buildingId),
+					await this.pollService.getActivePollsStats(buildingId),
 				);
 		} catch (error: any) {
 			if (error.issues) {

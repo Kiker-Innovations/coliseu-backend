@@ -165,5 +165,61 @@ export class PackageRepository
 			.sort({ cancelledAt: -1 })
 			.toArray();
 	}
+
+	public async findByApartmentId(apartmentId: string): Promise<PackageEntity[]> {
+		return await this.collection
+			.find({ apartmentId })
+			.sort({ receiverDate: -1 })
+			.toArray();
+	}
+
+	public async findPendingByApartmentId(apartmentId: string): Promise<PackageEntity[]> {
+		return await this.collection
+			.find({ 
+				apartmentId,
+				status: PackageStatusEnum.PENDENTE,
+			})
+			.sort({ receiverDate: -1 })
+			.toArray();
+	}
+
+	public async findDeliveredByApartmentId(apartmentId: string): Promise<PackageEntity[]> {
+		return await this.collection
+			.find({ 
+				apartmentId,
+				status: PackageStatusEnum.ENTREGUE,
+			})
+			.sort({ deliveryDate: -1 })
+			.toArray();
+	}
+
+	public async countPendingThisMonthByApartmentId(apartmentId: string): Promise<number> {
+		const now = getDate();
+		const startOfMonth = toDate(now).startOf("month").toDate();
+		const endOfMonth = toDate(now).endOf("month").toDate();
+
+		return await this.collection.countDocuments({
+			apartmentId,
+			status: PackageStatusEnum.PENDENTE,
+			receiverDate: {
+				$gte: startOfMonth,
+				$lte: endOfMonth,
+			},
+		});
+	}
+
+	public async countDeliveredAllByApartmentId(apartmentId: string): Promise<number> {
+		return await this.collection.countDocuments({
+			apartmentId,
+			status: PackageStatusEnum.ENTREGUE,
+		});
+	}
+
+	public async countPendingAllByApartmentId(apartmentId: string): Promise<number> {
+		return await this.collection.countDocuments({
+			apartmentId,
+			status: PackageStatusEnum.PENDENTE,
+		});
+	}
 }
 

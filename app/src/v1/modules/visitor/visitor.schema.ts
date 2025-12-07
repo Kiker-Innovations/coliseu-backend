@@ -36,12 +36,6 @@ export class VisitorSchema {
 					description: "Placa do veículo (formato: ABC1234 ou ABC1D23)",
 					example: "ABC1234",
 				},
-				apartmentId: {
-					type: "string",
-					format: "uuid",
-					description: "ID do apartamento",
-					example: "123e4567-e89b-12d3-a456-426614174000",
-				},
 				types: {
 					type: "array",
 					items: {
@@ -166,7 +160,6 @@ export class VisitorSchema {
 										phone: { type: "string" },
 										vehicleType: { type: "string" },
 										vehiclePlate: { type: "string" },
-										apartmentId: { type: "string" },
 										types: {
 											type: "array",
 											items: {
@@ -329,12 +322,6 @@ export class VisitorSchema {
 					type: "string",
 					description: "Placa do veículo (formato: ABC1234 ou ABC1D23)",
 					example: "ABC1234",
-				},
-				apartmentId: {
-					type: "string",
-					format: "uuid",
-					description: "ID do apartamento",
-					example: "123e4567-e89b-12d3-a456-426614174000",
 				},
 				types: {
 					type: "array",

@@ -44,8 +44,11 @@ const envSchema = z.object({
         projectOffers: z.string().min(1),
         projectSuggestions: z.string().min(1),
         projectSuggestionPolls: z.string().min(1),
+        projectOfferVotes: z.string().min(1),
         visitors: z.string().min(1),
         visits: z.string().min(1),
+        financials: z.string().min(1),
+        financialSnapshots: z.string().min(1),
       }),
     }),
   }),
@@ -106,7 +109,8 @@ export const env = envSchema.parse({
         packages: process.env.MONGODB_COLLECTION_PACKAGES || "packages",
         apartments: process.env.MONGODB_COLLECTION_APARTMENTS || "apartments",
         residentSuggestions:
-          process.env.MONGODB_COLLECTION_RESIDENT_SUGGESTIONS || "resident_suggestions",
+          process.env.MONGODB_COLLECTION_RESIDENT_SUGGESTIONS ||
+          "resident_suggestions",
         polls: process.env.MONGODB_COLLECTION_POLLS || "polls",
         pollVotes: process.env.MONGODB_COLLECTION_POLL_VOTES || "poll_votes",
         seasons: process.env.MONGODB_COLLECTION_SEASONS || "seasons",
@@ -119,8 +123,15 @@ export const env = envSchema.parse({
         projectSuggestionPolls:
           process.env.MONGODB_COLLECTION_PROJECT_SUGGESTION_POLLS ||
           "project_suggestion_polls",
+        projectOfferVotes:
+          process.env.MONGODB_COLLECTION_PROJECT_OFFER_VOTES ||
+          "project_offer_votes",
         visitors: process.env.MONGODB_COLLECTION_VISITORS || "visitors",
         visits: process.env.MONGODB_COLLECTION_VISITS || "visits",
+        financials: process.env.MONGODB_COLLECTION_FINANCIALS || "financials",
+        financialSnapshots:
+          process.env.MONGODB_COLLECTION_FINANCIAL_SNAPSHOTS ||
+          "financial_snapshots",
       },
     },
   },

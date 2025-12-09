@@ -50,7 +50,6 @@ export class PollController {
                 httpStatus.FORBIDDEN,
             );
         }
-		console.log(request.user.userType);
 		
 		const buildingId = request.user.buildingId;
 		const { status } = request.query as {

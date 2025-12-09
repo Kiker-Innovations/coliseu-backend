@@ -67,10 +67,7 @@ export class ProjectService {
       await this.projectRepository.findManyByBuildingIdAndSeasonId(
         buildingId,
         fromSeasonId
-      );
-
-	  console.log(projects);
-	  
+      );	  
 
     const projectsWithOffers = await Promise.all(
       projects.map(async (project) => {

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Novo Documento Disponível - Coliseu</title>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+		body {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			background-color: #f4f4f4;
+			padding: 20px;
+		}
+		.container {
+			max-width: 600px;
+			margin: 0 auto;
+			background-color: #ffffff;
+			border-radius: 10px;
+			overflow: hidden;
+			box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		}
+		.header {
+			background: linear-gradient(135deg, #C17A54 0%, #9E6344 100%);
+			padding: 40px 20px;
+			text-align: center;
+		}
+		.logo {
+			width: 80px;
+			height: 80px;
+			margin: 0 auto 20px;
+			background-color: #ffffff;
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			padding: 10px;
+		}
+		.logo img {
+			width: 60px;
+			height: 60px;
+			object-fit: contain;
+		}
+		.header h1 {
+			color: #ffffff;
+			font-size: 28px;
+			margin: 0;
+		}
+		.content {
+			padding: 40px 30px;
+		}
+		.greeting {
+			font-size: 18px;
+			color: #000000;
+			margin-bottom: 20px;
+		}
+		.message {
+			font-size: 16px;
+			color: #000000;
+			line-height: 1.6;
+			margin-bottom: 30px;
+		}
+		.info-box {
+			background-color: #ffffff;
+			border-left: 4px solid #C17A54;
+			padding: 15px;
+			margin: 20px 0;
+			font-size: 14px;
+			color: #000000;
+		}
+		.info-box strong {
+			color: #000000;
+			font-size: 16px;
+		}
+		.info-item {
+			margin: 10px 0;
+			font-size: 14px;
+			color: #000000;
+		}
+		.info-item-label {
+			font-weight: bold;
+			color: #000000;
+		}
+		.cta-box {
+			background-color: #ffffff;
+			border-left: 4px solid #C17A54;
+			padding: 20px;
+			margin: 30px 0;
+			text-align: center;
+		}
+		.cta-box p {
+			font-size: 16px;
+			color: #000000;
+			margin-bottom: 10px;
+		}
+		.cta-button {
+			display: inline-block;
+			background: linear-gradient(135deg, #C17A54 0%, #9E6344 100%);
+			color: #ffffff;
+			text-decoration: none;
+			padding: 12px 30px;
+			border-radius: 5px;
+			font-weight: bold;
+			margin-top: 15px;
+		}
+		.cta-button:hover {
+			opacity: 0.9;
+		}
+		.attachment-notice {
+			background-color: #fff3cd;
+			border-left: 4px solid #ffc107;
+			padding: 15px;
+			margin: 20px 0;
+			font-size: 14px;
+			color: #856404;
+		}
+		.footer {
+			background-color: #f8f8f8;
+			padding: 30px;
+			text-align: center;
+			border-top: 1px solid #eeeeee;
+		}
+		.footer p {
+			font-size: 14px;
+			color: #999999;
+			margin: 5px 0;
+		}
+		.footer a {
+			color: #C17A54;
+			text-decoration: none;
+		}
+		.social-links {
+			margin-top: 20px;
+		}
+		.social-links a {
+			display: inline-block;
+			margin: 0 10px;
+			color: #C17A54;
+			font-size: 14px;
+		}
+		@media only screen and (max-width: 600px) {
+			.container {
+				border-radius: 0;
+			}
+			.content {
+				padding: 30px 20px;
+			}
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="header">
+			<div class="logo">
+				<img src="https://coliseu-condo.s3.us-east-1.amazonaws.com/coliseu/logos/coliseu_logo_vertical.png" alt="Coliseu Logo">
+			</div>
+			<h1>Novo Documento</h1>
+		</div>
+		
+		<div class="content">
+			<p class="greeting">Olá, <strong>{{residentName}}</strong>!</p>
+			
+			<p class="message">
+				Um novo documento foi publicado e está disponível para consulta.
+			</p>
+			
+			<div class="info-box">
+				<strong>📄 Informações do Documento</strong>
+				<div class="info-item">
+					<span class="info-item-label">🏢 Condomínio:</span> {{buildingName}}
+				</div>
+				<div class="info-item">
+					<span class="info-item-label">📋 Documento:</span> {{documentName}}
+				</div>
+				<div class="info-item">
+					<span class="info-item-label">📝 Descrição:</span> {{documentDescription}}
+				</div>
+			</div>
+			
+			{{#if canAttach}}
+			<div class="cta-box">
+				<p><strong>O documento também está disponível para download no aplicativo.</strong></p>
+				<a href="{{documentUrl}}" class="cta-button">Baixar Documento</a>
+			</div>
+			{{else}}
+			<div class="attachment-notice">
+				<strong>⚠️ Aviso:</strong> Este arquivo é muito grande para ser enviado por e-mail. 
+				Por favor, acesse o aplicativo Coliseu na aba <strong>Documentos</strong> para fazer o download.
+			</div>
+			<div class="cta-box">
+				<p><strong>Acesse o aplicativo para baixar o documento.</strong></p>
+				<a href="{{documentUrl}}" class="cta-button">Acessar Documento</a>
+			</div>
+			{{/if}}
+			
+			<p class="message" style="font-size: 14px; color: #666666;">
+				Esta é uma notificação automática do sistema Coliseu. Por favor, não responda este e-mail.
+			</p>
+		</div>
+		
+		<div class="footer">
+			<p><strong>Coliseu</strong></p>
+			<p>Sistema de Gestão Condominial</p>
+			<p style="margin-top: 15px;">
+				Dúvidas? Entre em contato: 
+				<a href="mailto:help@coliseucondo.com.br">help@coliseucondo.com.br</a>
+			</p>
+			<div class="social-links">
+				<a href="#">Instagram</a> • 
+				<a href="#">Facebook</a> • 
+				<a href="#">LinkedIn</a>
+			</div>
+			<p style="margin-top: 20px; font-size: 12px; color: #bbbbbb;">
+				© {{year}} Coliseu. Todos os direitos reservados.
+			</p>
+		</div>
+	</div>
+</body>
+</html>
+

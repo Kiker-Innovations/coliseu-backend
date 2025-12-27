@@ -36,6 +36,7 @@ const envSchema = z.object({
         buildings: z.string().min(1),
         packages: z.string().min(1),
         apartments: z.string().min(1),
+        amenities: z.string().min(1),
         residentSuggestions: z.string().min(1),
         polls: z.string().min(1),
         pollVotes: z.string().min(1),
@@ -50,6 +51,7 @@ const envSchema = z.object({
         financials: z.string().min(1),
         financialSnapshots: z.string().min(1),
         documents: z.string().min(1),
+        amenityBookings: z.string().min(1),
       }),
     }),
   }),
@@ -110,6 +112,7 @@ export const env = envSchema.parse({
         buildings: process.env.MONGODB_COLLECTION_BUILDINGS || "buildings",
         packages: process.env.MONGODB_COLLECTION_PACKAGES || "packages",
         apartments: process.env.MONGODB_COLLECTION_APARTMENTS || "apartments",
+        amenities: process.env.MONGODB_COLLECTION_AMENITIES || "amenities",
         residentSuggestions:
           process.env.MONGODB_COLLECTION_RESIDENT_SUGGESTIONS ||
           "resident_suggestions",
@@ -135,6 +138,7 @@ export const env = envSchema.parse({
           process.env.MONGODB_COLLECTION_FINANCIAL_SNAPSHOTS ||
           "financial_snapshots",
         documents: process.env.MONGODB_COLLECTION_DOCUMENTS || "documents",
+        amenityBookings: process.env.MONGODB_COLLECTION_AMENITY_BOOKINGS || "amenity_bookings",
       },
     },
   },

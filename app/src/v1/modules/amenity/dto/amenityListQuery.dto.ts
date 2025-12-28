@@ -12,7 +12,7 @@ export const amenityListQuerySchema = z.object({
 		.optional(),
 	bookingType: z
 		.enum(["DIARIO", "POR_HORAS"], {
-			errorMap: () => ({ message: "Tipo de agendamento deve ser DIARIO ou POR_HORAS" }),
+			errorMap: () => ({ message: "Tipo de reserva deve ser DIARIO ou POR_HORAS" }),
 		})
 		.optional(),
 });

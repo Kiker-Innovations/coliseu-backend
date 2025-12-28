@@ -2,7 +2,7 @@ export class AmenityBookingSchema {
 	public create = {
 		body: {
 			type: "object",
-			required: ["amenityId", "startDate", "endDate", "totalValue"],
+			required: ["amenityId", "startDate"],
 			properties: {
 				amenityId: {
 					type: "string",
@@ -12,25 +12,42 @@ export class AmenityBookingSchema {
 				startDate: {
 					type: "string",
 					format: "date-time",
-					description: "Data e hora de início do agendamento (ISO 8601)",
-					example: "2024-01-15T14:00:00Z",
+					description: "Data de início da reserva (ISO 8601)",
+					example: "2024-01-15T00:00:00Z",
 				},
 				endDate: {
 					type: "string",
 					format: "date-time",
-					description: "Data e hora de término do agendamento (ISO 8601)",
-					example: "2024-01-15T16:00:00Z",
+					description: "Data de término da reserva (ISO 8601) - obrigatório para DIARIO",
+					example: "2024-01-15T23:59:59Z",
 				},
-				totalValue: {
+				startTime: {
+					type: "string",
+					pattern: "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$",
+					description: "Hora de início (HH:mm) - obrigatório para POR_HORAS",
+					example: "14:00",
+				},
+				endTime: {
+					type: "string",
+					pattern: "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$",
+					description: "Hora de término (HH:mm) - obrigatório para POR_HORAS",
+					example: "16:00",
+				},
+				numberOfHours: {
 					type: "number",
-					description: "Valor total do agendamento",
-					example: 150.50,
+					description: "Número de horas (opcional, calculado automaticamente se não fornecido)",
+					example: 2,
+				},
+				observation: {
+					type: "string",
+					description: "Observação opcional da reserva",
+					example: "Observação sobre a reserva",
 				},
 			},
 		},
 		response: {
 			201: {
-				description: "Agendamento criado com sucesso",
+				description: "Reserva criada com sucesso",
 				type: "object",
 				properties: {
 					success: { type: "boolean" },
@@ -59,7 +76,7 @@ export class AmenityBookingSchema {
 		},
 		response: {
 			200: {
-				description: "Lista de agendamentos",
+				description: "Lista de reservas",
 				type: "object",
 				properties: {
 					success: { type: "boolean" },
@@ -67,7 +84,45 @@ export class AmenityBookingSchema {
 					data: {
 						type: "object",
 						properties: {
-							bookings: { type: "array", items: { type: "object" } },
+							bookings: {
+								type: "array",
+								items: {
+									type: "object",
+									properties: {
+										_id: { type: "string" },
+										amenityId: { type: "string" },
+										apartmentId: { type: "string" },
+										residentId: { type: ["string", "null"] },
+										startDate: { type: ["string", "null"] },
+										endDate: { type: ["string", "null"] },
+										startTime: { type: ["string", "null"] },
+										endTime: { type: ["string", "null"] },
+										numberOfHours: { type: ["number", "null"] },
+										numberOfDays: { type: ["number", "null"] },
+										status: { type: "string" },
+										totalValue: { type: "number" },
+										qrCode: { type: ["string", "null"] },
+										qrCodeExpiry: { type: ["string", "null"] },
+										observation: { type: ["string", "null"] },
+										createdAt: { type: ["string", "null"] },
+										updatedAt: { type: ["string", "null"] },
+										amenity: {
+											type: ["object", "null"],
+											properties: {
+												_id: { type: "string" },
+												name: { type: "string" },
+												description: { type: ["string", "null"] },
+												type: { type: ["string", "null"] },
+												value: { type: ["number", "null"] },
+												fineValue: { type: ["number", "null"] },
+												maxResidents: { type: ["number", "null"] },
+												bookingType: { type: ["string", "null"] },
+												maxHours: { type: ["number", "null"] },
+											},
+										},
+									},
+								},
+							},
 							total: { type: "number" },
 							page: { type: "number" },
 							limit: { type: "number" },
@@ -85,13 +140,13 @@ export class AmenityBookingSchema {
 			properties: {
 				id: {
 					type: "string",
-					description: "ID do agendamento",
+					description: "ID da reserva",
 				},
 			},
 		},
 		response: {
 			200: {
-				description: "Agendamento cancelado",
+				description: "Reserva cancelada",
 				type: "object",
 				properties: {
 					success: { type: "boolean" },
@@ -100,7 +155,7 @@ export class AmenityBookingSchema {
 				},
 			},
 			404: {
-				description: "Agendamento não encontrado",
+				description: "Reserva não encontrada",
 				type: "object",
 				properties: {
 					success: { type: "boolean" },
@@ -113,7 +168,7 @@ export class AmenityBookingSchema {
 	public listByBuilding = {
 		response: {
 			200: {
-				description: "Lista de agendamentos do edifício",
+				description: "Lista de reservas do edifício",
 				type: "object",
 				properties: {
 					success: { type: "boolean" },
@@ -121,7 +176,59 @@ export class AmenityBookingSchema {
 					data: {
 						type: "object",
 						properties: {
-							bookings: { type: "array", items: { type: "object" } },
+							bookings: {
+								type: "array",
+								items: {
+									type: "object",
+									properties: {
+										_id: { type: "string" },
+										amenityId: { type: "string" },
+										apartmentId: { type: "string" },
+										residentId: { type: ["string", "null"] },
+										startDate: { type: ["string", "null"] },
+										endDate: { type: ["string", "null"] },
+										startTime: { type: ["string", "null"] },
+										endTime: { type: ["string", "null"] },
+										numberOfHours: { type: ["number", "null"] },
+										numberOfDays: { type: ["number", "null"] },
+										status: { type: "string" },
+										totalValue: { type: "number" },
+										qrCode: { type: ["string", "null"] },
+										qrCodeExpiry: { type: ["string", "null"] },
+										observation: { type: ["string", "null"] },
+										createdAt: { type: ["string", "null"] },
+										updatedAt: { type: ["string", "null"] },
+										amenity: {
+											type: ["object", "null"],
+											properties: {
+												_id: { type: "string" },
+												name: { type: "string" },
+												description: { type: ["string", "null"] },
+												type: { type: ["string", "null"] },
+												bookingType: { type: ["string", "null"] },
+												maxHours: { type: ["number", "null"] },
+											},
+										},
+										apartment: {
+											type: ["object", "null"],
+											properties: {
+												_id: { type: "string" },
+												number: { type: "string" },
+												floor: { type: ["number", "null"] },
+												block: { type: ["string", "null"] },
+											},
+										},
+										resident: {
+											type: ["object", "null"],
+											properties: {
+												_id: { type: "string" },
+												name: { type: "string" },
+												email: { type: "string" },
+											},
+										},
+									},
+								},
+							},
 							total: { type: "number" },
 						},
 					},
@@ -129,6 +236,70 @@ export class AmenityBookingSchema {
 			},
 			400: {
 				description: "ID do edifício não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public getAvailableTimeSlots = {
+		params: {
+			type: "object",
+			required: ["id"],
+			properties: {
+				id: {
+					type: "string",
+					description: "ID da comodidade",
+				},
+			},
+		},
+		querystring: {
+			type: "object",
+			required: ["date"],
+			properties: {
+				date: {
+					type: "string",
+					format: "date",
+					description: "Data para verificar horários disponíveis (YYYY-MM-DD)",
+					example: "2024-01-15",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Horários disponíveis",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							availableSlots: {
+								type: "array",
+								items: { type: "string" },
+								description: "Lista de horários disponíveis (formato HH:mm)",
+							},
+							bookedSlots: {
+								type: "array",
+								items: {
+									type: "object",
+									properties: {
+										time: { type: "string" },
+										bookingId: { type: "string" },
+									},
+								},
+								description: "Lista de horários já agendados",
+							},
+						},
+					},
+				},
+			},
+			400: {
+				description: "Dados inválidos",
 				type: "object",
 				properties: {
 					success: { type: "boolean" },

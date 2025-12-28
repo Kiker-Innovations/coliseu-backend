@@ -10,20 +10,6 @@ export const amenityCreateSchema = z.object({
 		.min(3, "Nome deve ter no mínimo 3 caracteres")
 		.max(100, "Nome deve ter no máximo 100 caracteres")
 		.trim(),
-	quantity: z
-		.preprocess(
-			(val) => {
-				if (val === "" || val === null || val === undefined) return undefined;
-				const num = typeof val === "string" ? Number(val) : val;
-				if (isNaN(num) || !isFinite(num)) return undefined;
-				return num;
-			},
-			z
-				.number()
-				.int("Quantidade deve ser um valor inteiro")
-				.min(1, "Quantidade deve ser pelo menos 1")
-				.optional(),
-		),
 	description: z
 		.string()
 		.max(500, "Descrição deve ter no máximo 500 caracteres")
@@ -57,7 +43,20 @@ export const amenityCreateSchema = z.object({
 			},
 			z
 				.number()
-				.min(0, "Valor da multa não pode ser negativo")
+				.min(0, "Valor da multa por atraso não pode ser negativo")
+				.optional(),
+		),
+	nonComplianceFine: z
+		.preprocess(
+			(val) => {
+				if (val === "" || val === null || val === undefined) return undefined;
+				const num = typeof val === "string" ? Number(val) : val;
+				if (isNaN(num) || !isFinite(num)) return undefined;
+				return num;
+			},
+			z
+				.number()
+				.min(0, "Valor da multa por descumprimento não pode ser negativo")
 				.optional(),
 		),
 	maxResidents: z
@@ -70,13 +69,13 @@ export const amenityCreateSchema = z.object({
 			},
 			z
 				.number()
-				.int("Quantidade máxima de residents deve ser um valor inteiro")
-				.min(1, "Quantidade máxima de residents deve ser pelo menos 1")
+				.int("Quantidade Máxima de Residentes deve ser um valor inteiro")
+				.min(1, "Quantidade Máxima de Residentes deve ser pelo menos 1")
 				.optional(),
 		),
 	bookingType: z
 		.enum(["DIARIO", "POR_HORAS"], {
-			errorMap: () => ({ message: "Tipo de agendamento deve ser DIARIO ou POR_HORAS" }),
+			errorMap: () => ({ message: "Tipo de reserva deve ser DIARIO ou POR_HORAS" }),
 		})
 		.optional(),
 	maxHours: z
@@ -89,10 +88,13 @@ export const amenityCreateSchema = z.object({
 			},
 			z
 				.number()
-				.int("Máximo de horas deve ser um valor inteiro")
-				.min(1, "Máximo de horas deve ser pelo menos 1")
 				.optional(),
 		),
+	usageRules: z
+		.string()
+		.max(5000, "Normas de uso devem ter no máximo 5000 caracteres")
+		.trim()
+		.optional(),
 	status: z
 		.enum(AmenityStatusEnumValues as [string, ...string[]], {
 			required_error: "Status é obrigatório",

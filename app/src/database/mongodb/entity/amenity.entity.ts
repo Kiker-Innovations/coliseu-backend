@@ -4,12 +4,13 @@ export interface AmenityEntity {
 	_id: string;
 	buildingId: string;
 	name: string;
-	quantity: number;
 	description?: string;
 	type?: "COMODIDADE" | "AREA_COMUM";
 	value?: number;
 	fineValue?: number;
+	nonComplianceFine?: number;
 	maxResidents?: number;
+	usageRules?: string; // HTML content for rich text
 	bookingType?: "DIARIO" | "POR_HORAS";
 	maxHours?: number;
 	status?: AmenityStatusEnumType;

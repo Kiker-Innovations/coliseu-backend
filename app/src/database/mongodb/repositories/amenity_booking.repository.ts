@@ -56,8 +56,9 @@ export class AmenityBookingRepository
 	}
 
 	public async findMany(
-		filter?: Partial<AmenityBookingEntity>,
+		filter?: Partial<AmenityBookingEntity> | any, // Permitir queries MongoDB complexas
 	): Promise<AmenityBookingEntity[]> {
+		// Se filter já é um objeto de query MongoDB (com $gte, $lte, $in, etc), usar diretamente
 		return await this.collection.find(filter || {}).toArray();
 	}
 

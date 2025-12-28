@@ -12,6 +12,8 @@ import { httpException } from "../../../config/error";
 import httpStatus from "http-status";
 import type { HttpResponse } from "../../../interface/httpResponse.interface";
 import { AmenityBookingStatusEnum } from "../../enum/amenityBookingStatus.enum";
+import { getDate } from "../../utils/utils";
+import { randomUUID } from "node:crypto";
 
 export class AmenityBookingService {
 	private amenityBookingRepository: AmenityBookingRepository;
@@ -26,9 +28,253 @@ export class AmenityBookingService {
 		this.residentRepository = new ResidentRepository(mongoClient);
 	}
 
+	/**
+	 * Calcula o valor total da reserva baseado no tipo de reserva
+	 */
+	private calculateTotalValue(
+		amenity: any,
+		startDate: Date,
+		endDate?: Date,
+		startTime?: string,
+		endTime?: string,
+		numberOfHours?: number,
+	): number {
+		if (!amenity.value || amenity.value === 0) {
+			return 0;
+		}
+
+		if (amenity.bookingType === "POR_HORAS") {
+			// Calcular horas
+			let hours = 0;
+			if (numberOfHours) {
+				hours = numberOfHours;
+			} else if (startTime && endTime) {
+				const [startHour, startMin] = startTime.split(":").map(Number);
+				const [endHour, endMin] = endTime.split(":").map(Number);
+				const startMinutes = startHour * 60 + startMin;
+				const endMinutes = endHour * 60 + endMin;
+				hours = Math.ceil((endMinutes - startMinutes) / 60);
+			} else {
+				hours = 1; // Default 1 hora
+			}
+			return amenity.value * hours;
+		} else {
+			// Calcular dias (DIARIO)
+			if (!endDate) {
+				return amenity.value; // 1 dia
+			}
+			const diffTime = endDate.getTime() - startDate.getTime();
+			const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+			return amenity.value * Math.max(1, diffDays);
+		}
+	}
+
+	/**
+	 * Gera um QR code mockado para pagamento PIX
+	 */
+	private generateQRCode(bookingId: string, totalValue: number): string {
+		// Mock QR code PIX - em produção, usar biblioteca como qrcode ou API de pagamento
+		const qrData = {
+			bookingId,
+			value: totalValue,
+			currency: "BRL",
+			description: `Pagamento reserva ${bookingId}`,
+			timestamp: new Date().toISOString(),
+			type: "PIX",
+		};
+		// Retornar uma string base64 mockada simulando um QR code PIX
+		// Em produção, isso seria gerado por uma biblioteca de QR code ou API de pagamento
+		return `PIX_MOCK_${Buffer.from(JSON.stringify(qrData)).toString("base64")}`;
+	}
+
+	/**
+	 * Lista horários disponíveis para uma comodidade em uma data específica
+	 */
+	public async getAvailableTimeSlots(
+		amenityId: string,
+		date: Date,
+	): Promise<HttpResponse<{ availableSlots: string[]; bookedSlots: any[] }>> {
+		const amenity = await this.amenityRepository.findById(amenityId);
+
+		if (!amenity) {
+			throw httpException("Comodidade não encontrada", httpStatus.NOT_FOUND);
+		}
+
+		if (amenity.bookingType !== "POR_HORAS") {
+			throw httpException(
+				"Esta comodidade não utiliza reserva por horas",
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
+		// Buscar reservas existentes para a data
+		const startOfDay = new Date(date);
+		startOfDay.setHours(0, 0, 0, 0);
+		const endOfDay = new Date(date);
+		endOfDay.setHours(23, 59, 59, 999);
+
+		const existingBookings = await this.amenityBookingRepository.findMany({
+			amenityId,
+			startDate: {
+				$gte: startOfDay,
+				$lte: endOfDay,
+			},
+			status: {
+				$in: [AmenityBookingStatusEnum.PENDENTE, AmenityBookingStatusEnum.CONFIRMADO],
+			},
+		});
+
+		// Gerar todos os horários possíveis (00:00 até 23:00)
+		const allSlots: string[] = [];
+		for (let hour = 0; hour < 24; hour++) {
+			allSlots.push(`${hour.toString().padStart(2, "0")}:00`);
+		}
+
+		// Filtrar horários já agendados
+		const bookedSlots: any[] = [];
+		existingBookings.forEach((booking) => {
+			if (booking.startTime && booking.endTime) {
+				const [startHour] = booking.startTime.split(":").map(Number);
+				const [endHour] = booking.endTime.split(":").map(Number);
+				for (let hour = startHour; hour < endHour; hour++) {
+					const slot = `${hour.toString().padStart(2, "0")}:00`;
+					if (!bookedSlots.find((s) => s.time === slot)) {
+						bookedSlots.push({
+							time: slot,
+							bookingId: booking._id,
+						});
+					}
+				}
+			}
+		});
+
+		// Filtrar horários disponíveis
+		const availableSlots = allSlots.filter(
+			(slot) => !bookedSlots.find((booked) => booked.time === slot),
+		);
+
+		// Se há maxHours, considerar apenas slots que permitam reserva completa
+		if (amenity.maxHours) {
+			const validSlots: string[] = [];
+			availableSlots.forEach((slot) => {
+				const [slotHour] = slot.split(":").map(Number);
+				// Verificar se há slots consecutivos suficientes
+				let consecutiveAvailable = 0;
+				for (let i = 0; i < amenity.maxHours; i++) {
+					const checkSlot = `${(slotHour + i).toString().padStart(2, "0")}:00`;
+					if (availableSlots.includes(checkSlot)) {
+						consecutiveAvailable++;
+					}
+				}
+				if (consecutiveAvailable >= amenity.maxHours) {
+					validSlots.push(slot);
+				}
+			});
+			return {
+				success: true,
+				message: "Horários disponíveis encontrados",
+				data: {
+					availableSlots: validSlots,
+					bookedSlots,
+				},
+			};
+		}
+
+		return {
+			success: true,
+			message: "Horários disponíveis encontrados",
+			data: {
+				availableSlots,
+				bookedSlots,
+			},
+		};
+	}
+
+	/**
+	 * Verifica conflitos de reserva considerando horários
+	 */
+	private async checkConflicts(
+		amenityId: string,
+		startDate: Date,
+		endDate?: Date,
+		startTime?: string,
+		endTime?: string,
+		excludeBookingId?: string,
+	): Promise<boolean> {
+		const query: any = {
+			amenityId,
+			status: {
+				$in: [AmenityBookingStatusEnum.PENDENTE, AmenityBookingStatusEnum.CONFIRMADO],
+			},
+		};
+
+		if (excludeBookingId) {
+			query._id = { $ne: excludeBookingId };
+		}
+
+		// Para reserva por horas, verificar conflitos de horário no mesmo dia
+		if (startTime && endTime) {
+			const startOfDay = new Date(startDate);
+			startOfDay.setHours(0, 0, 0, 0);
+			const endOfDay = new Date(startDate);
+			endOfDay.setHours(23, 59, 59, 999);
+
+			query.startDate = {
+				$gte: startOfDay,
+				$lte: endOfDay,
+			};
+
+			const existingBookings = await this.amenityBookingRepository.findMany(query);
+
+			const [startHour, startMin] = startTime.split(":").map(Number);
+			const [endHour, endMin] = endTime.split(":").map(Number);
+			const startMinutes = startHour * 60 + startMin;
+			const endMinutes = endHour * 60 + endMin;
+
+			for (const booking of existingBookings) {
+				if (booking.startTime && booking.endTime) {
+					const [bookStartHour, bookStartMin] = booking.startTime.split(":").map(Number);
+					const [bookEndHour, bookEndMin] = booking.endTime.split(":").map(Number);
+					const bookStartMinutes = bookStartHour * 60 + bookStartMin;
+					const bookEndMinutes = bookEndHour * 60 + bookEndMin;
+
+					// Verificar sobreposição de horários
+					if (
+						(startMinutes < bookEndMinutes && endMinutes > bookStartMinutes) ||
+						(bookStartMinutes < endMinutes && bookEndMinutes > startMinutes)
+					) {
+						return true; // Conflito encontrado
+					}
+				}
+			}
+			return false; // Sem conflitos
+		}
+
+		// Para reserva diária, verificar conflitos de data
+		if (endDate) {
+			const conflictingBookings = await this.amenityBookingRepository.findConflictingBookings(
+				amenityId,
+				startDate,
+				endDate,
+				excludeBookingId,
+			);
+			return conflictingBookings.length > 0;
+		}
+
+		// Reserva de 1 dia
+		const conflictingBookings = await this.amenityBookingRepository.findConflictingBookings(
+			amenityId,
+			startDate,
+			startDate,
+			excludeBookingId,
+		);
+		return conflictingBookings.length > 0;
+	}
+
 	public async createAmenityBooking(
 		amenityBookingCreateDto: AmenityBookingCreateDto,
 		apartmentId: string,
+		residentId?: string,
 	): Promise<HttpResponse<AmenityBookingEntity>> {
 		// Verificar se a comodidade existe
 		const amenity = await this.amenityRepository.findById(amenityBookingCreateDto.amenityId);
@@ -37,34 +283,131 @@ export class AmenityBookingService {
 			throw httpException("Comodidade não encontrada", httpStatus.NOT_FOUND);
 		}
 
-		// Verificar conflitos de data
-		const conflictingBookings = await this.amenityBookingRepository.findConflictingBookings(
+		// Verificar se a comodidade está ativa
+		if (amenity.status !== "ATIVO") {
+			throw httpException("Comodidade não está disponível para reserva", httpStatus.BAD_REQUEST);
+		}
+
+		// Validar campos baseado no tipo de reserva
+		if (amenity.bookingType === "POR_HORAS") {
+			if (!amenityBookingCreateDto.startTime || !amenityBookingCreateDto.endTime) {
+				throw httpException(
+					"Horário de início e término são obrigatórios para reserva por horas",
+					httpStatus.BAD_REQUEST,
+				);
+			}
+
+			// Validar maxHours
+			if (amenity.maxHours) {
+				const [startHour, startMin] = amenityBookingCreateDto.startTime.split(":").map(Number);
+				const [endHour, endMin] = amenityBookingCreateDto.endTime.split(":").map(Number);
+				const startMinutes = startHour * 60 + startMin;
+				const endMinutes = endHour * 60 + endMin;
+				const hours = (endMinutes - startMinutes) / 60;
+
+				if (hours > amenity.maxHours) {
+					throw httpException(
+						`A reserva não pode exceder ${amenity.maxHours} horas`,
+						httpStatus.BAD_REQUEST,
+					);
+				}
+			}
+		} else {
+			// DIARIO - endDate é obrigatório
+			if (!amenityBookingCreateDto.endDate) {
+				throw httpException(
+					"Data de término é obrigatória para reserva diária",
+					httpStatus.BAD_REQUEST,
+				);
+			}
+		}
+
+		// Verificar conflitos
+		const hasConflict = await this.checkConflicts(
 			amenityBookingCreateDto.amenityId,
 			amenityBookingCreateDto.startDate,
 			amenityBookingCreateDto.endDate,
+			amenityBookingCreateDto.startTime,
+			amenityBookingCreateDto.endTime,
 		);
 
-		if (conflictingBookings.length > 0) {
-			throw httpException(
-				"Já existe um agendamento neste período",
-				httpStatus.CONFLICT,
-			);
+		if (hasConflict) {
+			throw httpException("Já existe uma reserva neste período", httpStatus.CONFLICT);
+		}
+
+		// Calcular valor total
+		const totalValue = this.calculateTotalValue(
+			amenity,
+			amenityBookingCreateDto.startDate,
+			amenityBookingCreateDto.endDate,
+			amenityBookingCreateDto.startTime,
+			amenityBookingCreateDto.endTime,
+			amenityBookingCreateDto.numberOfHours,
+		);
+
+		// Calcular número de horas/dias
+		let numberOfHours: number | undefined;
+		let numberOfDays: number | undefined;
+
+		if (amenity.bookingType === "POR_HORAS") {
+			if (amenityBookingCreateDto.numberOfHours) {
+				numberOfHours = amenityBookingCreateDto.numberOfHours;
+			} else if (amenityBookingCreateDto.startTime && amenityBookingCreateDto.endTime) {
+				const [startHour, startMin] = amenityBookingCreateDto.startTime.split(":").map(Number);
+				const [endHour, endMin] = amenityBookingCreateDto.endTime.split(":").map(Number);
+				const startMinutes = startHour * 60 + startMin;
+				const endMinutes = endHour * 60 + endMin;
+				numberOfHours = Math.ceil((endMinutes - startMinutes) / 60);
+			}
+		} else {
+			if (amenityBookingCreateDto.endDate) {
+				const diffTime =
+					amenityBookingCreateDto.endDate.getTime() - amenityBookingCreateDto.startDate.getTime();
+				numberOfDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+			} else {
+				numberOfDays = 1;
+			}
+		}
+
+		// Preparar endDate para reserva por horas (mesmo dia)
+		let endDate = amenityBookingCreateDto.endDate;
+		if (amenity.bookingType === "POR_HORAS" && !endDate) {
+			endDate = new Date(amenityBookingCreateDto.startDate);
+		}
+
+		// Gerar QR code se a comodidade for paga
+		let qrCode: string | undefined;
+		let qrCodeExpiry: Date | undefined;
+		if (amenity.value && amenity.value > 0) {
+			const bookingId = randomUUID();
+			qrCode = this.generateQRCode(bookingId, totalValue);
+			// QR code expira em 24 horas
+			qrCodeExpiry = new Date();
+			qrCodeExpiry.setHours(qrCodeExpiry.getHours() + 24);
 		}
 
 		const amenityBookingEntity: CreateAmenityBookingEntity = {
 			amenityId: amenityBookingCreateDto.amenityId,
 			apartmentId,
+			residentId,
 			startDate: amenityBookingCreateDto.startDate,
-			endDate: amenityBookingCreateDto.endDate,
+			endDate: endDate || amenityBookingCreateDto.startDate,
+			startTime: amenityBookingCreateDto.startTime,
+			endTime: amenityBookingCreateDto.endTime,
+			numberOfHours,
+			numberOfDays,
 			status: AmenityBookingStatusEnum.PENDENTE,
-			totalValue: amenityBookingCreateDto.totalValue,
+			totalValue,
+			qrCode,
+			qrCodeExpiry,
+			observation: amenityBookingCreateDto.observation,
 		};
 
 		const createdBooking = await this.amenityBookingRepository.create(amenityBookingEntity);
 
 		return {
 			success: true,
-			message: "Agendamento criado com sucesso! Aguardando confirmação.",
+			message: "Reserva criada com sucesso! Aguardando confirmação.",
 			data: createdBooking,
 		};
 	}
@@ -85,90 +428,107 @@ export class AmenityBookingService {
 			query.limit,
 		);
 
-		// Buscar dados das amenities para cada booking e serializar corretamente
-		const bookingsWithAmenity = await Promise.all(
-			bookings.map(async (booking) => {
-				if (!booking) {
-					return null;
-				}
+		// Serializar bookings sem Promise.all
+		const serializedBookings: any[] = [];
+		
+		for (const booking of bookings) {
+			if (!booking) {
+				continue;
+			}
 
-				// Garantir que o booking tenha todos os campos necessários
-				const bookingData = {
-					_id: booking._id || "",
-					amenityId: booking.amenityId || "",
-					apartmentId: booking.apartmentId || "",
-					startDate: booking.startDate || null,
-					endDate: booking.endDate || null,
-					status: booking.status || "",
-					totalValue: booking.totalValue || 0,
-					createdAt: booking.createdAt || null,
-					updatedAt: booking.updatedAt || null,
-				};
+			// Buscar amenity
+			const amenity = await this.amenityRepository.findById(booking.amenityId);
 
-				const amenity = await this.amenityRepository.findById(bookingData.amenityId);
-				
-				// Serializar o booking para garantir que todos os campos sejam retornados
-				const serializedBooking: any = {
-					_id: String(bookingData._id),
-					amenityId: String(bookingData.amenityId),
-					apartmentId: String(bookingData.apartmentId),
-					status: String(bookingData.status),
-					totalValue: Number(bookingData.totalValue),
-				};
+			// Serializar o booking
+			const serializedBooking: any = {
+				_id: String(booking._id || ""),
+				amenityId: String(booking.amenityId || ""),
+				apartmentId: String(booking.apartmentId || ""),
+				residentId: booking.residentId ? String(booking.residentId) : null,
+				status: String(booking.status || ""),
+				totalValue: Number(booking.totalValue || 0),
+				startTime: booking.startTime || null,
+				endTime: booking.endTime || null,
+				numberOfHours: booking.numberOfHours || null,
+				numberOfDays: booking.numberOfDays || null,
+				qrCode: booking.qrCode || null,
+				observation: booking.observation || null,
+			};
 
 				// Converter datas para ISO string
-				if (bookingData.startDate) {
-					serializedBooking.startDate = bookingData.startDate instanceof Date 
-						? bookingData.startDate.toISOString() 
-						: new Date(bookingData.startDate).toISOString();
-				}
-
-				if (bookingData.endDate) {
-					serializedBooking.endDate = bookingData.endDate instanceof Date 
-						? bookingData.endDate.toISOString() 
-						: new Date(bookingData.endDate).toISOString();
-				}
-
-				if (bookingData.createdAt) {
-					serializedBooking.createdAt = bookingData.createdAt instanceof Date 
-						? bookingData.createdAt.toISOString() 
-						: new Date(bookingData.createdAt).toISOString();
-				}
-
-				if (bookingData.updatedAt) {
-					serializedBooking.updatedAt = bookingData.updatedAt instanceof Date 
-						? bookingData.updatedAt.toISOString() 
-						: new Date(bookingData.updatedAt).toISOString();
-				}
-
-				// Adicionar dados da amenity
-				if (amenity) {
-					serializedBooking.amenity = {
-						name: amenity.name,
-						description: amenity.description || null,
-						type: amenity.type || null,
-						value: amenity.value || null,
-						fineValue: amenity.fineValue || null,
-						maxResidents: amenity.maxResidents || null,
-						bookingType: amenity.bookingType || null,
-						maxHours: amenity.maxHours || null,
-					};
+				if (booking.startDate) {
+					serializedBooking.startDate = booking.startDate instanceof Date
+						? booking.startDate.toISOString()
+						: new Date(booking.startDate).toISOString();
 				} else {
-					serializedBooking.amenity = null;
+					serializedBooking.startDate = null;
 				}
-				
-				return serializedBooking;
-			}),
-		);
 
-		// Filtrar nulls caso existam
-		const validBookings = bookingsWithAmenity.filter((booking) => booking !== null) as any[];
+				if (booking.endDate) {
+					serializedBooking.endDate = booking.endDate instanceof Date
+						? booking.endDate.toISOString()
+						: new Date(booking.endDate).toISOString();
+				} else {
+					serializedBooking.endDate = null;
+				}
+
+				if (booking.qrCodeExpiry) {
+					serializedBooking.qrCodeExpiry = booking.qrCodeExpiry instanceof Date
+						? booking.qrCodeExpiry.toISOString()
+						: new Date(booking.qrCodeExpiry).toISOString();
+				} else {
+					serializedBooking.qrCodeExpiry = null;
+				}
+
+			if (booking.createdAt) {
+				serializedBooking.createdAt = booking.createdAt instanceof Date
+					? booking.createdAt.toISOString()
+					: new Date(booking.createdAt).toISOString();
+			} else {
+				serializedBooking.createdAt = null;
+			}
+
+			if (booking.updatedAt) {
+				serializedBooking.updatedAt = booking.updatedAt instanceof Date
+					? booking.updatedAt.toISOString()
+					: new Date(booking.updatedAt).toISOString();
+			} else {
+				serializedBooking.updatedAt = null;
+			}
+
+			if (booking.qrCodeExpiry) {
+				serializedBooking.qrCodeExpiry = booking.qrCodeExpiry instanceof Date
+					? booking.qrCodeExpiry.toISOString()
+					: new Date(booking.qrCodeExpiry).toISOString();
+			} else {
+				serializedBooking.qrCodeExpiry = null;
+			}
+
+			// Adicionar dados da amenity
+			if (amenity) {
+				serializedBooking.amenity = {
+					_id: String(amenity._id),
+					name: String(amenity.name || ""),
+					description: amenity.description ? String(amenity.description) : null,
+					type: amenity.type ? String(amenity.type) : null,
+					value: amenity.value ? Number(amenity.value) : null,
+					fineValue: amenity.fineValue ? Number(amenity.fineValue) : null,
+					maxResidents: amenity.maxResidents ? Number(amenity.maxResidents) : null,
+					bookingType: amenity.bookingType ? String(amenity.bookingType) : null,
+					maxHours: amenity.maxHours ? Number(amenity.maxHours) : null,
+				};
+			} else {
+				serializedBooking.amenity = null;
+			}
+
+			serializedBookings.push(serializedBooking);
+		}
 
 		return {
 			success: true,
-			message: "Agendamentos encontrados",
+			message: "Reservas encontradas",
 			data: {
-				bookings: validBookings,
+				bookings: serializedBookings,
 				total,
 				page: query.page,
 				limit: query.limit,
@@ -182,11 +542,11 @@ export class AmenityBookingService {
 		const booking = await this.amenityBookingRepository.findById(bookingId);
 
 		if (!booking) {
-			throw httpException("Agendamento não encontrado", httpStatus.NOT_FOUND);
+			throw httpException("Reserva não encontrada", httpStatus.NOT_FOUND);
 		}
 
 		if (booking.status === AmenityBookingStatusEnum.CANCELADO) {
-			throw httpException("Agendamento já está cancelado", httpStatus.BAD_REQUEST);
+			throw httpException("Reserva já está cancelada", httpStatus.BAD_REQUEST);
 		}
 
 		const updatedBooking = await this.amenityBookingRepository.update(bookingId, {
@@ -194,12 +554,12 @@ export class AmenityBookingService {
 		});
 
 		if (!updatedBooking) {
-			throw httpException("Erro ao cancelar agendamento", httpStatus.INTERNAL_SERVER_ERROR);
+			throw httpException("Erro ao cancelar reserva", httpStatus.INTERNAL_SERVER_ERROR);
 		}
 
 		return {
 			success: true,
-			message: "Agendamento cancelado com sucesso",
+			message: "Reserva cancelada com sucesso",
 			data: updatedBooking,
 		};
 	}
@@ -221,7 +581,7 @@ export class AmenityBookingService {
 		if (amenityIds.length === 0) {
 			return {
 				success: true,
-				message: "Nenhum agendamento encontrado",
+				message: "Nenhuma reserva encontrada",
 				data: {
 					bookings: [],
 					total: 0,
@@ -229,11 +589,15 @@ export class AmenityBookingService {
 			};
 		}
 
-		// Filtrar agendamentos excluindo FINALIZADO e CANCELADO
+		// Filtrar reservas apenas com status PENDENTE, CONFIRMADO e EM_ANDAMENTO
 		const filters: any = {
 			amenityId: { $in: amenityIds },
 			status: {
-				$nin: [AmenityBookingStatusEnum.FINALIZADO, AmenityBookingStatusEnum.CANCELADO],
+				$in: [
+					AmenityBookingStatusEnum.PENDENTE,
+					AmenityBookingStatusEnum.CONFIRMADO,
+					AmenityBookingStatusEnum.EM_ANDAMENTO,
+				],
 			},
 		};
 
@@ -251,7 +615,7 @@ export class AmenityBookingService {
 
 				const amenity = await this.amenityRepository.findById(booking.amenityId);
 				const apartment = await this.apartmentRepository.findById(booking.apartmentId);
-				
+
 				// Buscar resident do apartment
 				let resident = null;
 				if (apartment) {
@@ -267,57 +631,76 @@ export class AmenityBookingService {
 					_id: String(booking._id),
 					amenityId: String(booking.amenityId),
 					apartmentId: String(booking.apartmentId),
+					residentId: booking.residentId ? String(booking.residentId) : null,
 					status: String(booking.status),
 					totalValue: Number(booking.totalValue),
+					startTime: booking.startTime || null,
+					endTime: booking.endTime || null,
+					numberOfHours: booking.numberOfHours || null,
+					numberOfDays: booking.numberOfDays || null,
+					qrCode: booking.qrCode || null,
+					observation: booking.observation || null,
 				};
 
 				// Converter datas para ISO string
 				if (booking.startDate) {
-					serializedBooking.startDate = booking.startDate instanceof Date 
-						? booking.startDate.toISOString() 
+					serializedBooking.startDate = booking.startDate instanceof Date
+						? booking.startDate.toISOString()
 						: new Date(booking.startDate).toISOString();
 				}
 
 				if (booking.endDate) {
-					serializedBooking.endDate = booking.endDate instanceof Date 
-						? booking.endDate.toISOString() 
+					serializedBooking.endDate = booking.endDate instanceof Date
+						? booking.endDate.toISOString()
 						: new Date(booking.endDate).toISOString();
 				}
 
 				if (booking.createdAt) {
-					serializedBooking.createdAt = booking.createdAt instanceof Date 
-						? booking.createdAt.toISOString() 
+					serializedBooking.createdAt = booking.createdAt instanceof Date
+						? booking.createdAt.toISOString()
 						: new Date(booking.createdAt).toISOString();
+				} else {
+					serializedBooking.createdAt = null;
 				}
 
 				if (booking.updatedAt) {
-					serializedBooking.updatedAt = booking.updatedAt instanceof Date 
-						? booking.updatedAt.toISOString() 
+					serializedBooking.updatedAt = booking.updatedAt instanceof Date
+						? booking.updatedAt.toISOString()
 						: new Date(booking.updatedAt).toISOString();
+				} else {
+					serializedBooking.updatedAt = null;
 				}
 
 				// Adicionar dados da amenity
-				serializedBooking.amenity = amenity ? {
-					_id: String(amenity._id),
-					name: amenity.name,
-					description: amenity.description || null,
-					type: amenity.type || null,
-				} : null;
+				serializedBooking.amenity = amenity
+					? {
+							_id: String(amenity._id),
+							name: amenity.name,
+							description: amenity.description || null,
+							type: amenity.type || null,
+							bookingType: amenity.bookingType || null,
+							maxHours: amenity.maxHours || null,
+						}
+					: null;
 
 				// Adicionar dados do apartment
-				serializedBooking.apartment = apartment ? {
-					_id: String(apartment._id),
-					number: apartment.number,
-					floor: apartment.floor || null,
-					block: apartment.block || null,
-				} : null;
+				serializedBooking.apartment = apartment
+					? {
+							_id: String(apartment._id),
+							number: apartment.number,
+							floor: apartment.floor || null,
+							block: apartment.block || null,
+						}
+					: null;
 
 				// Adicionar dados do resident
-				serializedBooking.resident = resident ? {
-					_id: String(resident._id),
-					name: resident.name,
-					email: resident.email,
-				} : null;
+				serializedBooking.resident = resident
+					? {
+							_id: String(resident._id),
+							name: resident.name,
+							email: resident.email,
+						}
+					: null;
 
 				return serializedBooking;
 			}),
@@ -328,7 +711,7 @@ export class AmenityBookingService {
 
 		return {
 			success: true,
-			message: "Agendamentos encontrados",
+			message: "Reservas encontradas",
 			data: {
 				bookings: validBookings,
 				total,
@@ -336,4 +719,3 @@ export class AmenityBookingService {
 		};
 	}
 }
-

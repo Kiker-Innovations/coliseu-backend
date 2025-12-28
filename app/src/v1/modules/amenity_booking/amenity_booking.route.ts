@@ -22,7 +22,7 @@ export class AmenityBookingRouteV1 {
 			schema: {
 				tags: ["Amenity Bookings"],
 				summary: "Create a new amenity booking",
-				description: "Cria um novo agendamento de comodidade",
+				description: "Cria uma nova reserva de comodidade",
 				...this.amenityBookingSchema.create,
 			},
 			preHandler: this.authMiddleware.authenticate,
@@ -39,7 +39,7 @@ export class AmenityBookingRouteV1 {
 			schema: {
 				tags: ["Amenity Bookings"],
 				summary: "List amenity bookings",
-				description: "Lista agendamentos de comodidades com filtros opcionais",
+				description: "Lista reservas de comodidades com filtros opcionais",
 				...this.amenityBookingSchema.list,
 			},
 			preHandler: this.authMiddleware.authenticate,
@@ -56,7 +56,7 @@ export class AmenityBookingRouteV1 {
 			schema: {
 				tags: ["Amenity Bookings"],
 				summary: "Cancel amenity booking",
-				description: "Cancela um agendamento de comodidade",
+				description: "Cancela uma reserva de comodidade",
 				...this.amenityBookingSchema.cancel,
 			},
 			preHandler: this.authMiddleware.authenticate,
@@ -73,11 +73,28 @@ export class AmenityBookingRouteV1 {
 			schema: {
 				tags: ["Amenity Bookings"],
 				summary: "List amenity bookings by building (Admin)",
-				description: "Lista todos os agendamentos de comodidades do edifício (exclui FINALIZADO e CANCELADO)",
+				description: "Lista todas as reservas de comodidades do edifício (exclui FINALIZADO e CANCELADO)",
 				...this.amenityBookingSchema.listByBuilding,
 			},
 			preHandler: this.authMiddleware.authenticate,
 			handler: this.amenityBookingController.getAmenityBookingsByBuilding.bind(
+				this.amenityBookingController,
+			) as RouteHandlerMethod,
+		};
+	};
+
+	private getAvailableTimeSlots = (): RouteOptions => {
+		return {
+			method: "GET",
+			url: "/v1/amenity-bookings/:id/available-slots",
+			schema: {
+				tags: ["Amenity Bookings"],
+				summary: "Get available time slots for an amenity",
+				description: "Lista horários disponíveis para reserva de uma comodidade em uma data específica",
+				...this.amenityBookingSchema.getAvailableTimeSlots,
+			},
+			preHandler: this.authMiddleware.authenticate,
+			handler: this.amenityBookingController.getAvailableTimeSlots.bind(
 				this.amenityBookingController,
 			) as RouteHandlerMethod,
 		};
@@ -89,6 +106,7 @@ export class AmenityBookingRouteV1 {
 			this.list(),
 			this.cancel(),
 			this.listByBuilding(),
+			this.getAvailableTimeSlots(),
 		];
 	};
 }

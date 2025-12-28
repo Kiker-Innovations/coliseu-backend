@@ -21,19 +21,19 @@ export class AmenityService {
 			id: string;
 			buildingId: string;
 			name: string;
-			quantity: number;
 		}>
 	> {
 		// Se o tipo for AREA_COMUM, não incluir value e fineValue
 		const amenityEntity: CreateAmenityEntity = {
 			buildingId: amenityCreateDto.buildingId,
 			name: amenityCreateDto.name,
-			quantity: amenityCreateDto.quantity || 1, // Default para 1 se não fornecido
 			description: amenityCreateDto.description,
 			type: amenityCreateDto.type, // Sempre incluir o tipo se fornecido
 			value: amenityCreateDto.type === "AREA_COMUM" ? undefined : amenityCreateDto.value,
 			fineValue: amenityCreateDto.type === "AREA_COMUM" ? undefined : amenityCreateDto.fineValue,
+			nonComplianceFine: amenityCreateDto.type === "AREA_COMUM" ? undefined : amenityCreateDto.nonComplianceFine,
 			maxResidents: amenityCreateDto.maxResidents,
+			usageRules: amenityCreateDto.usageRules,
 			bookingType: amenityCreateDto.bookingType,
 			maxHours: amenityCreateDto.maxHours,
 			status: amenityCreateDto.status,
@@ -48,7 +48,6 @@ export class AmenityService {
 				id: createdAmenity._id,
 				buildingId: createdAmenity.buildingId,
 				name: createdAmenity.name,
-				quantity: createdAmenity.quantity,
 			},
 		};
 	}
@@ -94,7 +93,6 @@ export class AmenityService {
 		const amenities = await this.amenityRepository.findMany({
 			buildingId,
 			status: "ATIVO",
-			type: "COMODIDADE",
 		});
 
 		return {

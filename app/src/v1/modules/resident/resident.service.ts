@@ -68,7 +68,7 @@ export class ResidentService {
 			email: residentCreateDto.email,
 			passwordHash,
 			phone: residentCreateDto.phone,
-			status: ResidentStatusEnum.INATIVO,
+			status: ResidentStatusEnum.A_CONFIRMACAO_EMAIL,
 			photoUrl: null,
 			residentCode,
 		};
@@ -245,11 +245,18 @@ export class ResidentService {
 		}
 
 		if (
-			resident.status === ResidentStatusEnum.VALIDADO ||
+			resident.status === ResidentStatusEnum.A_VALIDACAO ||
 			resident.status === ResidentStatusEnum.ATIVO
 		) {
 			throw httpException(
 				"Cadastro já foi confirmado anteriormente",
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
+		if (resident.status !== ResidentStatusEnum.A_CONFIRMACAO_EMAIL) {
+			throw httpException(
+				"Email já foi confirmado ou status inválido",
 				httpStatus.BAD_REQUEST,
 			);
 		}
@@ -262,7 +269,7 @@ export class ResidentService {
 		}
 
 		await this.residentRepository.updateByEmail(residentConfirmDto.email, {
-			status: ResidentStatusEnum.VALIDADO,
+			status: ResidentStatusEnum.A_VALIDACAO,
 		});
 
 		const apartment = await this.apartmentRepository.findById(resident.apartmentId);
@@ -313,6 +320,180 @@ export class ResidentService {
 			message:
 				"Código de recuperação enviado para seu email. Verifique sua caixa de entrada.",
 			data: null,
+		};
+	}
+
+	public async getResidentStatusByEmail(
+		email: string,
+	): Promise<HttpResponse<{
+		name: string;
+		email: string;
+		apartmentNumber?: string;
+		apartmentBlock?: string;
+		status: string;
+		rejectType?: string;
+		rejectNote?: string;
+		buildingId?: string;
+		apartmentId?: string;
+	}>> {
+		const resident = await this.getResidentByEmail(email);
+
+		if (!resident) {
+			throw httpException("Morador não encontrado", httpStatus.NOT_FOUND);
+		}
+
+		// Buscar dados do apartamento
+		const apartment = await this.apartmentRepository.findById(resident.apartmentId);
+
+		return {
+			success: true,
+			message: "Dados do morador encontrados",
+			data: {
+				name: resident.name,
+				email: resident.email,
+				apartmentNumber: apartment?.number,
+				apartmentBlock: apartment?.block,
+				status: resident.status,
+				rejectType: resident.rejectType,
+				rejectNote: resident.rejectNote,
+				buildingId: resident.buildingId,
+				apartmentId: resident.apartmentId,
+			},
+		};
+	}
+
+	public async resendConfirmationEmail(
+		email: string,
+	): Promise<HttpResponse<null>> {
+		const resident = await this.getResidentByEmail(email);
+
+		if (!resident) {
+			throw httpException("Morador não encontrado", httpStatus.NOT_FOUND);
+		}
+
+		if (resident.status !== ResidentStatusEnum.A_CONFIRMACAO_EMAIL) {
+			throw httpException(
+				"Email de confirmação só pode ser reenviado para cadastros aguardando confirmação de email",
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
+		// Reenviar email de confirmação
+		const residentEmail = new ResidentEmail();
+		residentEmail.sendConfirmationEmailAsync(
+			resident.email,
+			resident.name,
+			resident.residentCode,
+		);
+
+		return {
+			success: true,
+			message: "Email de confirmação reenviado com sucesso",
+			data: null,
+		};
+	}
+
+	public async updateRejectedResident(
+		email: string,
+		residentUpdateDto: ResidentUpdateDto,
+	): Promise<HttpResponse<{
+		email: string;
+		phone: string;
+		status: string;
+		presignedUrl?: string;
+	}>> {
+		const resident = await this.getResidentByEmail(email);
+
+		if (!resident) {
+			throw httpException("Morador não encontrado", httpStatus.NOT_FOUND);
+		}
+
+		if (resident.status !== ResidentStatusEnum.REJEITADO) {
+			throw httpException(
+				"Esta operação só é permitida para cadastros rejeitados",
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
+		// Verificar se email foi alterado e se já existe
+		if (residentUpdateDto.email && residentUpdateDto.email !== resident.email) {
+			const existingResident = await this.residentRepository.findByEmail(
+				residentUpdateDto.email,
+			);
+			if (existingResident && existingResident._id !== resident._id) {
+				throw httpException(
+					"Email já cadastrado no sistema",
+					httpStatus.CONFLICT,
+				);
+			}
+		}
+
+		// Preparar dados de atualização
+		const updateData: any = {
+			status: ResidentStatusEnum.A_VALIDACAO,
+		};
+
+		if (residentUpdateDto.name) {
+			updateData.name = residentUpdateDto.name;
+		}
+
+		if (residentUpdateDto.email) {
+			updateData.email = residentUpdateDto.email;
+		}
+
+		if (residentUpdateDto.phone) {
+			updateData.phone = residentUpdateDto.phone;
+		}
+
+		if (residentUpdateDto.buildingId) {
+			updateData.buildingId = residentUpdateDto.buildingId;
+		}
+
+		if (residentUpdateDto.apartmentId) {
+			updateData.apartmentId = residentUpdateDto.apartmentId;
+		}
+
+		// Se senha foi fornecida, fazer hash
+		if (residentUpdateDto.password) {
+			updateData.passwordHash = await hashPassword(residentUpdateDto.password);
+		}
+
+		// Gerar presignedUrl para foto (sempre, mesmo que não seja usada)
+		const { presignedUrl, publicUrl } = await this.generatePresignedUrl(
+			resident._id,
+			"jpg",
+		);
+
+		// Atualizar photoUrl
+		updateData.photoUrl = publicUrl;
+
+		// Atualizar dados
+		const updatedResident = await this.residentRepository.update(
+			resident._id,
+			updateData,
+		);
+
+		// Remover campos de rejeição usando $unset
+		if (updatedResident) {
+			await this.residentRepository.removeRejectionFields(resident._id);
+		}
+
+		if (!updatedResident) {
+			throw httpException(
+				"Erro ao atualizar morador",
+				httpStatus.INTERNAL_SERVER_ERROR,
+			);
+		}
+
+		return {
+			success: true,
+			message: "Dados atualizados com sucesso. Seu cadastro será revisado novamente.",
+			data: {
+				email: updatedResident.email,
+				phone: updatedResident.phone,
+				status: updatedResident.status,
+				presignedUrl,
+			},
 		};
 	}
 

@@ -32,6 +32,9 @@ const authGuardPlugin = async (
 
 		`${config.stripPrefix}/v1/residents/forget-password`,
 		`${config.stripPrefix}/v1/residents/reset-password`,
+		`${config.stripPrefix}/v1/residents/status`,
+		`${config.stripPrefix}/v1/residents/resend-confirmation-email`,
+		`${config.stripPrefix}/v1/residents/update-rejected`,
 		`${config.stripPrefix}/v1/admins/forget-password`,
 		`${config.stripPrefix}/v1/admins/reset-password`,
 		`${config.stripPrefix}/v1/concierges/forget-password`,

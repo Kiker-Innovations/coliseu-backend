@@ -17,6 +17,8 @@ import { VisitorRouteV1 } from "./v1/modules/visitor/visitor.route";
 import { VisitRouteV1 } from "./v1/modules/visit/visit.route";
 import { FinancialRouteV1 } from "./v1/modules/financial/financial.route";
 import { DocumentRouteV1 } from "./v1/modules/document/document.route";
+import { AmenityRouteV1 } from "./v1/modules/amenity/amenity.route";
+import { AmenityBookingRouteV1 } from "./v1/modules/amenity_booking/amenity_booking.route";
 
 export class Route {
   public registerRoutes = async (server: FastifyInstance): Promise<void> => {
@@ -40,6 +42,8 @@ export class Route {
       ...new VisitRouteV1(mongoClient).routes(),
       ...new FinancialRouteV1(mongoClient).routes(),
       ...new DocumentRouteV1(mongoClient).routes(),
+      ...new AmenityRouteV1(mongoClient).routes(),
+      ...new AmenityBookingRouteV1(mongoClient).routes(),
     ]) {
       server.route(route);
     }

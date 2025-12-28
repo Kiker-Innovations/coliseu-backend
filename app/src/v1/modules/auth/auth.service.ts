@@ -58,16 +58,23 @@ export class AuthService {
       throw httpException("Credenciais inválidas", httpStatus.UNAUTHORIZED);
     }
 
-    if (resident.status === ResidentStatusEnum.INATIVO) {
+    if (resident.status === ResidentStatusEnum.A_CONFIRMACAO_EMAIL) {
       throw httpException(
         "Cadastro não confirmado. Verifique seu email.",
         httpStatus.FORBIDDEN
       );
     }
 
-    if (resident.status === ResidentStatusEnum.VALIDADO) {
+    if (resident.status === ResidentStatusEnum.A_VALIDACAO) {
       throw httpException(
         "Cadastro aguardando aprovação do administrador.",
+        httpStatus.FORBIDDEN
+      );
+    }
+
+    if (resident.status === ResidentStatusEnum.REJEITADO) {
+      throw httpException(
+        "Cadastro rejeitado. Verifique os motivos e atualize seus dados.",
         httpStatus.FORBIDDEN
       );
     }

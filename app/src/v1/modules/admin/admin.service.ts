@@ -5,6 +5,8 @@ import type {
 	AdminEntity,
 } from "../../../database/mongodb/entity/admin.entity";
 import { AdminRepository } from "../../../database/mongodb/repositories/admin.repository";
+import { ResidentRepository } from "../../../database/mongodb/repositories/resident.repository";
+import { ApartmentRepository } from "../../../database/mongodb/repositories/apartment.repository";
 import type {
 	AdminConfirmDto,
 	AdminCreateDto,
@@ -24,12 +26,17 @@ import { AdminEmail } from "./admin.emails";
 import { sendPasswordResetEmail } from "@/v1/utils/emailHelper";
 import { getDate } from "@/v1/utils/utils";
 import { AdminStatusEnum } from "../../enum/adminStatus.enum";
+import { ResidentStatusEnum } from "../../enum/residentStatus.enum";
 
 export class AdminService {
 	private adminRepository: AdminRepository;
+	private residentRepository: ResidentRepository;
+	private apartmentRepository: ApartmentRepository;
 
 	constructor(mongoClient: MongoClient) {
 		this.adminRepository = new AdminRepository(mongoClient);
+		this.residentRepository = new ResidentRepository(mongoClient);
+		this.apartmentRepository = new ApartmentRepository(mongoClient);
 	}
 
 	public async createAdmin(adminCreateDto: AdminCreateDto): Promise<
@@ -285,6 +292,380 @@ export class AdminService {
 			success: true,
 			message: "Senha redefinida com sucesso! Você já pode fazer login.",
 			data: null,
+		};
+	}
+
+	public async getResidents(
+		buildingId: string,
+		params?: {
+			page?: number;
+			limit?: number;
+			search?: string;
+			filterBy?: "name" | "phone" | "email" | "apartment";
+			status?: "A_CONFIRMACAO_EMAIL" | "A_VALIDACAO" | "REJEITADO" | "INATIVO" | "ATIVO";
+		},
+	): Promise<HttpResponse<{
+		data: Array<{
+			_id: string;
+			name: string;
+			email: string;
+			phone?: string;
+			apartmentNumber?: string;
+			status: string;
+		}>;
+		total: number;
+		totalPages: number;
+	}>> {
+		const residents = await this.residentRepository.findManyWithApartments(
+			buildingId,
+			params,
+		);
+
+		const total = residents.length;
+		const page = params?.page || 1;
+		const limit = params?.limit || 10;
+		const skip = (page - 1) * limit;
+		const paginatedResidents = residents.slice(skip, skip + limit);
+
+		return {
+			success: true,
+			message: "Residentes encontrados",
+			data: {
+				data: paginatedResidents,
+				total,
+				totalPages: Math.ceil(total / limit),
+			},
+		};
+	}
+
+	public async countResidentsByBuilding(
+		buildingId: string,
+	): Promise<HttpResponse<number>> {
+		if (!buildingId) {
+			throw httpException(
+				"ID do edifício é obrigatório",
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
+		const count = await this.residentRepository.countByBuildingId(buildingId);
+
+		return {
+			success: true,
+			message: "Contagem de residentes realizada com sucesso",
+			data: count,
+		};
+	}
+
+	public async getResidentById(
+		residentId: string,
+		buildingId: string,
+	): Promise<HttpResponse<{
+		_id: string;
+		name: string;
+		email: string;
+		phone: string;
+		buildingId: string;
+		apartmentId: string;
+		status: string;
+		photoUrl: string | null;
+		residentCode: string;
+		createdAt: string;
+		updatedAt: string;
+		apartment: {
+			_id: string;
+			number: string;
+			block: string;
+			floor: number;
+			status: string;
+		} | null;
+	}>> {
+		if (!residentId) {
+			throw httpException("ID do residente é obrigatório", httpStatus.BAD_REQUEST);
+		}
+
+		if (!buildingId) {
+			throw httpException("ID do edifício é obrigatório", httpStatus.BAD_REQUEST);
+		}
+
+		const resident = await this.residentRepository.findByIdWithApartment(
+			residentId,
+			buildingId,
+		);
+
+		if (!resident) {
+			throw httpException("Residente não encontrado", httpStatus.NOT_FOUND);
+		}
+
+		return {
+			success: true,
+			message: "Residente encontrado com sucesso",
+			data: resident,
+		};
+	}
+
+	public async approveResident(
+		residentId: string,
+		buildingId: string,
+	): Promise<HttpResponse<{
+		_id: string;
+		name: string;
+		email: string;
+		status: string;
+	}>> {
+		if (!residentId) {
+			throw httpException("ID do residente é obrigatório", httpStatus.BAD_REQUEST);
+		}
+
+		if (!buildingId) {
+			throw httpException("ID do edifício é obrigatório", httpStatus.BAD_REQUEST);
+		}
+
+		// Buscar residente
+		const resident = await this.residentRepository.findById(residentId);
+
+		if (!resident) {
+			throw httpException("Residente não encontrado", httpStatus.NOT_FOUND);
+		}
+
+		// Verificar se o residente pertence ao building
+		if (resident.buildingId !== buildingId) {
+			throw httpException(
+				"Residente não pertence ao edifício do administrador",
+				httpStatus.FORBIDDEN,
+			);
+		}
+
+		// Verificar se o status é A_VALIDACAO
+		if (resident.status !== ResidentStatusEnum.A_VALIDACAO) {
+			throw httpException(
+				`Residente não está aguardando aprovação. Status atual: ${resident.status}`,
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
+		// Atualizar status para ATIVO e registrar data de ativação
+		const updatedResident = await this.residentRepository.update(residentId, {
+			status: ResidentStatusEnum.ATIVO,
+			activatedAt: new Date(),
+		});
+
+		if (!updatedResident) {
+			throw httpException(
+				"Erro ao atualizar status do residente",
+				httpStatus.INTERNAL_SERVER_ERROR,
+			);
+		}
+
+		return {
+			success: true,
+			message: "Residente aprovado com sucesso",
+			data: {
+				_id: updatedResident._id,
+				name: updatedResident.name,
+				email: updatedResident.email,
+				status: updatedResident.status,
+			},
+		};
+	}
+
+	public async rejectResident(
+		residentId: string,
+		buildingId: string,
+		rejectType: string,
+		rejectNote?: string,
+	): Promise<HttpResponse<{
+		_id: string;
+		name: string;
+		email: string;
+		status: string;
+		rejectType: string;
+		rejectNote?: string;
+	}>> {
+		if (!residentId) {
+			throw httpException("ID do residente é obrigatório", httpStatus.BAD_REQUEST);
+		}
+
+		if (!buildingId) {
+			throw httpException("ID do edifício é obrigatório", httpStatus.BAD_REQUEST);
+		}
+
+		if (!rejectType) {
+			throw httpException("Tipo de rejeição é obrigatório", httpStatus.BAD_REQUEST);
+		}
+
+		// Buscar residente
+		const resident = await this.residentRepository.findById(residentId);
+
+		if (!resident) {
+			throw httpException("Residente não encontrado", httpStatus.NOT_FOUND);
+		}
+
+		// Verificar se o residente pertence ao building
+		if (resident.buildingId !== buildingId) {
+			throw httpException(
+				"Residente não pertence ao edifício do administrador",
+				httpStatus.FORBIDDEN,
+			);
+		}
+
+		// Verificar se o status é A_VALIDACAO
+		if (resident.status !== ResidentStatusEnum.A_VALIDACAO) {
+			throw httpException(
+				`Residente não está aguardando aprovação. Status atual: ${resident.status}`,
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
+		// Atualizar status para REJEITADO e salvar dados de rejeição
+		const updatedResident = await this.residentRepository.update(residentId, {
+			status: ResidentStatusEnum.REJEITADO,
+			rejectType: rejectType as any,
+			rejectNote: rejectNote || undefined,
+			rejectedAt: new Date(),
+		});
+
+		if (!updatedResident) {
+			throw httpException(
+				"Erro ao atualizar status do residente",
+				httpStatus.INTERNAL_SERVER_ERROR,
+			);
+		}
+
+		return {
+			success: true,
+			message: "Residente rejeitado com sucesso",
+			data: {
+				_id: updatedResident._id,
+				name: updatedResident.name,
+				email: updatedResident.email,
+				status: updatedResident.status,
+				rejectType: rejectType,
+				rejectNote: rejectNote,
+			},
+		};
+	}
+
+	public async deactivateResident(
+		residentId: string,
+		buildingId: string,
+		inactiveType: string,
+		inactiveNote?: string,
+	): Promise<HttpResponse<{
+		_id: string;
+		name: string;
+		email: string;
+		status: string;
+	}>> {
+		if (!residentId) {
+			throw httpException("ID do residente é obrigatório", httpStatus.BAD_REQUEST);
+		}
+
+		if (!buildingId) {
+			throw httpException("ID do edifício é obrigatório", httpStatus.BAD_REQUEST);
+		}
+
+		if (!inactiveType) {
+			throw httpException("Tipo de inativação é obrigatório", httpStatus.BAD_REQUEST);
+		}
+
+		const resident = await this.residentRepository.findById(residentId);
+
+		if (!resident || resident.buildingId !== buildingId) {
+			throw httpException("Residente não encontrado", httpStatus.NOT_FOUND);
+		}
+
+		if (resident.status !== ResidentStatusEnum.ATIVO) {
+			throw httpException(
+				"Residente não está ativo para ser inativado",
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
+		const updatedResident = await this.residentRepository.update(residentId, {
+			status: ResidentStatusEnum.INATIVO,
+			inactiveType: inactiveType as any,
+			inactiveNote: inactiveNote || undefined,
+			inactivatedAt: new Date(),
+		});
+
+		if (!updatedResident) {
+			throw httpException(
+				"Erro ao atualizar status do residente",
+				httpStatus.INTERNAL_SERVER_ERROR,
+			);
+		}
+
+		return {
+			success: true,
+			message: "Residente inativado com sucesso",
+			data: {
+				_id: updatedResident._id,
+				name: updatedResident.name,
+				email: updatedResident.email,
+				status: updatedResident.status,
+			},
+		};
+	}
+
+	public async activateResident(
+		residentId: string,
+		buildingId: string,
+	): Promise<HttpResponse<{
+		_id: string;
+		name: string;
+		email: string;
+		status: string;
+	}>> {
+		if (!residentId) {
+			throw httpException("ID do residente é obrigatório", httpStatus.BAD_REQUEST);
+		}
+
+		if (!buildingId) {
+			throw httpException("ID do edifício é obrigatório", httpStatus.BAD_REQUEST);
+		}
+
+		const resident = await this.residentRepository.findById(residentId);
+
+		if (!resident || resident.buildingId !== buildingId) {
+			throw httpException("Residente não encontrado", httpStatus.NOT_FOUND);
+		}
+
+		if (resident.status !== ResidentStatusEnum.INATIVO) {
+			throw httpException(
+				"Residente não está inativo para ser ativado",
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
+		const updatedResident = await this.residentRepository.update(residentId, {
+			status: ResidentStatusEnum.ATIVO,
+			inactiveType: undefined,
+			inactiveNote: undefined,
+			activatedAt: new Date(),
+		});
+
+		// Limpar campos de inativação usando $unset
+		if (updatedResident) {
+			await this.residentRepository.removeInactiveFields(residentId);
+		}
+
+		if (!updatedResident) {
+			throw httpException(
+				"Erro ao atualizar status do residente",
+				httpStatus.INTERNAL_SERVER_ERROR,
+			);
+		}
+
+		return {
+			success: true,
+			message: "Residente ativado com sucesso",
+			data: {
+				_id: updatedResident._id,
+				name: updatedResident.name,
+				email: updatedResident.email,
+				status: updatedResident.status,
+			},
 		};
 	}
 }

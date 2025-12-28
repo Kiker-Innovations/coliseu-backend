@@ -103,4 +103,103 @@ export class ResidentController {
 				),
 			);
 	}
+
+	public async getResidentStatus(
+		request: FastifyRequest,
+		reply: FastifyReply,
+	): Promise<void> {
+		try {
+			const { email } = request.query as { email: string };
+
+			if (!email) {
+				return reply.status(httpStatus.BAD_REQUEST).send({
+					success: false,
+					message: "Email é obrigatório",
+				});
+			}
+
+			const result = await this.residentService.getResidentStatusByEmail(email);
+
+			return reply.status(httpStatus.OK).send(result);
+		} catch (error: any) {
+			if (error.statusCode) {
+				return reply.status(error.statusCode).send({
+					success: false,
+					message: error.message,
+				});
+			}
+			console.error("Erro ao buscar status do resident:", error);
+			return reply.status(httpStatus.INTERNAL_SERVER_ERROR).send({
+				success: false,
+				message: "Erro interno do servidor",
+			});
+		}
+	}
+
+	public async resendConfirmationEmail(
+		request: FastifyRequest,
+		reply: FastifyReply,
+	): Promise<void> {
+		try {
+			const { email } = request.body as { email: string };
+
+			if (!email) {
+				return reply.status(httpStatus.BAD_REQUEST).send({
+					success: false,
+					message: "Email é obrigatório",
+				});
+			}
+
+			const result = await this.residentService.resendConfirmationEmail(email);
+
+			return reply.status(httpStatus.OK).send(result);
+		} catch (error: any) {
+			if (error.statusCode) {
+				return reply.status(error.statusCode).send({
+					success: false,
+					message: error.message,
+				});
+			}
+			console.error("Erro ao reenviar email de confirmação:", error);
+			return reply.status(httpStatus.INTERNAL_SERVER_ERROR).send({
+				success: false,
+				message: "Erro interno do servidor",
+			});
+		}
+	}
+
+	public async updateRejectedResident(
+		request: FastifyRequest,
+		reply: FastifyReply,
+	): Promise<void> {
+		try {
+			const { email } = request.query as { email: string };
+
+			if (!email) {
+				return reply.status(httpStatus.BAD_REQUEST).send({
+					success: false,
+					message: "Email é obrigatório",
+				});
+			}
+
+			const result = await this.residentService.updateRejectedResident(
+				email,
+				transformUpdateResidentDto(request.body),
+			);
+
+			return reply.status(httpStatus.OK).send(result);
+		} catch (error: any) {
+			if (error.statusCode) {
+				return reply.status(error.statusCode).send({
+					success: false,
+					message: error.message,
+				});
+			}
+			console.error("Erro ao atualizar residente rejeitado:", error);
+			return reply.status(httpStatus.INTERNAL_SERVER_ERROR).send({
+				success: false,
+				message: "Erro interno do servidor",
+			});
+		}
+	}
 }

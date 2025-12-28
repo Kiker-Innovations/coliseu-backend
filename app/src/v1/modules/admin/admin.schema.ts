@@ -319,5 +319,429 @@ export class AdminSchema {
 			},
 		},
 	};
+
+	public getResidents = {
+		querystring: {
+			type: "object",
+			properties: {
+				page: {
+					type: "number",
+					description: "Número da página (padrão: 1)",
+					minimum: 1,
+				},
+				limit: {
+					type: "number",
+					description: "Itens por página (padrão: 10)",
+					minimum: 1,
+					maximum: 100,
+				},
+				search: {
+					type: "string",
+					description: "Termo de busca",
+				},
+				filterBy: {
+					type: "string",
+					enum: ["name", "phone", "email", "apartment"],
+					description: "Campo para filtrar a busca",
+				},
+				status: {
+					type: "string",
+					enum: ["A_CONFIRMACAO_EMAIL", "A_VALIDACAO", "REJEITADO", "INATIVO", "ATIVO"],
+					description: "Filtrar por status",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Lista de residentes",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							data: {
+								type: "array",
+								items: {
+									type: "object",
+									properties: {
+										_id: { type: "string" },
+										name: { type: "string" },
+										email: { type: "string" },
+										phone: { type: "string" },
+										apartmentNumber: { type: "string" },
+										status: { type: "string" },
+									},
+								},
+							},
+							total: { type: "number" },
+							totalPages: { type: "number" },
+						},
+					},
+				},
+			},
+			400: {
+				description: "ID do edifício não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public countResidents = {
+		response: {
+			200: {
+				description: "Contagem de residentes",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: { type: "number" },
+				},
+			},
+			400: {
+				description: "ID do edifício não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public getResidentById = {
+		params: {
+			type: "object",
+			properties: {
+				id: {
+					type: "string",
+					description: "ID do residente",
+				},
+			},
+			required: ["id"],
+		},
+		response: {
+			200: {
+				description: "Residente encontrado com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							_id: { type: "string" },
+							name: { type: "string" },
+							email: { type: "string" },
+							phone: { type: "string" },
+							buildingId: { type: "string" },
+							apartmentId: { type: "string" },
+							status: { type: "string" },
+							photoUrl: { type: ["string", "null"] },
+							residentCode: { type: "string" },
+							createdAt: { type: "string", format: "date-time" },
+							updatedAt: { type: "string", format: "date-time" },
+							apartment: {
+								type: ["object", "null"],
+								properties: {
+									_id: { type: "string" },
+									number: { type: "string" },
+									block: { type: "string" },
+									floor: { type: "number" },
+									status: { type: "string" },
+								},
+							},
+						},
+					},
+				},
+			},
+			400: {
+				description: "Erro de validação",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			404: {
+				description: "Residente não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public approveResident = {
+		params: {
+			type: "object",
+			required: ["id"],
+			properties: {
+				id: { type: "string", description: "ID do residente" },
+			},
+		},
+		body: {
+			type: "object",
+			properties: {},
+		},
+		response: {
+			200: {
+				description: "Residente aprovado com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							_id: { type: "string" },
+							name: { type: "string" },
+							email: { type: "string" },
+							status: { type: "string" },
+						},
+					},
+				},
+			},
+			400: {
+				description: "Erro de validação ou status inválido",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			403: {
+				description: "Acesso negado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			404: {
+				description: "Residente não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public rejectResident = {
+		params: {
+			type: "object",
+			required: ["id"],
+			properties: {
+				id: { type: "string", description: "ID do residente" },
+			},
+		},
+		body: {
+			type: "object",
+			required: ["rejectType"],
+			properties: {
+				rejectType: {
+					type: "string",
+					enum: [
+						"DADOS_INCONSISTENTES",
+						"DOCUMENTO_INVALIDO",
+						"INFORMACOES_INCOMPLETAS",
+						"NAO_PERTENCE_AO_CONDOMINIO",
+						"OUTRO",
+					],
+					description: "Tipo de rejeição",
+				},
+				rejectNote: {
+					type: "string",
+					description: "Anotação sobre a rejeição",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Residente rejeitado com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							_id: { type: "string" },
+							name: { type: "string" },
+							email: { type: "string" },
+							status: { type: "string" },
+							rejectType: { type: "string" },
+							rejectNote: { type: "string", nullable: true },
+						},
+					},
+				},
+			},
+			400: {
+				description: "Erro de validação ou status inválido",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			403: {
+				description: "Acesso negado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			404: {
+				description: "Residente não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public deactivateResident = {
+		params: {
+			type: "object",
+			required: ["id"],
+			properties: {
+				id: { type: "string", description: "ID do residente" },
+			},
+		},
+		body: {
+			type: "object",
+			required: ["inactiveType"],
+			properties: {
+				inactiveType: {
+					type: "string",
+					enum: [
+						"SOLICITACAO_DO_RESIDENTE",
+						"VIOLACAO_DE_REGULAMENTO",
+						"INADIMPLENCIA",
+						"MUDANCA_DE_ENDERECO",
+						"OUTRO",
+					],
+					description: "Tipo de inativação",
+				},
+				inactiveNote: {
+					type: "string",
+					nullable: true,
+					description: "Anotação sobre a inativação (opcional)",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Residente inativado com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							_id: { type: "string" },
+							name: { type: "string" },
+							email: { type: "string" },
+							status: { type: "string" },
+						},
+					},
+				},
+			},
+			400: {
+				description: "Erro de validação ou status inválido",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			403: {
+				description: "Acesso negado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			404: {
+				description: "Residente não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public activateResident = {
+		params: {
+			type: "object",
+			required: ["id"],
+			properties: {
+				id: { type: "string", description: "ID do residente" },
+			},
+		},
+		body: {
+			type: "object",
+			properties: {},
+		},
+		response: {
+			200: {
+				description: "Residente ativado com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							_id: { type: "string" },
+							name: { type: "string" },
+							email: { type: "string" },
+							status: { type: "string" },
+						},
+					},
+				},
+			},
+			400: {
+				description: "Erro de validação ou status inválido",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			403: {
+				description: "Acesso negado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			404: {
+				description: "Residente não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
 }
 

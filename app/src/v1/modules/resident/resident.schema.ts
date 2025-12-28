@@ -420,4 +420,184 @@ export class ResidentSchema {
 			},
 		},
 	};
+
+	public getStatus = {
+		querystring: {
+			type: "object",
+			required: ["email"],
+			properties: {
+				email: {
+					type: "string",
+					description: "Email do morador",
+					example: "morador@example.com",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Status do morador encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							name: { type: "string" },
+							email: { type: "string" },
+							apartmentNumber: { type: "string" },
+							apartmentBlock: { type: "string" },
+							status: { type: "string" },
+							rejectType: { type: "string", nullable: true },
+							rejectNote: { type: "string", nullable: true },
+							buildingId: { type: "string", format: "uuid", nullable: true },
+							apartmentId: { type: "string", format: "uuid", nullable: true },
+						},
+					},
+				},
+			},
+			400: {
+				description: "Email não fornecido",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			404: {
+				description: "Morador não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public resendConfirmationEmail = {
+		body: {
+			type: "object",
+			required: ["email"],
+			properties: {
+				email: {
+					type: "string",
+					description: "Email do morador",
+					example: "morador@example.com",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Email de confirmação reenviado com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: { type: "null" },
+				},
+			},
+			400: {
+				description: "Email não fornecido ou status inválido",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			404: {
+				description: "Morador não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public updateRejectedResident = {
+		querystring: {
+			type: "object",
+			required: ["email"],
+			properties: {
+				email: {
+					type: "string",
+					format: "email",
+					description: "Email do morador",
+				},
+			},
+		},
+		body: {
+			type: "object",
+			properties: {
+				name: {
+					type: "string",
+					description: "Nome do morador",
+					minLength: 3,
+					maxLength: 100,
+				},
+				email: {
+					type: "string",
+					format: "email",
+					description: "Email do morador",
+				},
+				password: {
+					type: "string",
+					description: "Nova senha do morador",
+					minLength: 6,
+				},
+				phone: {
+					type: "string",
+					description: "Telefone do morador (formato internacional)",
+					pattern: "^\\+\\d{11,15}$",
+				},
+				buildingId: {
+					type: "string",
+					format: "uuid",
+					description: "ID do edifício",
+				},
+				apartmentId: {
+					type: "string",
+					format: "uuid",
+					description: "ID do apartamento",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Dados atualizados com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							email: { type: "string" },
+							phone: { type: "string" },
+							status: { type: "string" },
+							presignedUrl: { type: "string", nullable: true },
+						},
+					},
+				},
+			},
+			400: {
+				description: "Erro de validação",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			404: {
+				description: "Morador não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
 }

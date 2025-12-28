@@ -15,6 +15,14 @@ export const residentUpdateSchema = z.object({
 		.string()
 		.uuid("ID do apartamento deve ser um UUID válido")
 		.optional(),
+	email: z
+		.string()
+		.email("Email inválido")
+		.optional(),
+	password: z
+		.string()
+		.min(6, "Senha deve ter no mínimo 6 caracteres")
+		.optional(),
 	phone: z
 		.string()
 		.regex(

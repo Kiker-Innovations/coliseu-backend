@@ -52,6 +52,7 @@ const envSchema = z.object({
         financialSnapshots: z.string().min(1),
         documents: z.string().min(1),
         amenityBookings: z.string().min(1),
+        notices: z.string().min(1),
       }),
     }),
   }),
@@ -73,6 +74,7 @@ const envSchema = z.object({
           resident: z.string().min(1),
           visitor: z.string().min(1),
           documents: z.string().min(1),
+          notices: z.string().min(1),
         }),
       }),
       ses: z.object({
@@ -139,6 +141,7 @@ export const env = envSchema.parse({
           "financial_snapshots",
         documents: process.env.MONGODB_COLLECTION_DOCUMENTS || "documents",
         amenityBookings: process.env.MONGODB_COLLECTION_AMENITY_BOOKINGS || "amenity_bookings",
+        notices: process.env.MONGODB_COLLECTION_NOTICES || "notices",
       },
     },
   },
@@ -161,6 +164,7 @@ export const env = envSchema.parse({
           resident: process.env.AWS_S3_FOLDER_RESIDENT,
           visitor: process.env.AWS_S3_FOLDER_VISITOR || "visitors",
           documents: process.env.AWS_S3_FOLDER_DOCUMENTS || "documents",
+          notices: process.env.AWS_S3_FOLDER_NOTICES || "notices",
         },
       },
       ses: {

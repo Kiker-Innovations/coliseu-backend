@@ -18,7 +18,7 @@ export class ResidentSchema {
 				buildingId: {
 					type: "string",
 					description: "ID do edifício (UUID)",
-					example: "123e4567-e89b-12d3-a456-426614174000",
+					example: "b2ce3bcd-6309-42a5-861c-33bdefb7ab33",
 				},
 				apartmentId: {
 					type: "string",
@@ -153,7 +153,7 @@ export class ResidentSchema {
 				buildingId: {
 					type: "string",
 					description: "ID do edifício (UUID)",
-					example: "123e4567-e89b-12d3-a456-426614174000",
+					example: "b2ce3bcd-6309-42a5-861c-33bdefb7ab33",
 				},
 				apartmentId: {
 					type: "string",

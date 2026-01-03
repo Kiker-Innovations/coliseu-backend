@@ -25,7 +25,7 @@ export const amenityCreateSchema = z.object({
 			(val) => {
 				if (val === "" || val === null || val === undefined) return undefined;
 				const num = typeof val === "string" ? Number(val) : val;
-				if (isNaN(num) || !isFinite(num)) return undefined;
+				if (isNaN(num as number) || !isFinite(num as number)) return undefined;
 				return num;
 			},
 			z
@@ -38,7 +38,7 @@ export const amenityCreateSchema = z.object({
 			(val) => {
 				if (val === "" || val === null || val === undefined) return undefined;
 				const num = typeof val === "string" ? Number(val) : val;
-				if (isNaN(num) || !isFinite(num)) return undefined;
+				if (isNaN(num as number) || !isFinite(num as number)) return undefined;
 				return num;
 			},
 			z
@@ -51,7 +51,7 @@ export const amenityCreateSchema = z.object({
 			(val) => {
 				if (val === "" || val === null || val === undefined) return undefined;
 				const num = typeof val === "string" ? Number(val) : val;
-				if (isNaN(num) || !isFinite(num)) return undefined;
+				if (isNaN(num as number) || !isFinite(num as number)) return undefined;
 				return num;
 			},
 			z
@@ -64,7 +64,7 @@ export const amenityCreateSchema = z.object({
 			(val) => {
 				if (val === "" || val === null || val === undefined) return undefined;
 				const num = typeof val === "string" ? Number(val) : val;
-				if (isNaN(num) || !isFinite(num)) return undefined;
+				if (isNaN(num as number) || !isFinite(num as number)) return undefined;
 				return num;
 			},
 			z
@@ -83,7 +83,7 @@ export const amenityCreateSchema = z.object({
 			(val) => {
 				if (val === "" || val === null || val === undefined) return undefined;
 				const num = typeof val === "string" ? Number(val) : val;
-				if (isNaN(num) || !isFinite(num)) return undefined;
+				if (isNaN(num as number) || !isFinite(num as number)) return undefined;
 				return num;
 			},
 			z

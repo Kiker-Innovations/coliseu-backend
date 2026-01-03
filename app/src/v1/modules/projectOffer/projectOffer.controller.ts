@@ -99,7 +99,9 @@ export class ProjectOfferController {
     const { offerId } = request.body as { offerId: string };
     return reply
       .status(httpStatus.OK)
-      .send(await this.projectOfferService.voteOffer(offerId, request.user.id));
+      .send(
+        await this.projectOfferService.voteOffer(offerId, request.user.userId)
+      );
   }
 
   public async getMyVote(
@@ -117,7 +119,7 @@ export class ProjectOfferController {
     return reply
       .status(httpStatus.OK)
       .send(
-        await this.projectOfferService.getMyVote(projectId, request.user.id)
+        await this.projectOfferService.getMyVote(projectId, request.user.userId)
       );
   }
 

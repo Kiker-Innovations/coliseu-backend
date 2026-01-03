@@ -26,8 +26,7 @@ export const visitorCreateSchema = z.object({
 		.transform((val) => (val === "" ? undefined : val)),
 	vehicleType: z
 		.enum([VehicleTypeEnum.CARRO, VehicleTypeEnum.MOTO])
-		.optional()
-		.transform((val) => (val === "" ? undefined : val)),
+		.optional(),
 	vehiclePlate: z
 		.string()
 		.optional()

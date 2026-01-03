@@ -8,6 +8,7 @@ import type { AmenityCreateDto, AmenityUpdateDto } from "./dto";
 import { httpException } from "../../../config/error";
 import httpStatus from "http-status";
 import type { HttpResponse } from "../../../interface/httpResponse.interface";
+import { AmenityStatusEnumType } from "@/v1/enum/amenityStatus.enum";
 
 export class AmenityService {
 	private amenityRepository: AmenityRepository;
@@ -36,7 +37,7 @@ export class AmenityService {
 			usageRules: amenityCreateDto.usageRules,
 			bookingType: amenityCreateDto.bookingType,
 			maxHours: amenityCreateDto.maxHours,
-			status: amenityCreateDto.status,
+			status: amenityCreateDto.status as AmenityStatusEnumType,
 		};
 
 		const createdAmenity = await this.amenityRepository.create(amenityEntity);

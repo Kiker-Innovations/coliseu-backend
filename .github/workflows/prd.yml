@@ -65,7 +65,7 @@ jobs:
 
       - name: Upload Lambda to S3
         run: |
-          aws s3 cp lambda.zip s3://coliseu-condo/lambda/coliseu/lambda.zip
+          aws s3 cp lambda.zip s3://coliseu-condo-prd/lambda/coliseu/lambda.zip
 
   terraform:
     name: Terraform Apply

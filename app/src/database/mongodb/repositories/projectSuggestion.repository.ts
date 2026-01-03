@@ -8,7 +8,7 @@ import type {
 } from "../entity/projectSuggestion.entity";
 import type { IRepository } from "../interfaces/IRepository";
 import { getDate } from "@/v1/utils/utils";
-import { ProjectSuggestionStatusEnum } from "@/v1/enum/projectSuggestionStatus.enum";
+import { ProjectSuggestionStatusEnum, type ProjectSuggestionStatusEnumType } from "@/v1/enum/projectSuggestionStatus.enum";
 
 export class ProjectSuggestionRepository
   implements
@@ -90,7 +90,7 @@ export class ProjectSuggestionRepository
     status: string
   ): Promise<ProjectSuggestionEntity[]> {
     return await this.collection
-      .find({ seasonId, status })
+      .find({ seasonId, status: status as ProjectSuggestionStatusEnumType })
       .sort({ rank: 1 })
       .toArray();
   }

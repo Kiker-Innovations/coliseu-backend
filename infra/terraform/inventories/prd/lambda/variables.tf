@@ -44,7 +44,7 @@ variable "lambda_description" {
 variable "lambda_handler" {
 	description = "Handler da função Lambda"
 	type        = string
-	default     = "src/lambda.handler"
+	default     = "lambda.handler"
 }
 
 variable "lambda_runtime" {

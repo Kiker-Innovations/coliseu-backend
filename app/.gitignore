@@ -45,3 +45,5 @@ lerna-debug.log*
 *lock*
 .env
 Makefile
+.dist
+*dist*

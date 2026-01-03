@@ -1,0 +1,603 @@
+import {
+	protectedSchema,
+	unauthorizedResponse,
+	forbiddenResponse,
+} from "../../utils/schemaHelper";
+
+export class ResidentSchema {
+	public create = {
+		body: {
+			type: "object",
+			required: ["name", "buildingId", "apartmentId", "email", "password", "phone"],
+			properties: {
+				name: {
+					type: "string",
+					description: "Nome completo do morador",
+					example: "João Silva",
+				},
+				buildingId: {
+					type: "string",
+					description: "ID do edifício (UUID)",
+					example: "123e4567-e89b-12d3-a456-426614174000",
+				},
+				apartmentId: {
+					type: "string",
+					description: "ID do apartamento (UUID)",
+					example: "123e4567-e89b-12d3-a456-426614174001",
+				},
+				email: {
+					type: "string",
+					description: "Email do morador",
+					example: "morador@example.com",
+				},
+				password: {
+					type: "string",
+					description:
+						"Senha (mínimo 8 caracteres, com maiúscula, minúscula e caractere especial)",
+					example: "Senha@123",
+				},
+				phone: {
+					type: "string",
+					description: "Telefone no formato internacional",
+					example: "+5513974080222",
+				},
+			},
+		},
+		response: {
+			201: {
+				description: "Morador criado com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							name: { type: "string" },
+							email: { type: "string" },
+							phone: { type: "string" },
+							presignedUrl: { type: "string" },
+						},
+					},
+				},
+			},
+			400: {
+				description: "Dados inválidos",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					errors: {
+						type: "array",
+						items: {
+							type: "object",
+							properties: {
+								field: { type: "string" },
+								message: { type: "string" },
+							},
+						},
+					},
+				},
+			},
+			409: {
+				description: "Email já cadastrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public getById = protectedSchema({
+		params: {
+			type: "object",
+			required: ["id"],
+			properties: {
+				id: {
+					type: "string",
+					description: "ID do morador",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Morador encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					data: {
+						type: "object",
+						properties: {
+							email: { type: "string" },
+							phone: { type: "string" },
+							photoUrl: { type: "string", nullable: true },
+							createdAt: { type: "string" },
+							updatedAt: { type: "string" },
+						},
+					},
+				},
+			},
+			404: {
+				description: "Morador não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			...unauthorizedResponse,
+		},
+	});
+
+	public update = protectedSchema({
+		params: {
+			type: "object",
+			required: ["id"],
+			properties: {
+				id: {
+					type: "string",
+					description: "ID do morador",
+				},
+			},
+		},
+		body: {
+			type: "object",
+			properties: {
+				name: {
+					type: "string",
+					description: "Nome completo do morador",
+					example: "João Silva",
+				},
+				buildingId: {
+					type: "string",
+					description: "ID do edifício (UUID)",
+					example: "123e4567-e89b-12d3-a456-426614174000",
+				},
+				apartmentId: {
+					type: "string",
+					description: "ID do apartamento (UUID)",
+					example: "123e4567-e89b-12d3-a456-426614174001",
+				},
+				phone: {
+					type: "string",
+					description: "Telefone no formato internacional",
+					example: "+5513974080222",
+				},
+				photoUrl: {
+					type: "string",
+					description: "URL da foto do morador",
+					example:
+						"https://bucket.s3.amazonaws.com/residents/abc-123/photo.jpg",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Morador atualizado com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							id: { type: "string" },
+							email: { type: "string" },
+							phone: { type: "string" },
+							status: { type: "string" },
+							photoUrl: { type: "string", nullable: true },
+							createdAt: { type: "string" },
+							updatedAt: { type: "string" },
+						},
+					},
+				},
+			},
+			404: {
+				description: "Morador não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			...unauthorizedResponse,
+			...forbiddenResponse,
+		},
+	});
+
+	public remove = protectedSchema({
+		params: {
+			type: "object",
+			required: ["id"],
+			properties: {
+				id: {
+					type: "string",
+					description: "ID do morador",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Morador deletado com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			404: {
+				description: "Morador não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			...unauthorizedResponse,
+			...forbiddenResponse,
+		},
+	});
+
+	public confirm = {
+		body: {
+			type: "object",
+			required: ["email", "code"],
+			properties: {
+				email: {
+					type: "string",
+					description: "Email do morador",
+					example: "morador@example.com",
+				},
+				code: {
+					type: "string",
+					description: "Código de confirmação recebido por email",
+					example: "ABC123",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Código confirmado com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			400: {
+				description: "Código inválido ou morador não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public generatePresignedUrl = protectedSchema({
+		params: {
+			type: "object",
+			required: ["id"],
+			properties: {
+				id: {
+					type: "string",
+					description: "ID do morador",
+				},
+			},
+		},
+		body: {
+			type: "object",
+			properties: {
+				fileExtension: {
+					type: "string",
+					description: "Extensão do arquivo (jpg, png, etc)",
+					example: "jpg",
+					default: "jpg",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "URL pré-assinada gerada com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					data: {
+						type: "object",
+						properties: {
+							presignedUrl: {
+								type: "string",
+								description: "URL para upload via PUT",
+							},
+							photoUrl: {
+								type: "string",
+								description: "URL pública da foto após upload",
+							},
+							s3Key: { type: "string", description: "Chave do objeto no S3" },
+							instructions: { type: "string" },
+							expiresIn: { type: "string", description: "Tempo de expiração" },
+						},
+					},
+				},
+			},
+			404: {
+				description: "Morador não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			...unauthorizedResponse,
+			...forbiddenResponse,
+		},
+	});
+
+	public forgetPassword = {
+		body: {
+			type: "object",
+			required: ["email"],
+			properties: {
+				email: {
+					type: "string",
+					description: "Email do morador",
+					example: "morador@example.com",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Código de recuperação enviado para o email",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: { type: "null" },
+				},
+			},
+			404: {
+				description: "Email não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public resetPassword = {
+		body: {
+			type: "object",
+			required: ["email", "code", "newPassword"],
+			properties: {
+				email: {
+					type: "string",
+					description: "Email do morador",
+					example: "morador@example.com",
+				},
+				code: {
+					type: "string",
+					description: "Código de recuperação de 6 dígitos recebido por email",
+					example: "123456",
+				},
+				newPassword: {
+					type: "string",
+					description:
+						"Nova senha (mínimo 8 caracteres, com maiúscula, minúscula e caractere especial)",
+					example: "NovaSenha@123",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Senha redefinida com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: { type: "null" },
+				},
+			},
+			400: {
+				description: "Código inválido ou expirado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			404: {
+				description: "Email não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public getStatus = {
+		querystring: {
+			type: "object",
+			required: ["email"],
+			properties: {
+				email: {
+					type: "string",
+					description: "Email do morador",
+					example: "morador@example.com",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Status do morador encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							name: { type: "string" },
+							email: { type: "string" },
+							apartmentNumber: { type: "string" },
+							apartmentBlock: { type: "string" },
+							status: { type: "string" },
+							rejectType: { type: "string", nullable: true },
+							rejectNote: { type: "string", nullable: true },
+							buildingId: { type: "string", format: "uuid", nullable: true },
+							apartmentId: { type: "string", format: "uuid", nullable: true },
+						},
+					},
+				},
+			},
+			400: {
+				description: "Email não fornecido",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			404: {
+				description: "Morador não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public resendConfirmationEmail = {
+		body: {
+			type: "object",
+			required: ["email"],
+			properties: {
+				email: {
+					type: "string",
+					description: "Email do morador",
+					example: "morador@example.com",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Email de confirmação reenviado com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: { type: "null" },
+				},
+			},
+			400: {
+				description: "Email não fornecido ou status inválido",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			404: {
+				description: "Morador não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public updateRejectedResident = {
+		querystring: {
+			type: "object",
+			required: ["email"],
+			properties: {
+				email: {
+					type: "string",
+					format: "email",
+					description: "Email do morador",
+				},
+			},
+		},
+		body: {
+			type: "object",
+			properties: {
+				name: {
+					type: "string",
+					description: "Nome do morador",
+					minLength: 3,
+					maxLength: 100,
+				},
+				email: {
+					type: "string",
+					format: "email",
+					description: "Email do morador",
+				},
+				password: {
+					type: "string",
+					description: "Nova senha do morador",
+					minLength: 6,
+				},
+				phone: {
+					type: "string",
+					description: "Telefone do morador (formato internacional)",
+					pattern: "^\\+\\d{11,15}$",
+				},
+				buildingId: {
+					type: "string",
+					format: "uuid",
+					description: "ID do edifício",
+				},
+				apartmentId: {
+					type: "string",
+					format: "uuid",
+					description: "ID do apartamento",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Dados atualizados com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							email: { type: "string" },
+							phone: { type: "string" },
+							status: { type: "string" },
+							presignedUrl: { type: "string", nullable: true },
+						},
+					},
+				},
+			},
+			400: {
+				description: "Erro de validação",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			404: {
+				description: "Morador não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+}

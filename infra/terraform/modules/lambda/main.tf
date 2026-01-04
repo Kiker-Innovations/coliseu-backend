@@ -3,33 +3,45 @@
 ################################################################################
 
 resource "aws_lambda_function" "this" {
-	function_name = var.function_name
-	description   = var.description
-	role          = aws_iam_role.lambda.arn
-	handler       = var.handler
-	runtime       = var.runtime
-	architectures = [var.architecture]
-	memory_size   = var.memory_size
-	timeout       = var.timeout
+  function_name = var.function_name
+  description   = var.description
+  role          = aws_iam_role.lambda.arn
+  architectures = [var.architecture]
+  memory_size   = var.memory_size
+  timeout       = var.timeout
 
-	s3_bucket = var.s3_bucket
-	s3_key    = var.s3_key
+  # Container image deployment
+  package_type = var.package_type
+  image_uri    = var.package_type == "Image" ? var.image_uri : null
 
-	environment {
-		variables = var.environment_variables
-	}
+  # ZIP deployment (legacy)
+  handler   = var.package_type == "Zip" ? var.handler : null
+  runtime   = var.package_type == "Zip" ? var.runtime : null
+  s3_bucket = var.package_type == "Zip" ? var.s3_bucket : null
+  s3_key    = var.package_type == "Zip" ? var.s3_key : null
 
-	depends_on = [
-		aws_iam_role_policy_attachment.lambda_policy,
-		aws_cloudwatch_log_group.this
-	]
+  environment {
+    variables = var.environment_variables
+  }
 
-	tags = merge(
-		var.tags,
-		{
-			Name = var.function_name
-		}
-	)
+  depends_on = [
+    aws_iam_role_policy_attachment.lambda_policy,
+    aws_cloudwatch_log_group.this
+  ]
+
+  tags = merge(
+    var.tags,
+    {
+      Name = var.function_name
+    }
+  )
+
+  lifecycle {
+    ignore_changes = [
+      # Ignore image_uri changes as it's updated by CI/CD
+      image_uri
+    ]
+  }
 }
 
 ################################################################################
@@ -37,10 +49,10 @@ resource "aws_lambda_function" "this" {
 ################################################################################
 
 resource "aws_cloudwatch_log_group" "this" {
-	name              = "/aws/lambda/${var.function_name}"
-	retention_in_days = var.log_retention_days
+  name              = "/aws/lambda/${var.function_name}"
+  retention_in_days = var.log_retention_days
 
-	tags = var.tags
+  tags = var.tags
 }
 
 ################################################################################
@@ -48,10 +60,10 @@ resource "aws_cloudwatch_log_group" "this" {
 ################################################################################
 
 resource "aws_iam_role" "lambda" {
-	name               = "${var.function_name}-role"
-	assume_role_policy = var.assume_role_policy
+  name               = "${var.function_name}-role"
+  assume_role_policy = var.assume_role_policy
 
-	tags = var.tags
+  tags = var.tags
 }
 
 ################################################################################
@@ -59,11 +71,11 @@ resource "aws_iam_role" "lambda" {
 ################################################################################
 
 resource "aws_iam_policy" "lambda" {
-	name        = "${var.function_name}-policy"
-	description = "Policy for Lambda function ${var.function_name}"
-	policy      = var.lambda_policy
+  name        = "${var.function_name}-policy"
+  description = "Policy for Lambda function ${var.function_name}"
+  policy      = var.lambda_policy
 
-	tags = var.tags
+  tags = var.tags
 }
 
 ################################################################################
@@ -71,8 +83,8 @@ resource "aws_iam_policy" "lambda" {
 ################################################################################
 
 resource "aws_iam_role_policy_attachment" "lambda_policy" {
-	role       = aws_iam_role.lambda.name
-	policy_arn = aws_iam_policy.lambda.arn
+  role       = aws_iam_role.lambda.name
+  policy_arn = aws_iam_policy.lambda.arn
 }
 
 ################################################################################
@@ -80,12 +92,11 @@ resource "aws_iam_role_policy_attachment" "lambda_policy" {
 ################################################################################
 
 resource "aws_lambda_permission" "api_gateway" {
-	count = var.create_api_gateway_permission ? 1 : 0
+  count = var.create_api_gateway_permission ? 1 : 0
 
-	statement_id  = "AllowAPIGatewayInvoke"
-	action        = "lambda:InvokeFunction"
-	function_name = aws_lambda_function.this.function_name
-	principal     = "apigateway.amazonaws.com"
-	source_arn    = var.api_gateway_source_arn
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.this.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = var.api_gateway_source_arn
 }
-

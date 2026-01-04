@@ -21,5 +21,8 @@ COPY --from=build /app/dist/node_modules ${LAMBDA_TASK_ROOT}/node_modules
 COPY --from=build /app/dist/emailTemplates ${LAMBDA_TASK_ROOT}/emailTemplates
 COPY --from=build /app/dist/package.json ${LAMBDA_TASK_ROOT}/
 
+# Copy package.json to root (code uses ../../package.json relative to __dirname)
+COPY --from=build /app/package.json /package.json
+
 # Handler format: filename.exportedFunction
 CMD ["lambda.handler"]

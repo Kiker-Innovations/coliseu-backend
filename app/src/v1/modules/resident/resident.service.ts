@@ -13,6 +13,7 @@ import type {
 	ResidentUpdateDto,
 	ResidentForgetPasswordDto,
 	ResidentResetPasswordDto,
+	ResidentChangePasswordDto,
 } from "./dto";
 import { httpException } from "../../../config/error";
 import httpStatus from "http-status";
@@ -26,16 +27,19 @@ import { ResidentEmail } from "./resident.emails";
 import { sendPasswordResetEmail } from "@/v1/utils/emailHelper";
 import { getDate } from "@/v1/utils/utils";
 import { ApartmentRepository } from "@/database/mongodb/repositories/apartment.repository";
+import { BuildingRepository } from "@/database/mongodb/repositories/building.repository";
 import { ApartmentStatusEnum } from "@/v1/enum/apartmentStatus.enum";
 
 export class ResidentService {
 	private residentRepository: ResidentRepository;
 	private apartmentRepository: ApartmentRepository;
+	private buildingRepository: BuildingRepository;
 	private s3Provider: S3Provider;
 
 	constructor(mongoClient: MongoClient) {
 		this.residentRepository = new ResidentRepository(mongoClient);
 		this.apartmentRepository = new ApartmentRepository(mongoClient);
+		this.buildingRepository = new BuildingRepository(mongoClient);
 		this.s3Provider = new S3Provider();
 	}
 
@@ -127,6 +131,64 @@ export class ResidentService {
 		};
 	}
 
+	public async getCurrentResident(residentId: string): Promise<
+		HttpResponse<{
+			id: string;
+			email: string;
+			name: string;
+			phone?: string;
+			photoUrl?: string | null;
+			apartmentNumber?: string;
+			buildingName?: string;
+			buildingId?: string;
+			apartmentId?: string;
+			apartment?: {
+				number?: string;
+				block?: string;
+				floor?: number;
+			};
+			apartmentBlock?: string;
+			apartmentFloor?: number;
+		}>
+	> {
+		const resident = await this.residentRepository.findById(residentId);
+
+		if (!resident) {
+			throw httpException("Morador não encontrado", httpStatus.NOT_FOUND);
+		}
+
+		const apartment = resident.apartmentId
+			? await this.apartmentRepository.findById(resident.apartmentId)
+			: null;
+
+		const building = await this.buildingRepository.findById(resident.buildingId);
+
+		return {
+			success: true,
+			message: "Perfil do morador encontrado",
+			data: {
+				id: resident._id,
+				email: resident.email,
+				name: resident.name,
+				phone: resident.phone,
+				photoUrl: resident.photoUrl || null,
+				apartmentNumber: apartment?.number,
+				apartmentBlock: apartment?.block,
+				apartmentFloor: apartment?.floor,
+				buildingName: building?.name,
+				buildingId: resident.buildingId,
+				apartmentId: resident.apartmentId,
+				apartment: apartment
+					? {
+							number: apartment.number,
+							block: apartment.block,
+							floor: apartment.floor,
+						}
+					: undefined,
+			},
+		};
+	}
+
 	public async getResidentByEmail(
 		email: string,
 	): Promise<ResidentEntity | null> {
@@ -138,8 +200,14 @@ export class ResidentService {
 		residentUpdateDto: ResidentUpdateDto,
 	): Promise<
 		HttpResponse<{
+			id: string;
 			email: string;
-			phone: string;
+			name: string;
+			phone?: string;
+			photoUrl?: string | null;
+			status?: string;
+			createdAt?: string;
+			updatedAt?: string;
 		}>
 	> {
 		const resident = await this.residentRepository.findById(residentId);
@@ -148,9 +216,42 @@ export class ResidentService {
 			throw httpException("Morador não encontrado", httpStatus.NOT_FOUND);
 		}
 
+		// Preparar dados de atualização
+		const updateData: any = {};
+
+		if (residentUpdateDto.name !== undefined) {
+			updateData.name = residentUpdateDto.name;
+		}
+
+		if (residentUpdateDto.email !== undefined) {
+			updateData.email = residentUpdateDto.email;
+		}
+
+		if (residentUpdateDto.phone !== undefined) {
+			updateData.phone = residentUpdateDto.phone;
+		}
+
+		if (residentUpdateDto.photoUrl !== undefined) {
+			updateData.photoUrl = residentUpdateDto.photoUrl;
+		}
+
+		if (residentUpdateDto.buildingId !== undefined) {
+			updateData.buildingId = residentUpdateDto.buildingId;
+		}
+
+		if (residentUpdateDto.apartmentId !== undefined) {
+			updateData.apartmentId = residentUpdateDto.apartmentId;
+		}
+
+		if (residentUpdateDto.password !== undefined) {
+			updateData.passwordHash = await hashPassword(residentUpdateDto.password);
+		}
+
+		console.log("Atualizando resident com dados:", updateData);
+
 		const updatedResident = await this.residentRepository.update(
 			residentId,
-			residentUpdateDto,
+			updateData,
 		);
 
 		if (!updatedResident) {
@@ -160,12 +261,20 @@ export class ResidentService {
 			);
 		}
 
+		console.log("Resident atualizado:", updatedResident);
+
 		return {
 			success: true,
 			message: "Morador atualizado com sucesso",
 			data: {
+				id: updatedResident._id,
 				email: updatedResident.email,
+				name: updatedResident.name,
 				phone: updatedResident.phone,
+				photoUrl: updatedResident.photoUrl || null,
+				status: updatedResident.status,
+				createdAt: updatedResident.createdAt?.toISOString(),
+				updatedAt: updatedResident.updatedAt?.toISOString(),
 			},
 		};
 	}
@@ -190,6 +299,32 @@ export class ResidentService {
 			success: true,
 			message: "Morador deletado com sucesso",
 			data: null,
+		};
+	}
+
+	public async generatePresignedUrlForPhoto(
+		residentId: string,
+		fileExtension: string,
+	): Promise<HttpResponse<{
+		presignedUrl: string;
+		photoUrl: string;
+		s3Key: string;
+		instructions: string;
+		expiresIn: string;
+	}>> {
+		const result = await this.generatePresignedUrl(residentId, fileExtension);
+
+		return {
+			success: true,
+			message: "URL pré-assinada gerada com sucesso",
+			data: {
+				presignedUrl: result.presignedUrl,
+				photoUrl: result.publicUrl,
+				s3Key: result.s3Key,
+				instructions:
+					"Use a presignedUrl para fazer upload da foto via PUT request. O photoUrl é a URL pública final da foto.",
+				expiresIn: result.expiresIn,
+			},
 		};
 	}
 
@@ -546,4 +681,46 @@ export class ResidentService {
 		};
 	}
 
+	public async changePassword(
+		residentId: string,
+		changePasswordDto: ResidentChangePasswordDto,
+	): Promise<HttpResponse<null>> {
+		const resident = await this.residentRepository.findById(residentId);
+
+		if (!resident) {
+			throw httpException("Morador não encontrado", httpStatus.NOT_FOUND);
+		}
+
+		// Verificar se a senha atual está correta
+		const isCurrentPasswordValid = await this.comparePassword(
+			changePasswordDto.currentPassword,
+			resident.passwordHash,
+		);
+
+		if (!isCurrentPasswordValid) {
+			throw httpException("Senha atual incorreta", httpStatus.UNAUTHORIZED);
+		}
+
+		// Hash da nova senha
+		const newPasswordHash = await hashPassword(changePasswordDto.newPassword);
+
+		// Atualizar senha
+		await this.residentRepository.update(resident._id, {
+			passwordHash: newPasswordHash,
+		});
+
+		return {
+			success: true,
+			message: "Senha alterada com sucesso",
+			data: null,
+		};
+	}
+
+	private async comparePassword(
+		password: string,
+		hash: string,
+	): Promise<boolean> {
+		const bcrypt = await import("bcrypt");
+		return await bcrypt.compare(password, hash);
+	}
 }

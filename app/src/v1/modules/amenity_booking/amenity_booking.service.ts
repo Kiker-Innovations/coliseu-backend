@@ -2,7 +2,7 @@ import type { MongoClient } from "mongodb";
 import type {
 	CreateAmenityBookingEntity,
 	AmenityBookingEntity,
-} from "../../../database/mongodb/entity/amenity_booking.entity";
+} from "../../../database/mongodb/entity/amenityBooking.entity";
 import { AmenityBookingRepository } from "../../../database/mongodb/repositories/amenity_booking.repository";
 import { AmenityRepository } from "../../../database/mongodb/repositories/amenity.repository";
 import { ApartmentRepository } from "../../../database/mongodb/repositories/apartment.repository";

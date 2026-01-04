@@ -7,6 +7,7 @@ import {
 	transformUpdateAdminDto,
 	transformForgetPasswordAdminDto,
 	transformResetPasswordAdminDto,
+	transformChangePasswordAdminDto,
 } from "./dto";
 import { AdminService } from "./admin.service";
 import { httpException } from "../../../config/error";
@@ -40,6 +41,36 @@ export class AdminController {
 		return reply
 			.status(httpStatus.OK)
 			.send(await this.adminService.getAdmin(id));
+	}
+
+	public async getCurrentAdmin(
+		request: FastifyRequest,
+		reply: FastifyReply,
+	): Promise<void> {
+		try {
+			const user = request.user as { userId: string };
+			if (!user || !user.userId) {
+				return reply.status(httpStatus.UNAUTHORIZED).send({
+					success: false,
+					message: "Usuário não autenticado",
+				});
+			}
+
+			const result = await this.adminService.getCurrentAdmin(user.userId);
+			return reply.status(httpStatus.OK).send(result);
+		} catch (error: any) {
+			if (error.statusCode) {
+				return reply.status(error.statusCode).send({
+					success: false,
+					message: error.message,
+				});
+			}
+			console.error("Erro ao buscar perfil:", error);
+			return reply.status(httpStatus.INTERNAL_SERVER_ERROR).send({
+				success: false,
+				message: "Erro interno do servidor",
+			});
+		}
 	}
 
 	public async updateAdmin(
@@ -423,6 +454,70 @@ export class AdminController {
 			return reply.status(httpStatus.INTERNAL_SERVER_ERROR).send({
 				success: false,
 				message: "Erro interno do servidor ao ativar residente",
+			});
+		}
+	}
+
+	public async changePassword(
+		request: FastifyRequest,
+		reply: FastifyReply,
+	): Promise<void> {
+		try {
+			const user = request.user as { userId: string };
+			if (!user || !user.userId) {
+				return reply.status(httpStatus.UNAUTHORIZED).send({
+					success: false,
+					message: "Usuário não autenticado",
+				});
+			}
+
+			const result = await this.adminService.changePassword(
+				user.userId,
+				transformChangePasswordAdminDto(request.body),
+			);
+
+			return reply.status(httpStatus.OK).send(result);
+		} catch (error: any) {
+			if (error.statusCode) {
+				return reply.status(error.statusCode).send({
+					success: false,
+					message: error.message,
+				});
+			}
+			console.error("Erro ao alterar senha:", error);
+			return reply.status(httpStatus.INTERNAL_SERVER_ERROR).send({
+				success: false,
+				message: "Erro interno do servidor",
+			});
+		}
+	}
+
+	public async generatePresignedUrlForPhoto(
+		request: FastifyRequest,
+		reply: FastifyReply,
+	): Promise<void> {
+		try {
+			const { id } = request.params as { id: string };
+			const body = request.body as { fileExtension?: string };
+			const fileExtension = body.fileExtension || "jpg";
+
+			const result = await this.adminService.generatePresignedUrlForPhoto(
+				id,
+				fileExtension,
+			);
+
+			return reply.status(httpStatus.OK).send(result);
+		} catch (error: any) {
+			if (error.statusCode) {
+				return reply.status(error.statusCode).send({
+					success: false,
+					message: error.message,
+				});
+			}
+			console.error("Erro ao gerar presigned URL:", error);
+			return reply.status(httpStatus.INTERNAL_SERVER_ERROR).send({
+				success: false,
+				message: "Erro interno do servidor",
 			});
 		}
 	}

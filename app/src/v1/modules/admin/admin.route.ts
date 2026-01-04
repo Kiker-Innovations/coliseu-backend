@@ -49,6 +49,26 @@ export class AdminRouteV1 {
 		};
 	};
 
+	private getMe = (): RouteOptions => {
+		return {
+			method: "GET",
+			url: "/v1/admins/me",
+			schema: {
+				tags: ["Admins"],
+				summary: "Get current admin profile",
+				description: "Busca o perfil do administrador autenticado",
+				...this.adminSchema.getMe,
+			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.authorize([UserTypeEnum.ADMIN]),
+			],
+			handler: this.adminController.getCurrentAdmin.bind(
+				this.adminController,
+			) as RouteHandlerMethod,
+		};
+	};
+
 	private update = (): RouteOptions => {
 		return {
 			method: "PUT",
@@ -126,6 +146,26 @@ export class AdminRouteV1 {
 				...this.adminSchema.resetPassword,
 			},
 			handler: this.adminController.resetPassword.bind(
+				this.adminController,
+			) as RouteHandlerMethod,
+		};
+	};
+
+	private changePassword = (): RouteOptions => {
+		return {
+			method: "POST",
+			url: "/v1/admins/me/password",
+			schema: {
+				tags: ["Admins"],
+				summary: "Change admin password",
+				description: "Altera a senha do administrador autenticado",
+				...this.adminSchema.changePassword,
+			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.authorize([UserTypeEnum.ADMIN]),
+			],
+			handler: this.adminController.changePassword.bind(
 				this.adminController,
 			) as RouteHandlerMethod,
 		};
@@ -275,11 +315,13 @@ export class AdminRouteV1 {
 		return [
 			this.create(),
 			this.getById(),
+			this.getMe(),
 			this.update(),
 			this.remove(),
 			this.confirm(),
 			this.forgetPassword(),
 			this.resetPassword(),
+			this.changePassword(),
 			this.getResidents(),
 			this.countResidents(),
 			this.getResidentById(),
@@ -287,7 +329,28 @@ export class AdminRouteV1 {
 			this.rejectResident(),
 			this.deactivateResident(),
 			this.activateResident(),
+			this.generatePresignedUrlForPhoto(),
 		];
+	};
+
+	private generatePresignedUrlForPhoto = (): RouteOptions => {
+		return {
+			method: "POST",
+			url: "/v1/admins/:id/photo/presigned-url",
+			schema: {
+				tags: ["Admins"],
+				summary: "Generate presigned URL for photo upload",
+				description: "Gera uma URL pré-assinada para upload de foto do administrador",
+				...this.adminSchema.generatePresignedUrl,
+			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.authorize([UserTypeEnum.ADMIN]),
+			],
+			handler: this.adminController.generatePresignedUrlForPhoto.bind(
+				this.adminController,
+			) as RouteHandlerMethod,
+		};
 	};
 }
 

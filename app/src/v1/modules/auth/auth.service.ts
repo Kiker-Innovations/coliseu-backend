@@ -88,9 +88,9 @@ export class AuthService {
       throw httpException("Credenciais inválidas", httpStatus.UNAUTHORIZED);
     }
 
-    const apartment = await this.apartmentRepository.findById(
-      resident.apartmentId
-    );
+    const apartment = resident.apartmentId
+      ? await this.apartmentRepository.findById(resident.apartmentId)
+      : null;
 
     const seasons = await this.seasonRepository.findManyByBuildingId(
       resident.buildingId
@@ -102,7 +102,9 @@ export class AuthService {
       buildingId: resident.buildingId,
       email: resident.email,
       name: resident.name,
-      apartmentId: resident.apartmentId,
+      phone: resident.phone,
+      photoUrl: resident.photoUrl || null,
+      apartmentId: resident.apartmentId || undefined,
       apartmentNumber: apartment?.number,
       blockName: apartment?.block,
       buildingName: building.name,
@@ -169,6 +171,8 @@ export class AuthService {
       buildingId: concierge.buildingId,
       email: concierge.email,
       name: concierge.name,
+      phone: concierge.phone,
+      photoUrl: concierge.photoUrl || null,
       shift: concierge.shift,
       buildingName: building.name,
       actualSeasonId: null,
@@ -239,6 +243,7 @@ export class AuthService {
       buildingId: admin.buildingId,
       email: admin.email,
       name: admin.name,
+      phone: admin.phone,
       buildingName: building.name,
       actualSeasonId: seasons[0]?._id ?? null,
     });
@@ -450,17 +455,22 @@ export class AuthService {
           const building = await this.buildingRepository.findById(
             resident.buildingId
           );
-          const apartment = await this.apartmentRepository.findById(
-            resident.apartmentId
+          const apartment = resident.apartmentId
+            ? await this.apartmentRepository.findById(resident.apartmentId)
+            : null;
+          const seasons = await this.seasonRepository.findManyByBuildingId(
+            resident.buildingId
           );
           if (building) {
             tokenPayload.email = resident.email;
             tokenPayload.name = resident.name;
-            tokenPayload.apartmentId = resident.apartmentId;
+            tokenPayload.phone = resident.phone;
+            tokenPayload.photoUrl = resident.photoUrl || null;
+            tokenPayload.apartmentId = resident.apartmentId || undefined;
             tokenPayload.apartmentNumber = apartment?.number;
             tokenPayload.blockName = apartment?.block;
             tokenPayload.buildingName = building.name;
-            tokenPayload.actualSeasonId = decoded.actualSeasonId ?? null;
+            tokenPayload.actualSeasonId = seasons[0]?._id ?? null;
             isValid = true;
           }
         }
@@ -475,6 +485,8 @@ export class AuthService {
           if (building) {
             tokenPayload.email = concierge.email;
             tokenPayload.name = concierge.name;
+            tokenPayload.phone = concierge.phone;
+            tokenPayload.photoUrl = concierge.photoUrl || null;
             tokenPayload.shift = concierge.shift;
             tokenPayload.buildingName = building.name;
             isValid = true;
@@ -486,10 +498,16 @@ export class AuthService {
           const building = await this.buildingRepository.findById(
             admin.buildingId
           );
+          const seasons = await this.seasonRepository.findManyByBuildingId(
+            admin.buildingId
+          );
           if (building) {
             tokenPayload.email = admin.email;
             tokenPayload.name = admin.name;
+            tokenPayload.phone = admin.phone;
+            tokenPayload.photoUrl = admin.photoUrl || null;
             tokenPayload.buildingName = building.name;
+            tokenPayload.actualSeasonId = seasons[0]?._id ?? null;
             isValid = true;
           }
         }

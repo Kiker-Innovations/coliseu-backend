@@ -1,4 +1,18 @@
 ################################################################################
+# Secrets Manager Outputs
+################################################################################
+
+output "secrets_arn" {
+  description = "ARN do secret no Secrets Manager"
+  value       = module.secrets.secret_arn
+}
+
+output "secrets_name" {
+  description = "Nome do secret no Secrets Manager"
+  value       = module.secrets.secret_name
+}
+
+################################################################################
 # ECR Outputs
 ################################################################################
 

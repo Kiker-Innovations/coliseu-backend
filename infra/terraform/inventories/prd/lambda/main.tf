@@ -83,6 +83,28 @@ locals {
 }
 
 ################################################################################
+# Secrets Manager
+################################################################################
+
+module "secrets" {
+  source = "../../../modules/secrets"
+
+  secret_name = "${var.project_name}/${var.environment}/app"
+  description = "Application secrets for ${var.project_name} ${var.environment}"
+
+  # Initial placeholder values - update via AWS Console
+  # Terraform will NOT overwrite manual changes due to lifecycle ignore_changes
+  initial_secret_value = {
+    APP_BASE_URL   = "https://api.example.com"
+    JWT_SECRET     = "change-me-in-aws-console"
+    MONGODB_URL    = "mongodb://change-me-in-aws-console"
+    RESEND_API_KEY = "change-me-in-aws-console"
+  }
+
+  tags = local.common_tags
+}
+
+################################################################################
 # ECR Repository
 ################################################################################
 

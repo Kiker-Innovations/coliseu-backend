@@ -24,7 +24,15 @@
 				"arn:aws:s3:::${s3_bucket_name}",
 				"arn:aws:s3:::${s3_bucket_name}/*"
 			]
+		},
+		{
+			"Sid": "SESAccess",
+			"Effect": "Allow",
+			"Action": [
+				"ses:SendEmail",
+				"ses:SendRawEmail"
+			],
+			"Resource": "*"
 		}
 	]
 }
-

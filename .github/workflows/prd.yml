@@ -16,6 +16,7 @@ env:
   TF_VERSION: 1.6.0
   ECR_REPOSITORY: coliseu-prd
   LAMBDA_FUNCTION_NAME: coliseu-prd
+  SECRETS_NAME: coliseu/prd/app
 
 jobs:
   deploy:
@@ -44,32 +45,68 @@ jobs:
           terraform_wrapper: false
 
       # ============================================================
-      # Step 1: Create ECR Repository (if not exists)
+      # Step 1: Create Secrets Manager + ECR (infrastructure first)
       # ============================================================
       - name: Terraform Init
         run: terraform init
 
-      - name: Terraform Apply - ECR Only
+      - name: Terraform Apply - Secrets & ECR
         run: |
           terraform apply -auto-approve \
+            -target=module.secrets \
             -target=module.ecr
         env:
           TF_VAR_environment: ${{ env.ENVIRONMENT }}
-          TF_VAR_aws_account_id: ${{ secrets.AWS_ACCOUNT_ID_PRD }}
-          TF_VAR_app_base_url: ${{ secrets.APP_BASE_URL_PRD }}
-          TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET_PRD }}
-          TF_VAR_mongodb_url: ${{ secrets.MONGODB_URL_PRD }}
-          TF_VAR_resend_api_key: ${{ secrets.RESEND_API_KEY_PRD }}
+          TF_VAR_aws_account_id: ${{ env.AWS_ACCOUNT_ID }}
+          # Placeholder values for initial infrastructure setup
+          TF_VAR_app_base_url: "https://placeholder.com"
+          TF_VAR_jwt_secret: "placeholder"
+          TF_VAR_mongodb_url: "mongodb://placeholder"
+          TF_VAR_resend_api_key: "placeholder"
 
-      - name: Get ECR Repository URL
-        id: ecr
+      - name: Get Terraform Outputs
+        id: tf-infra
         run: |
-          ECR_URL=$(terraform output -raw ecr_repository_url)
-          echo "repository_url=$ECR_URL" >> $GITHUB_OUTPUT
-          echo "📦 ECR Repository: $ECR_URL"
+          echo "ecr_repository_url=$(terraform output -raw ecr_repository_url)" >> $GITHUB_OUTPUT
+          echo "secrets_name=$(terraform output -raw secrets_name)" >> $GITHUB_OUTPUT
+          echo "📦 ECR Repository: $(terraform output -raw ecr_repository_url)"
+          echo "🔐 Secrets: $(terraform output -raw secrets_name)"
 
       # ============================================================
-      # Step 2: Build and Push Docker Image
+      # Step 2: Fetch Secrets from AWS Secrets Manager
+      # ============================================================
+      - name: Fetch Secrets from Secrets Manager
+        id: secrets
+        run: |
+          echo "🔐 Fetching secrets from AWS Secrets Manager..."
+
+          SECRET_JSON=$(aws secretsmanager get-secret-value \
+            --secret-id "${{ steps.tf-infra.outputs.secrets_name }}" \
+            --query 'SecretString' \
+            --output text)
+
+          # Parse and export as environment variables (masked in logs)
+          APP_BASE_URL=$(echo "$SECRET_JSON" | jq -r '.APP_BASE_URL')
+          JWT_SECRET=$(echo "$SECRET_JSON" | jq -r '.JWT_SECRET')
+          MONGODB_URL=$(echo "$SECRET_JSON" | jq -r '.MONGODB_URL')
+          RESEND_API_KEY=$(echo "$SECRET_JSON" | jq -r '.RESEND_API_KEY')
+
+          # Mask sensitive values in GitHub logs
+          echo "::add-mask::$JWT_SECRET"
+          echo "::add-mask::$MONGODB_URL"
+          echo "::add-mask::$RESEND_API_KEY"
+
+          # Export to GITHUB_OUTPUT for use in subsequent steps
+          echo "app_base_url=$APP_BASE_URL" >> $GITHUB_OUTPUT
+          echo "jwt_secret=$JWT_SECRET" >> $GITHUB_OUTPUT
+          echo "mongodb_url=$MONGODB_URL" >> $GITHUB_OUTPUT
+          echo "resend_api_key=$RESEND_API_KEY" >> $GITHUB_OUTPUT
+
+          echo "✅ Secrets fetched successfully"
+        working-directory: ${{ github.workspace }}
+
+      # ============================================================
+      # Step 3: Build and Push Docker Image
       # ============================================================
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
@@ -85,8 +122,8 @@ jobs:
           push: true
           platforms: linux/arm64
           tags: |
-            ${{ steps.ecr.outputs.repository_url }}:latest
-            ${{ steps.ecr.outputs.repository_url }}:${{ github.sha }}
+            ${{ steps.tf-infra.outputs.ecr_repository_url }}:latest
+            ${{ steps.tf-infra.outputs.ecr_repository_url }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
@@ -94,28 +131,28 @@ jobs:
       - name: Show image info
         run: |
           echo "✅ Image pushed successfully!"
-          echo "   Repository: ${{ steps.ecr.outputs.repository_url }}"
+          echo "   Repository: ${{ steps.tf-infra.outputs.ecr_repository_url }}"
           echo "   Tags: latest, ${{ github.sha }}"
 
       # ============================================================
-      # Step 3: Create/Update Lambda with the new image
+      # Step 4: Apply Full Infrastructure with Secrets
       # ============================================================
       - name: Terraform Apply - Full Infrastructure
-        run: |
-          terraform apply -auto-approve
+        run: terraform apply -auto-approve
         env:
           TF_VAR_environment: ${{ env.ENVIRONMENT }}
-          TF_VAR_aws_account_id: ${{ secrets.AWS_ACCOUNT_ID_PRD }}
-          TF_VAR_app_base_url: ${{ secrets.APP_BASE_URL_PRD }}
-          TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET_PRD }}
-          TF_VAR_mongodb_url: ${{ secrets.MONGODB_URL_PRD }}
-          TF_VAR_resend_api_key: ${{ secrets.RESEND_API_KEY_PRD }}
+          TF_VAR_aws_account_id: ${{ env.AWS_ACCOUNT_ID }}
+          # Secrets from AWS Secrets Manager
+          TF_VAR_app_base_url: ${{ steps.secrets.outputs.app_base_url }}
+          TF_VAR_jwt_secret: ${{ steps.secrets.outputs.jwt_secret }}
+          TF_VAR_mongodb_url: ${{ steps.secrets.outputs.mongodb_url }}
+          TF_VAR_resend_api_key: ${{ steps.secrets.outputs.resend_api_key }}
 
       - name: Update Lambda to use new image
         run: |
           aws lambda update-function-code \
             --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
-            --image-uri ${{ steps.ecr.outputs.repository_url }}:${{ github.sha }}
+            --image-uri ${{ steps.tf-infra.outputs.ecr_repository_url }}:${{ github.sha }}
 
       - name: Wait for Lambda update
         run: |

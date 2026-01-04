@@ -173,3 +173,13 @@ variable "aws_s3_folder_documents" {
   type        = string
   default     = "documents"
 }
+
+################################################################################
+# AWS SES Variables
+################################################################################
+
+variable "aws_ses_from_email" {
+  description = "Email remetente para SES"
+  type        = string
+  default     = "noreply@coliseu.app"
+}

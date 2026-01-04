@@ -72,6 +72,7 @@ locals {
     AWS_S3_FOLDER_RESIDENT          = var.aws_s3_folder_resident
     AWS_S3_FOLDER_VISITOR           = var.aws_s3_folder_visitor
     AWS_S3_FOLDER_DOCUMENTS         = var.aws_s3_folder_documents
+    AWS_SES_FROM_EMAIL              = var.aws_ses_from_email
   }
 
   common_tags = {

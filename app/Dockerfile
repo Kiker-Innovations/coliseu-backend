@@ -1,6 +1,8 @@
 # Build stage - compile TypeScript and bundle with esbuild
 FROM node:22 AS build
 
+# Install zip (needed for bun postbuild hook) and bun
+RUN apt-get update && apt-get install -y zip && rm -rf /var/lib/apt/lists/*
 RUN curl -fsSL https://bun.sh/install | bash -s "bun-v1.1.26"
 ENV PATH="/root/.bun/bin:${PATH}"
 

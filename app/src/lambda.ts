@@ -24,10 +24,10 @@ async function initializeProxy(): Promise<ReturnType<typeof awsLambdaFastify>> {
     const app = await buildApp({ logger: true });
 
     proxy = awsLambdaFastify(app, {
-      // Configurações opcionais do adapter
-      decorateRequest: true,
+      // decorateRequest: false because buildApp() calls server.ready()
+      // which locks the plugin chain before awsLambdaFastify runs
+      decorateRequest: false,
       serializeLambdaArguments: false,
-      decorationPropertyName: "awsLambda",
     });
   }
   return proxy;

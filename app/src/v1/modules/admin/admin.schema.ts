@@ -325,15 +325,18 @@ export class AdminSchema {
 			type: "object",
 			properties: {
 				page: {
-					type: "number",
+					oneOf: [
+						{ type: "number", minimum: 1 },
+						{ type: "string", pattern: "^[0-9]+$" },
+					],
 					description: "Número da página (padrão: 1)",
-					minimum: 1,
 				},
 				limit: {
-					type: "number",
+					oneOf: [
+						{ type: "number", minimum: 1, maximum: 100 },
+						{ type: "string", pattern: "^[0-9]+$" },
+					],
 					description: "Itens por página (padrão: 10)",
-					minimum: 1,
-					maximum: 100,
 				},
 				search: {
 					type: "string",
@@ -370,6 +373,7 @@ export class AdminSchema {
 										name: { type: "string" },
 										email: { type: "string" },
 										phone: { type: "string" },
+										apartmentId: { type: "string" },
 										apartmentNumber: { type: "string" },
 										status: { type: "string" },
 									},

@@ -162,6 +162,7 @@ export class ResidentRepository
 		name: string;
 		email: string;
 		phone?: string;
+		apartmentId?: string;
 		apartmentNumber?: string;
 		status: string;
 	}>> {
@@ -198,6 +199,7 @@ export class ResidentRepository
 				name: 1,
 				email: 1,
 				phone: 1,
+				apartmentId: 1,
 				apartmentNumber: "$apartment.number",
 				status: 1,
 			},
@@ -210,6 +212,7 @@ export class ResidentRepository
 			name: String(r.name || ""),
 			email: String(r.email || ""),
 			phone: r.phone ? String(r.phone) : undefined,
+			apartmentId: r.apartmentId ? String(r.apartmentId) : undefined,
 			apartmentNumber: r.apartmentNumber ? String(r.apartmentNumber) : undefined,
 			status: String(r.status || ""),
 		}));

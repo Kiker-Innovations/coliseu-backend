@@ -88,9 +88,9 @@ export class AuthService {
       throw httpException("Credenciais inválidas", httpStatus.UNAUTHORIZED);
     }
 
-    const apartment = await this.apartmentRepository.findById(
-      resident.apartmentId
-    );
+    const apartment = resident.apartmentId
+      ? await this.apartmentRepository.findById(resident.apartmentId)
+      : null;
 
     const seasons = await this.seasonRepository.findManyByBuildingId(
       resident.buildingId
@@ -102,7 +102,7 @@ export class AuthService {
       buildingId: resident.buildingId,
       email: resident.email,
       name: resident.name,
-      apartmentId: resident.apartmentId,
+      apartmentId: resident.apartmentId || undefined,
       apartmentNumber: apartment?.number,
       blockName: apartment?.block,
       buildingName: building.name,
@@ -450,17 +450,20 @@ export class AuthService {
           const building = await this.buildingRepository.findById(
             resident.buildingId
           );
-          const apartment = await this.apartmentRepository.findById(
-            resident.apartmentId
+          const apartment = resident.apartmentId
+            ? await this.apartmentRepository.findById(resident.apartmentId)
+            : null;
+          const seasons = await this.seasonRepository.findManyByBuildingId(
+            resident.buildingId
           );
           if (building) {
             tokenPayload.email = resident.email;
             tokenPayload.name = resident.name;
-            tokenPayload.apartmentId = resident.apartmentId;
+            tokenPayload.apartmentId = resident.apartmentId || undefined;
             tokenPayload.apartmentNumber = apartment?.number;
             tokenPayload.blockName = apartment?.block;
             tokenPayload.buildingName = building.name;
-            tokenPayload.actualSeasonId = decoded.actualSeasonId ?? null;
+            tokenPayload.actualSeasonId = seasons[0]?._id ?? null;
             isValid = true;
           }
         }

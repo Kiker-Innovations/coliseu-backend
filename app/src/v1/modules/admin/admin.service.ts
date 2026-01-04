@@ -310,6 +310,7 @@ export class AdminService {
 			name: string;
 			email: string;
 			phone?: string;
+			apartmentId?: string;
 			apartmentNumber?: string;
 			status: string;
 		}>;

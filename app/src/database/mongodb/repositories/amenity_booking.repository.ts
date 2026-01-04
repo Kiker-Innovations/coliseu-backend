@@ -5,7 +5,7 @@ import type {
 	CreateAmenityBookingEntity,
 	AmenityBookingEntity,
 	UpdateAmenityBookingEntity,
-} from "../entity/amenity_booking.entity";
+} from "../entity/amenityBooking.entity";
 import type { IRepository } from "../interfaces/IRepository";
 import { getDate } from "@/v1/utils/utils";
 import type { AmenityBookingStatusEnumType } from "@/v1/enum/amenityBookingStatus.enum";

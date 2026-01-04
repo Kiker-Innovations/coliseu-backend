@@ -7,6 +7,7 @@ import {
 	transformUpdateResidentDto,
 	transformForgetPasswordResidentDto,
 	transformResetPasswordResidentDto,
+	transformChangePasswordResidentDto,
 } from "./dto";
 import { ResidentService } from "./resident.service";
 
@@ -38,6 +39,36 @@ export class ResidentController {
 		return reply
 			.status(httpStatus.OK)
 			.send(await this.residentService.getResident(id));
+	}
+
+	public async getCurrentResident(
+		request: FastifyRequest,
+		reply: FastifyReply,
+	): Promise<void> {
+		try {
+			const user = request.user as { userId: string };
+			if (!user || !user.userId) {
+				return reply.status(httpStatus.UNAUTHORIZED).send({
+					success: false,
+					message: "Usuário não autenticado",
+				});
+			}
+
+			const result = await this.residentService.getCurrentResident(user.userId);
+			return reply.status(httpStatus.OK).send(result);
+		} catch (error: any) {
+			if (error.statusCode) {
+				return reply.status(error.statusCode).send({
+					success: false,
+					message: error.message,
+				});
+			}
+			console.error("Erro ao buscar perfil do morador:", error);
+			return reply.status(httpStatus.INTERNAL_SERVER_ERROR).send({
+				success: false,
+				message: "Erro interno do servidor",
+			});
+		}
 	}
 
 	public async updateResident(
@@ -196,6 +227,70 @@ export class ResidentController {
 				});
 			}
 			console.error("Erro ao atualizar residente rejeitado:", error);
+			return reply.status(httpStatus.INTERNAL_SERVER_ERROR).send({
+				success: false,
+				message: "Erro interno do servidor",
+			});
+		}
+	}
+
+	public async generatePresignedUrlForPhoto(
+		request: FastifyRequest,
+		reply: FastifyReply,
+	): Promise<void> {
+		try {
+			const { id } = request.params as { id: string };
+			const body = request.body as { fileExtension?: string };
+			const fileExtension = body.fileExtension || "jpg";
+
+			const result = await this.residentService.generatePresignedUrlForPhoto(
+				id,
+				fileExtension,
+			);
+
+			return reply.status(httpStatus.OK).send(result);
+		} catch (error: any) {
+			if (error.statusCode) {
+				return reply.status(error.statusCode).send({
+					success: false,
+					message: error.message,
+				});
+			}
+			console.error("Erro ao gerar presigned URL:", error);
+			return reply.status(httpStatus.INTERNAL_SERVER_ERROR).send({
+				success: false,
+				message: "Erro interno do servidor",
+			});
+		}
+	}
+
+	public async changePassword(
+		request: FastifyRequest,
+		reply: FastifyReply,
+	): Promise<void> {
+		try {
+			const user = request.user as { userId: string };
+			if (!user || !user.userId) {
+				return reply.status(httpStatus.UNAUTHORIZED).send({
+					success: false,
+					message: "Usuário não autenticado",
+				});
+			}
+
+			const result = await this.residentService.changePassword(
+				user.userId,
+				transformChangePasswordResidentDto(request.body),
+			);
+
+			return reply.status(httpStatus.OK).send(result);
+		} catch (error: any) {
+			if (error.statusCode) {
+				return reply.status(error.statusCode).send({
+					success: false,
+					message: error.message,
+				});
+			}
+			console.error("Erro ao alterar senha:", error);
 			return reply.status(httpStatus.INTERNAL_SERVER_ERROR).send({
 				success: false,
 				message: "Erro interno do servidor",

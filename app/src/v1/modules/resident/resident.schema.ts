@@ -131,6 +131,43 @@ export class ResidentSchema {
 		},
 	});
 
+	public getMe = protectedSchema({
+		response: {
+			200: {
+				description: "Perfil do morador autenticado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					data: {
+						type: "object",
+						properties: {
+							id: { type: "string" },
+							email: { type: "string" },
+							name: { type: "string" },
+							phone: { type: "string", nullable: true },
+							photoUrl: { type: "string", nullable: true },
+							apartmentNumber: { type: "string", nullable: true },
+							apartmentBlock: { type: "string", nullable: true },
+							apartmentFloor: { type: "number", nullable: true },
+							buildingName: { type: "string", nullable: true },
+							buildingId: { type: "string" },
+							apartmentId: { type: "string", nullable: true },
+						},
+					},
+				},
+			},
+			404: {
+				description: "Morador não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			...unauthorizedResponse,
+		},
+	});
+
 	public update = protectedSchema({
 		params: {
 			type: "object",
@@ -321,6 +358,57 @@ export class ResidentSchema {
 							expiresIn: { type: "string", description: "Tempo de expiração" },
 						},
 					},
+				},
+			},
+			404: {
+				description: "Morador não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			...unauthorizedResponse,
+			...forbiddenResponse,
+		},
+	});
+
+	public changePassword = protectedSchema({
+		body: {
+			type: "object",
+			required: ["currentPassword", "newPassword", "confirmPassword"],
+			properties: {
+				currentPassword: {
+					type: "string",
+					description: "Senha atual do morador",
+				},
+				newPassword: {
+					type: "string",
+					description: "Nova senha (mínimo 8 caracteres, com maiúscula, minúscula e caractere especial)",
+					minLength: 8,
+				},
+				confirmPassword: {
+					type: "string",
+					description: "Confirmação da nova senha",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Senha alterada com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: { type: "null" },
+				},
+			},
+			401: {
+				description: "Senha atual incorreta",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
 				},
 			},
 			404: {

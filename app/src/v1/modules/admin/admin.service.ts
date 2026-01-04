@@ -7,12 +7,15 @@ import type {
 import { AdminRepository } from "../../../database/mongodb/repositories/admin.repository";
 import { ResidentRepository } from "../../../database/mongodb/repositories/resident.repository";
 import { ApartmentRepository } from "../../../database/mongodb/repositories/apartment.repository";
+import { BuildingRepository } from "../../../database/mongodb/repositories/building.repository";
+import { S3Provider } from "../../../providers/aws/s3.provider";
 import type {
 	AdminConfirmDto,
 	AdminCreateDto,
 	AdminUpdateDto,
 	AdminForgetPasswordDto,
 	AdminResetPasswordDto,
+	AdminChangePasswordDto,
 } from "./dto";
 import { httpException } from "../../../config/error";
 import httpStatus from "http-status";
@@ -32,11 +35,15 @@ export class AdminService {
 	private adminRepository: AdminRepository;
 	private residentRepository: ResidentRepository;
 	private apartmentRepository: ApartmentRepository;
+	private buildingRepository: BuildingRepository;
+	private s3Provider: S3Provider;
 
 	constructor(mongoClient: MongoClient) {
 		this.adminRepository = new AdminRepository(mongoClient);
 		this.residentRepository = new ResidentRepository(mongoClient);
 		this.apartmentRepository = new ApartmentRepository(mongoClient);
+		this.buildingRepository = new BuildingRepository(mongoClient);
+		this.s3Provider = new S3Provider();
 	}
 
 	public async createAdmin(adminCreateDto: AdminCreateDto): Promise<
@@ -63,6 +70,7 @@ export class AdminService {
 			buildingId: adminCreateDto.buildingId,
 			name: adminCreateDto.name,
 			email: adminCreateDto.email,
+			phone: adminCreateDto.phone,
 			passwordHash,
 			status: AdminStatusEnum.INATIVO,
 			adminCode,
@@ -107,7 +115,43 @@ export class AdminService {
 			data: {
 				name: admin.name,
 				email: admin.email,
+				phone: admin.phone,
+				photoUrl: admin.photoUrl || null,
 				status: admin.status,
+			},
+		};
+	}
+
+	public async getCurrentAdmin(adminId: string): Promise<
+		HttpResponse<{
+			id: string;
+			email: string;
+			name: string;
+			phone?: string;
+			photoUrl?: string | null;
+			buildingName?: string;
+			buildingId?: string;
+		}>
+	> {
+		const admin = await this.adminRepository.findById(adminId);
+
+		if (!admin) {
+			throw httpException("Administrador não encontrado", httpStatus.NOT_FOUND);
+		}
+
+		const building = await this.buildingRepository.findById(admin.buildingId);
+
+		return {
+			success: true,
+			message: "Perfil do administrador encontrado",
+			data: {
+				id: admin._id,
+				email: admin.email,
+				name: admin.name,
+				phone: admin.phone,
+				photoUrl: admin.photoUrl || null,
+				buildingName: building?.name,
+				buildingId: admin.buildingId,
 			},
 		};
 	}
@@ -132,9 +176,31 @@ export class AdminService {
 			throw httpException("Administrador não encontrado", httpStatus.NOT_FOUND);
 		}
 
+		const updateData: any = {};
+
+		if (adminUpdateDto.name) {
+			updateData.name = adminUpdateDto.name;
+		}
+
+		if (adminUpdateDto.email) {
+			updateData.email = adminUpdateDto.email;
+		}
+
+		if (adminUpdateDto.phone !== undefined) {
+			updateData.phone = adminUpdateDto.phone;
+		}
+
+		if (adminUpdateDto.buildingId) {
+			updateData.buildingId = adminUpdateDto.buildingId;
+		}
+
+		if (adminUpdateDto.photoUrl !== undefined) {
+			updateData.photoUrl = adminUpdateDto.photoUrl;
+		}
+
 		const updatedAdmin = await this.adminRepository.update(
 			adminId,
-			adminUpdateDto,
+			updateData,
 		);
 
 		if (!updatedAdmin) {
@@ -150,6 +216,8 @@ export class AdminService {
 			data: {
 				name: updatedAdmin.name,
 				email: updatedAdmin.email,
+				phone: updatedAdmin.phone,
+				photoUrl: updatedAdmin.photoUrl || null,
 				status: updatedAdmin.status,
 			},
 		};
@@ -667,6 +735,117 @@ export class AdminService {
 				email: updatedResident.email,
 				status: updatedResident.status,
 			},
+		};
+	}
+
+	public async changePassword(
+		adminId: string,
+		changePasswordDto: AdminChangePasswordDto,
+	): Promise<HttpResponse<null>> {
+		const admin = await this.adminRepository.findById(adminId);
+
+		if (!admin) {
+			throw httpException("Administrador não encontrado", httpStatus.NOT_FOUND);
+		}
+
+		// Verificar se a senha atual está correta
+		const isCurrentPasswordValid = await this.comparePassword(
+			changePasswordDto.currentPassword,
+			admin.passwordHash,
+		);
+
+		if (!isCurrentPasswordValid) {
+			throw httpException("Senha atual incorreta", httpStatus.UNAUTHORIZED);
+		}
+
+		// Hash da nova senha
+		const newPasswordHash = await hashPassword(changePasswordDto.newPassword);
+
+		// Atualizar senha
+		await this.adminRepository.update(admin._id, {
+			passwordHash: newPasswordHash,
+		});
+
+		return {
+			success: true,
+			message: "Senha alterada com sucesso",
+			data: null,
+		};
+	}
+
+	private async comparePassword(
+		password: string,
+		hash: string,
+	): Promise<boolean> {
+		const bcrypt = await import("bcrypt");
+		return await bcrypt.compare(password, hash);
+	}
+
+	public async generatePresignedUrlForPhoto(
+		adminId: string,
+		fileExtension: string,
+	): Promise<HttpResponse<{
+		presignedUrl: string;
+		photoUrl: string;
+		s3Key: string;
+		instructions: string;
+		expiresIn: string;
+	}>> {
+		const result = await this.generatePresignedUrl(adminId, fileExtension);
+
+		return {
+			success: true,
+			message: "URL pré-assinada gerada com sucesso",
+			data: {
+				presignedUrl: result.presignedUrl,
+				photoUrl: result.publicUrl,
+				s3Key: result.s3Key,
+				instructions:
+					"Use a presignedUrl para fazer upload da foto via PUT request. O photoUrl é a URL pública final da foto.",
+				expiresIn: result.expiresIn,
+			},
+		};
+	}
+
+	private async generatePresignedUrl(
+		adminId: string,
+		fileExtension: string,
+	): Promise<{
+		presignedUrl: string;
+		s3Key: string;
+		expiresIn: string;
+		publicUrl: string;
+	}> {
+		const admin = await this.adminRepository.findById(adminId);
+
+		if (!admin) {
+			throw httpException("Administrador não encontrado", httpStatus.NOT_FOUND);
+		}
+
+		const fileName = `${admin._id}-photo.${fileExtension}`;
+		const s3Key = `admins/${adminId}/${fileName}`;
+
+		const contentTypeMap: Record<string, string> = {
+			jpg: "image/jpeg",
+			jpeg: "image/jpeg",
+			png: "image/png",
+		};
+
+		const contentType =
+			contentTypeMap[fileExtension.toLowerCase()] || "application/octet-stream";
+
+		const presignedUrl = await this.s3Provider.getPresignedUrlForPut(
+			s3Key,
+			contentType,
+			60,
+		);
+		const publicUrl = this.s3Provider.getPublicUrl(s3Key);
+
+		return {
+			presignedUrl,
+			publicUrl,
+			s3Key,
+			expiresIn: `${env.providers.aws.s3.presignedUrlExpiration} segundos`,
 		};
 	}
 }

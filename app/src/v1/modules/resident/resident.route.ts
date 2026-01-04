@@ -45,6 +45,22 @@ export class ResidentRouteV1 {
 		};
 	};
 
+	private getMe = (): RouteOptions => {
+		return {
+			method: "GET",
+			url: "/v1/residents/me",
+			schema: {
+				tags: ["Residents"],
+				summary: "Get current resident profile",
+				description: "Busca o perfil do morador autenticado",
+				...this.residentSchema.getMe, // Schema específico sem params
+			},
+			handler: this.residentController.getCurrentResident.bind(
+				this.residentController,
+			) as RouteHandlerMethod,
+		};
+	};
+
 	private update = (): RouteOptions => {
 		return {
 			method: "PUT",
@@ -175,10 +191,43 @@ export class ResidentRouteV1 {
 		};
 	};
 
+	private generatePresignedUrlForPhoto = (): RouteOptions => {
+		return {
+			method: "POST",
+			url: "/v1/residents/:id/photo/presigned-url",
+			schema: {
+				tags: ["Residents"],
+				summary: "Generate presigned URL for photo upload",
+				description: "Gera uma URL pré-assinada para upload de foto do morador",
+				...this.residentSchema.generatePresignedUrl,
+			},
+			handler: this.residentController.generatePresignedUrlForPhoto.bind(
+				this.residentController,
+			) as RouteHandlerMethod,
+		};
+	};
+
+	private changePassword = (): RouteOptions => {
+		return {
+			method: "POST",
+			url: "/v1/residents/me/password",
+			schema: {
+				tags: ["Residents"],
+				summary: "Change resident password",
+				description: "Altera a senha do morador autenticado",
+				...this.residentSchema.changePassword,
+			},
+			handler: this.residentController.changePassword.bind(
+				this.residentController,
+			) as RouteHandlerMethod,
+		};
+	};
+
 	public routes = (): RouteOptions[] => {
 		return [
 			this.create(),
 			this.getById(),
+			this.getMe(),
 			this.update(),
 			this.remove(),
 			this.confirm(),
@@ -187,6 +236,8 @@ export class ResidentRouteV1 {
 			this.getStatus(),
 			this.resendConfirmationEmail(),
 			this.updateRejectedResident(),
+			this.generatePresignedUrlForPhoto(),
+			this.changePassword(),
 		];
 	};
 }

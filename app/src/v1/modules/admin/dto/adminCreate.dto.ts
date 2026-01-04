@@ -12,6 +12,13 @@ export const adminCreateSchema = z.object({
 	email: z
 		.string({ required_error: "Email é obrigatório" })
 		.email("Email deve ser válido"),
+	phone: z
+		.string({ required_error: "Telefone é obrigatório" })
+		.regex(
+			/^\+\d{11,15}$/,
+			"Telefone deve estar no formato internacional (ex: +5511999999999)",
+		)
+		.optional(),
 	password: z
 		.string({ required_error: "Senha é obrigatória" })
 		.min(8, "Senha deve ter no mínimo 8 caracteres")

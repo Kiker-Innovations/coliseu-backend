@@ -1,3 +1,9 @@
+import {
+	protectedSchema,
+	unauthorizedResponse,
+	forbiddenResponse,
+} from "../../utils/schemaHelper";
+
 export class AdminSchema {
 	public create = {
 		body: {
@@ -18,6 +24,11 @@ export class AdminSchema {
 					type: "string",
 					description: "Email do administrador",
 					example: "admin@example.com",
+				},
+				phone: {
+					type: "string",
+					description: "Telefone do administrador (formato internacional: +5511999999999)",
+					example: "+5511999999999",
 				},
 				password: {
 					type: "string",
@@ -95,6 +106,8 @@ export class AdminSchema {
 						properties: {
 							name: { type: "string" },
 							email: { type: "string" },
+							phone: { type: "string", nullable: true },
+							photoUrl: { type: "string", nullable: true },
 							status: { type: "string", description: "Status do administrador (INATIVO, ATIVO)" },
 						},
 					},
@@ -135,6 +148,16 @@ export class AdminSchema {
 					description: "Nome completo do administrador",
 					example: "João Silva",
 				},
+				phone: {
+					type: "string",
+					description: "Telefone do administrador (formato internacional: +5511999999999)",
+					example: "+5511999999999",
+				},
+				photoUrl: {
+					type: "string",
+					nullable: true,
+					description: "URL da foto do administrador",
+				},
 			},
 		},
 		response: {
@@ -149,6 +172,8 @@ export class AdminSchema {
 						properties: {
 							name: { type: "string" },
 							email: { type: "string" },
+							phone: { type: "string", nullable: true },
+							photoUrl: { type: "string", nullable: true },
 							status: { type: "string", description: "Status do administrador (INATIVO, ATIVO)" },
 						},
 					},
@@ -267,6 +292,116 @@ export class AdminSchema {
 			},
 		},
 	};
+
+	public generatePresignedUrl = protectedSchema({
+		params: {
+			type: "object",
+			required: ["id"],
+			properties: {
+				id: {
+					type: "string",
+					description: "ID do administrador",
+				},
+			},
+		},
+		body: {
+			type: "object",
+			properties: {
+				fileExtension: {
+					type: "string",
+					description: "Extensão do arquivo (jpg, png, etc)",
+					example: "jpg",
+					default: "jpg",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "URL pré-assinada gerada com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					data: {
+						type: "object",
+						properties: {
+							presignedUrl: {
+								type: "string",
+								description: "URL para upload via PUT",
+							},
+							photoUrl: {
+								type: "string",
+								description: "URL pública da foto após upload",
+							},
+							s3Key: { type: "string", description: "Chave do objeto no S3" },
+							instructions: { type: "string" },
+							expiresIn: { type: "string", description: "Tempo de expiração" },
+						},
+					},
+				},
+			},
+			404: {
+				description: "Administrador não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			...unauthorizedResponse,
+			...forbiddenResponse,
+		},
+	});
+
+	public changePassword = protectedSchema({
+		body: {
+			type: "object",
+			required: ["currentPassword", "newPassword", "confirmPassword"],
+			properties: {
+				currentPassword: {
+					type: "string",
+					description: "Senha atual do administrador",
+				},
+				newPassword: {
+					type: "string",
+					description: "Nova senha (mínimo 8 caracteres, com maiúscula, minúscula e caractere especial)",
+					minLength: 8,
+				},
+				confirmPassword: {
+					type: "string",
+					description: "Confirmação da nova senha",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Senha alterada com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: { type: "null" },
+				},
+			},
+			401: {
+				description: "Senha atual incorreta",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			404: {
+				description: "Administrador não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			...unauthorizedResponse,
+			...forbiddenResponse,
+		},
+	});
 
 	public resetPassword = {
 		body: {

@@ -21,14 +21,15 @@ let proxy: ReturnType<typeof awsLambdaFastify> | null = null;
  */
 async function initializeProxy(): Promise<ReturnType<typeof awsLambdaFastify>> {
   if (!proxy) {
+    console.log("[Lambda] Inicializando aplicação Fastify...");
     const app = await buildApp({ logger: true });
 
     proxy = awsLambdaFastify(app, {
       // decorateRequest: false because buildApp() calls server.ready()
       // which locks the plugin chain before awsLambdaFastify runs
       decorateRequest: false,
-      serializeLambdaArguments: false,
     });
+    console.log("[Lambda] Proxy @fastify/aws-lambda criado com sucesso");
   }
   return proxy;
 }
@@ -57,17 +58,57 @@ export async function handler(
   // Importante para conexões persistentes como MongoDB
   context.callbackWaitsForEmptyEventLoop = false;
 
+  console.log(
+    "[Lambda] Event recebido:",
+    JSON.stringify(
+      {
+        httpMethod: (event as APIGatewayProxyEvent).httpMethod,
+        requestContext: {
+          http: (event as APIGatewayProxyEventV2).requestContext?.http,
+          resourcePath: (event as APIGatewayProxyEvent).requestContext
+            ?.resourcePath,
+        },
+        path: (event as APIGatewayProxyEvent).path,
+        rawPath: (event as APIGatewayProxyEventV2).rawPath,
+        headers: event.headers,
+      },
+      null,
+      2
+    )
+  );
+
   const proxyHandler = await initializeProxy();
 
-  return new Promise((resolve, reject) => {
-    proxyHandler(event, context, (err, result) => {
+  // Usa callback pattern que é o esperado pelo @fastify/aws-lambda
+  const result = await new Promise<
+    APIGatewayProxyResult | APIGatewayProxyResultV2
+  >((resolve, reject) => {
+    proxyHandler(event, context, (err, res) => {
       if (err) {
+        console.error("[Lambda] Erro no proxy:", err);
         reject(err);
       } else {
-        resolve(result as APIGatewayProxyResult | APIGatewayProxyResultV2);
+        const response = res as APIGatewayProxyResult;
+        console.log(
+          "[Lambda] Response do proxy:",
+          JSON.stringify(
+            {
+              statusCode: response?.statusCode,
+              headers: response?.headers,
+              bodyLength: response?.body?.length,
+              bodyPreview: response?.body?.substring(0, 500),
+              isBase64Encoded: response?.isBase64Encoded,
+            },
+            null,
+            2
+          )
+        );
+        resolve(response);
       }
     });
   });
+
+  return result;
 }
 
 /**

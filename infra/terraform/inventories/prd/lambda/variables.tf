@@ -133,7 +133,7 @@ variable "mongodb_url" {
 variable "mongodb_database" {
   description = "Nome do banco de dados MongoDB"
   type        = string
-  default     = "coliseu_prd"
+  default     = "coliseu"
 }
 
 ################################################################################

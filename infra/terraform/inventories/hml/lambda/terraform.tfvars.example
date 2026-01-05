@@ -16,7 +16,7 @@ jwt_secret = "your-jwt-secret-here"
 
 # MongoDB (sensível - use secrets no CI/CD)
 mongodb_url      = "mongodb+srv://user:password@cluster.mongodb.net"
-mongodb_database = "coliseu_hml"
+ = "coliseu_hml"
 
 # Resend (sensível - use secrets no CI/CD)
 resend_api_key = "re_xxxxxxxxxxxx"

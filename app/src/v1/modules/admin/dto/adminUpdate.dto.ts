@@ -11,6 +11,15 @@ export const adminUpdateSchema = z.object({
 		.max(100, "Nome deve ter no máximo 100 caracteres")
 		.trim()
 		.optional(),
+	phone: z
+		.string()
+		.regex(
+			/^\+\d{11,15}$/,
+			"Telefone deve estar no formato internacional (ex: +5511999999999)",
+		)
+		.optional()
+		.nullable(),
+	photoUrl: z.string().optional().nullable(),
 });
 
 export type AdminUpdateDto = z.infer<typeof adminUpdateSchema>;

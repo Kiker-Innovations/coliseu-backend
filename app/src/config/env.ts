@@ -52,6 +52,10 @@ const envSchema = z.object({
         financialSnapshots: z.string().min(1),
         documents: z.string().min(1),
         amenityBookings: z.string().min(1),
+        notices: z.string().min(1),
+        infractions: z.string().min(1),
+        fines: z.string().min(1),
+        infractionAppeals: z.string().min(1),
       }),
     }),
   }),
@@ -61,9 +65,9 @@ const envSchema = z.object({
     }),
     aws: z.object({
       config: z.object({
-        region: z.string().min(1),
-        accessKeyId: z.string().min(1),
-        secretAccessKey: z.string().min(1),
+        region: z.string().min(1).optional(),
+        accessKeyId: z.string().min(1).optional(),
+        secretAccessKey: z.string().min(1).optional(),
       }),
       s3: z.object({
         bucketName: z.string().min(1),
@@ -73,6 +77,8 @@ const envSchema = z.object({
           resident: z.string().min(1),
           visitor: z.string().min(1),
           documents: z.string().min(1),
+          notices: z.string().min(1),
+          infractions: z.string().min(1),
         }),
       }),
       ses: z.object({
@@ -139,6 +145,10 @@ export const env = envSchema.parse({
           "financial_snapshots",
         documents: process.env.MONGODB_COLLECTION_DOCUMENTS || "documents",
         amenityBookings: process.env.MONGODB_COLLECTION_AMENITY_BOOKINGS || "amenity_bookings",
+        notices: process.env.MONGODB_COLLECTION_NOTICES || "notices",
+        infractions: process.env.MONGODB_COLLECTION_INFRACTIONS || "infractions",
+        fines: process.env.MONGODB_COLLECTION_FINES || "fines",
+        infractionAppeals: process.env.MONGODB_COLLECTION_INFRACTION_APPEALS || "infraction_appeals",
       },
     },
   },
@@ -148,9 +158,9 @@ export const env = envSchema.parse({
     },
     aws: {
       config: {
-        region: process.env.AWS_REGION,
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        region: process.env.AWS_REGION || "us-east-1",
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
       },
       s3: {
         bucketName: process.env.AWS_S3_BUCKET_NAME,
@@ -161,6 +171,8 @@ export const env = envSchema.parse({
           resident: process.env.AWS_S3_FOLDER_RESIDENT,
           visitor: process.env.AWS_S3_FOLDER_VISITOR || "visitors",
           documents: process.env.AWS_S3_FOLDER_DOCUMENTS || "documents",
+          notices: process.env.AWS_S3_FOLDER_NOTICES || "notices",
+          infractions: process.env.AWS_S3_FOLDER_INFRACTIONS || "infractions",
         },
       },
       ses: {

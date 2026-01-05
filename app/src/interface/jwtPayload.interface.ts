@@ -7,6 +7,8 @@ export interface JwtPayload {
 	actualSeasonId: string;
 	email: string;
 	name?: string;
+	phone?: string;
+	photoUrl?: string | null;
 	apartmentId?: string;
 	apartmentNumber?: string;
 	blockName?: string;

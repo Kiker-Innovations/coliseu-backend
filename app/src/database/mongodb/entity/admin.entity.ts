@@ -4,6 +4,8 @@ export interface AdminEntity {
 	email: string;
 	passwordHash: string;
 	name: string;
+	phone?: string;
+	photoUrl?: string | null;
 	status: string;
 	adminCode?: string;
 	resetPasswordToken?: string;

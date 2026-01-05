@@ -57,6 +57,12 @@ export class DocumentService {
       fileExtension || "pdf",
       documentCreateDto.mimeType
     );
+    console.log('presignedUrl -------------------------------')
+    console.log(presignedUrl)
+    console.log('publicUrl -------------------------------')
+    console.log(publicUrl)
+    console.log('documentId -------------------------------')
+    console.log(documentId)
 
     const documentEntity: CreateDocumentEntity = {
       buildingId: documentCreateDto.buildingId,
@@ -71,6 +77,9 @@ export class DocumentService {
     const createdDocument = await this.documentRepository.create(
       documentEntity
     );
+
+    console.log('createdDocument -------------------------------')
+    console.log(createdDocument)
 
     this.sendNotificationToResidentsAsync(
       documentCreateDto.buildingId,

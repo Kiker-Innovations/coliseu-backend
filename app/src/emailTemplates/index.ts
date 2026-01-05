@@ -53,6 +53,15 @@ export interface DocumentNotificationTemplateData {
   canAttach: boolean;
 }
 
+export interface NoticeNotificationTemplateData {
+  residentName: string;
+  buildingName: string;
+  noticeTitle: string;
+  noticeContent: string;
+  noticeUrl: string;
+  hasAttachment: boolean;
+}
+
 export const EmailTemplates = {
   RESIDENT_CONFIRMATION: "residentConfirmation",
   ADMIN_CONFIRMATION: "adminConfirmation",
@@ -60,4 +69,5 @@ export const EmailTemplates = {
   PASSWORD_RESET: "passwordReset",
   PACKAGE_ARRIVAL: "packageArrival",
   DOCUMENT_NOTIFICATION: "documentNotification",
+  NOTICE_NOTIFICATION: "noticeNotification",
 } as const;

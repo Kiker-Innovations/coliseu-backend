@@ -30,6 +30,7 @@ export const residentUpdateSchema = z.object({
 			"Telefone deve estar no formato internacional (ex: +5513974080222)",
 		)
 		.optional(),
+	photoUrl: z.string().url("URL da foto inválida").nullable().optional(),
 });
 
 export type ResidentUpdateDto = z.infer<typeof residentUpdateSchema>;

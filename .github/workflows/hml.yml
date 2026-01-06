@@ -163,3 +163,9 @@ jobs:
 
       - name: Terraform Outputs
         run: terraform output -no-color
+
+  release-auto-pr:
+    name: Call release-auto-pr workflow
+    if: ${{ success() }}
+    needs: deploy
+    uses: ./.github/workflows/release-auto-pr.yml

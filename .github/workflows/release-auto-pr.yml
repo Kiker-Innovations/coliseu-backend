@@ -1,4 +1,4 @@
-name: Auto Create PR to Main
+name: Create Release Branch and PR
 
 on:
   workflow_run:
@@ -7,95 +7,88 @@ on:
       - completed
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 jobs:
-  create-pr:
-    name: Create PR to Main
+  release:
+    name: Create Release Branch
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Get branch name
-        id: branch
-        run: |
-          BRANCH_NAME="develop"
-          echo "name=$BRANCH_NAME" >> $GITHUB_OUTPUT
-          echo "📌 Branch: $BRANCH_NAME"
+      - name: Fetch tags
+        run: git fetch --tags
 
-      - name: Check if main exists
-        id: check-main
+      - name: Get last version
+        id: last_version
         run: |
-          if git ls-remote --heads origin main | grep -q main; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "✅ Branch main exists"
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "⚠️ Branch main does not exist"
+          LAST_TAG=$(git tag --sort=-v:refname | head -n 1)
+          echo "last=${LAST_TAG:-v0.0.0}" >> $GITHUB_OUTPUT
+          echo "📦 Last version: ${LAST_TAG:-v0.0.0}"
+
+      - name: Determine version bump
+        id: bump
+        run: |
+          COMMITS=$(git log $(git describe --tags --abbrev=0)..HEAD --pretty=%s)
+
+          BUMP="patch"
+
+          if echo "$COMMITS" | grep -q "feat!"; then
+            BUMP="major"
+          elif echo "$COMMITS" | grep -q "^feat"; then
+            BUMP="minor"
           fi
 
-      - name: Check for existing PR
-        if: steps.check-main.outputs.exists == 'true'
-        id: check-pr
-        run: |
-          # Busca apenas PRs abertos com --state open
-          EXISTING_PR=$(gh pr list --head "${{ steps.branch.outputs.name }}" --base main --state open --json number --jq '.[0].number // empty')
-          if [ -n "$EXISTING_PR" ]; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "pr_number=$EXISTING_PR" >> $GITHUB_OUTPUT
-            echo "ℹ️ PR #$EXISTING_PR already exists and is open, PR creation will be skipped."
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "📝 No existing open PR found"
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo "type=$BUMP" >> $GITHUB_OUTPUT
+          echo "🔼 Version bump: $BUMP"
 
-      - name: Create Pull Request
-        if: steps.check-main.outputs.exists == 'true' && steps.check-pr.outputs.exists != 'true'
-        id: create-pr
+      - name: Calculate next version
+        id: next_version
         run: |
-          PR_URL=$(gh pr create \
-            --head "${{ steps.branch.outputs.name }}" \
+          VERSION=${{ steps.last_version.outputs.last }}
+          VERSION=${VERSION#v}
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+
+          case "${{ steps.bump.outputs.type }}" in
+            major)
+              MAJOR=$((MAJOR+1)); MINOR=0; PATCH=0 ;;
+            minor)
+              MINOR=$((MINOR+1)); PATCH=0 ;;
+            patch)
+              PATCH=$((PATCH+1)) ;;
+          esac
+
+          NEXT="v$MAJOR.$MINOR.$PATCH"
+          echo "version=$NEXT" >> $GITHUB_OUTPUT
+          echo "🚀 Next version: $NEXT"
+
+      - name: Create release branch
+        run: |
+          git checkout develop
+          git checkout -b release/${{ steps.next_version.outputs.version }}
+          git push origin release/${{ steps.next_version.outputs.version }}
+
+      - name: Create Pull Request to main
+        run: |
+          gh pr create \
+            --head release/${{ steps.next_version.outputs.version }} \
             --base main \
-            --title "🚀 Release: ${{ steps.branch.outputs.name }} → main" \
-            --body "## 🚀 Release PR
+            --title "🚀 Release ${{ steps.next_version.outputs.version }}" \
+            --body "## Release ${{ steps.next_version.outputs.version }}
 
-          This PR was automatically created when changes were pushed/merged into \`${{ steps.branch.outputs.name }}\` (develop).
+          Automatic release created after successful homologation deploy.
 
-          ### ℹ️ Details
-          - **Source Branch:** \`${{ steps.branch.outputs.name }}\`
-          - **Target Branch:** \`main\`
-          - **Commit:** ${{ github.sha }}
-          - **Author:** @${{ github.actor }}
+          **Source:** develop  
+          **Target:** main  
+          **Version:** ${{ steps.next_version.outputs.version }}
 
-          ---
-          _Please review and merge manually._")
-          
-          echo "url=$PR_URL" >> $GITHUB_OUTPUT
-          echo "✅ PR created: $PR_URL"
+          _This PR was generated automatically._"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Summary
-        run: |
-          echo "## 📋 Release PR Creation Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Source Branch | \`${{ steps.branch.outputs.name }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Target Branch | \`main\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
-          if [ -n "${{ steps.create-pr.outputs.url }}" ]; then
-            echo "| PR URL | ${{ steps.create-pr.outputs.url }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| Status | ✅ Created |" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ steps.check-pr.outputs.exists }}" == "true" ]; then
-            echo "| PR Number | #${{ steps.check-pr.outputs.pr_number }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| Status | ℹ️ Already exists |" >> $GITHUB_STEP_SUMMARY
-          fi
+          GH_TOKEN: ${{ secrets.GH_BOT_TOKEN }}

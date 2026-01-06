@@ -6,7 +6,7 @@ on:
       - 'feature/**'
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 jobs:
@@ -38,31 +38,50 @@ jobs:
             echo "⚠️ Branch develop does not exist"
           fi
 
-      - name: Check for existing PR
+      - name: Check for existing PR to develop from feature branch
         if: steps.check-develop.outputs.exists == 'true'
         id: check-pr
         run: |
-          EXISTING_PR=$(gh pr list --head "${{ steps.branch.outputs.name }}" --base develop --state open --json number --jq '.[0].number // empty')
-          if [ -n "$EXISTING_PR" ]; then
+          # Procura por qualquer PR (aberta, mergeada ou fechada) dessa branch para develop
+          PULL_REQUEST_JSON=$(gh pr list \
+            --state all \
+            --head "${{ steps.branch.outputs.name }}" \
+            --base develop \
+            --json number,state,mergedAt \
+            --jq '.[0]')
+          if [ "$PULL_REQUEST_JSON" != "" ]; then
+            PR_NUMBER=$(echo "$PULL_REQUEST_JSON" | jq -r '.number')
+            PR_STATE=$(echo "$PULL_REQUEST_JSON" | jq -r '.state')
+            PR_MERGED_AT=$(echo "$PULL_REQUEST_JSON" | jq -r '.mergedAt')
+            echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "pr_number=$EXISTING_PR" >> $GITHUB_OUTPUT
-            echo "ℹ️ PR #$EXISTING_PR já está aberta. Ignorando criação de nova PR."
+            if [ "$PR_STATE" = "OPEN" ]; then
+              echo "open=true" >> $GITHUB_OUTPUT
+              echo "merged=false" >> $GITHUB_OUTPUT
+              echo "ℹ️ PR #$PR_NUMBER já está aberta dessa feature para develop, a criação será ignorada."
+            elif [ "$PR_MERGED_AT" != "null" ] && [ "$PR_MERGED_AT" != "" ]; then
+              echo "open=false" >> $GITHUB_OUTPUT
+              echo "merged=true" >> $GITHUB_OUTPUT
+              echo "ℹ️ PR #$PR_NUMBER já foi mergeada. Será criada uma nova PR para novos commits."
+            else
+              echo "open=false" >> $GITHUB_OUTPUT
+              echo "merged=false" >> $GITHUB_OUTPUT
+              echo "ℹ️ PR #$PR_NUMBER já foi fechada mas não mergeada - nova PR será criada."
+            fi
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "📝 No existing open PR found"
+            echo "open=false" >> $GITHUB_OUTPUT
+            echo "merged=false" >> $GITHUB_OUTPUT
+            echo "📝 Nenhuma PR anterior encontrada dessa feature para develop"
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Pull Request
-        if: steps.check-develop.outputs.exists == 'true' && steps.check-pr.outputs.exists != 'true'
+        if: steps.check-develop.outputs.exists == 'true' && (steps.check-pr.outputs.exists == 'false' || steps.check-pr.outputs.merged == 'true')
         id: create-pr
         run: |
-          PR_URL=$(gh pr create \
-            --head "${{ steps.branch.outputs.name }}" \
-            --base develop \
-            --title "🔀 ${{ steps.branch.outputs.name }} → develop" \
-            --body "## 🚀 Pull Request
+          PR_BODY="## 🚀 Pull Request
 
           This PR was automatically created when the branch \`${{ steps.branch.outputs.name }}\` was pushed.
 
@@ -73,8 +92,22 @@ jobs:
           - **Author:** @${{ github.actor }}
 
           ---
-          _Please review and merge manually._")
-          
+          _Please review and merge manually._"
+
+          # Se PR anterior foi mergeada, sinalize no corpo da PR
+          if [ "${{ steps.check-pr.outputs.merged }}" == "true" ]; then
+            PR_BODY="${PR_BODY}
+
+          ---
+          _New PR created because the previous was already merged and there are new commits._"
+            echo "✅ PR anterior já foi mergeada, criando nova PR."
+          fi
+
+          PR_URL=$(gh pr create \
+            --head "${{ steps.branch.outputs.name }}" \
+            --base develop \
+            --title "🔀 ${{ steps.branch.outputs.name }} → develop" \
+            --body "$PR_BODY")
           echo "url=$PR_URL" >> $GITHUB_OUTPUT
           echo "✅ PR created: $PR_URL"
         env:
@@ -92,7 +125,10 @@ jobs:
           if [ -n "${{ steps.create-pr.outputs.url }}" ]; then
             echo "| PR URL | ${{ steps.create-pr.outputs.url }} |" >> $GITHUB_STEP_SUMMARY
             echo "| Status | ✅ Created |" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ steps.check-pr.outputs.exists }}" == "true" ]; then
+          elif [ "${{ steps.check-pr.outputs.open }}" == "true" ]; then
             echo "| PR Number | #${{ steps.check-pr.outputs.pr_number }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| Status | ℹ️ PR já existe e está aberta |" >> $GITHUB_STEP_SUMMARY
+            echo "| Status | ℹ️ PR já aberta, ignorada |" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.check-pr.outputs.merged }}" == "true" ]; then
+            echo "| PR Number | (old) #${{ steps.check-pr.outputs.pr_number }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Status | ✅ Nova PR criada após merge |" >> $GITHUB_STEP_SUMMARY
           fi

@@ -38,4 +38,3 @@ export const transformChangePasswordResidentDto = (
 ): ResidentChangePasswordDto => {
 	return residentChangePasswordSchema.parse(data);
 };
-

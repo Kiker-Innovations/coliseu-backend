@@ -19,12 +19,12 @@ export class InfractionController {
 
 	public async createFineInfraction(
 		request: FastifyRequest,
-		reply: FastifyReply
+		reply: FastifyReply,
 	): Promise<void> {
 		if (request.user.userType !== UserTypeEnum.ADMIN) {
 			throw httpException(
 				"Apenas administradores podem aplicar multas",
-				httpStatus.FORBIDDEN
+				httpStatus.FORBIDDEN,
 			);
 		}
 
@@ -37,12 +37,12 @@ export class InfractionController {
 
 	public async createNotificationInfraction(
 		request: FastifyRequest,
-		reply: FastifyReply
+		reply: FastifyReply,
 	): Promise<void> {
 		if (request.user.userType !== UserTypeEnum.ADMIN) {
 			throw httpException(
 				"Apenas administradores podem aplicar notificações",
-				httpStatus.FORBIDDEN
+				httpStatus.FORBIDDEN,
 			);
 		}
 
@@ -55,7 +55,7 @@ export class InfractionController {
 
 	public async getInfractions(
 		request: FastifyRequest,
-		reply: FastifyReply
+		reply: FastifyReply,
 	): Promise<void> {
 		const { apartmentId, status } = request.query as {
 			apartmentId?: string;
@@ -66,32 +66,36 @@ export class InfractionController {
 		if (!buildingId) {
 			throw httpException(
 				"BuildingId não encontrado no token",
-				httpStatus.BAD_REQUEST
+				httpStatus.BAD_REQUEST,
 			);
 		}
 
 		return reply
 			.status(httpStatus.OK)
 			.send(
-				await this.infractionService.getInfractions(buildingId, apartmentId, status)
+				await this.infractionService.getInfractions(
+					buildingId,
+					apartmentId,
+					status,
+				),
 			);
 	}
 
 	public async getMyFines(
 		request: FastifyRequest,
-		reply: FastifyReply
+		reply: FastifyReply,
 	): Promise<void> {
 		if (request.user.userType !== UserTypeEnum.RESIDENT) {
 			throw httpException(
 				"Apenas moradores podem visualizar suas próprias multas",
-				httpStatus.FORBIDDEN
+				httpStatus.FORBIDDEN,
 			);
 		}
 
 		if (!request.user.apartmentId) {
 			throw httpException(
 				"Morador não possui apartamento associado",
-				httpStatus.BAD_REQUEST
+				httpStatus.BAD_REQUEST,
 			);
 		}
 
@@ -104,26 +108,26 @@ export class InfractionController {
 			.send(
 				await this.infractionService.getMyFines(
 					request.user.apartmentId,
-					status
-				)
+					status,
+				),
 			);
 	}
 
 	public async contestInfraction(
 		request: FastifyRequest,
-		reply: FastifyReply
+		reply: FastifyReply,
 	): Promise<void> {
 		if (request.user.userType !== UserTypeEnum.RESIDENT) {
 			throw httpException(
 				"Apenas moradores podem contestar multas",
-				httpStatus.FORBIDDEN
+				httpStatus.FORBIDDEN,
 			);
 		}
 
 		if (!request.user.apartmentId || !request.user.userId) {
 			throw httpException(
 				"Morador não possui apartamento associado",
-				httpStatus.BAD_REQUEST
+				httpStatus.BAD_REQUEST,
 			);
 		}
 
@@ -135,26 +139,26 @@ export class InfractionController {
 				await this.infractionService.contestInfraction(
 					dto,
 					request.user.userId,
-					request.user.apartmentId
-				)
+					request.user.apartmentId,
+				),
 			);
 	}
 
 	public async getInfractionAppeal(
 		request: FastifyRequest,
-		reply: FastifyReply
+		reply: FastifyReply,
 	): Promise<void> {
 		if (request.user.userType !== UserTypeEnum.RESIDENT) {
 			throw httpException(
 				"Apenas moradores podem visualizar contestações",
-				httpStatus.FORBIDDEN
+				httpStatus.FORBIDDEN,
 			);
 		}
 
 		if (!request.user.apartmentId || !request.user.userId) {
 			throw httpException(
 				"Morador não possui apartamento associado",
-				httpStatus.BAD_REQUEST
+				httpStatus.BAD_REQUEST,
 			);
 		}
 
@@ -166,19 +170,19 @@ export class InfractionController {
 				await this.infractionService.getInfractionAppeal(
 					infractionId,
 					request.user.userId,
-					request.user.apartmentId
-				)
+					request.user.apartmentId,
+				),
 			);
 	}
 
 	public async approveAppeal(
 		request: FastifyRequest,
-		reply: FastifyReply
+		reply: FastifyReply,
 	): Promise<void> {
 		if (request.user.userType !== UserTypeEnum.ADMIN) {
 			throw httpException(
 				"Apenas administradores podem aprovar contestações",
-				httpStatus.FORBIDDEN
+				httpStatus.FORBIDDEN,
 			);
 		}
 
@@ -191,12 +195,12 @@ export class InfractionController {
 
 	public async rejectAppeal(
 		request: FastifyRequest,
-		reply: FastifyReply
+		reply: FastifyReply,
 	): Promise<void> {
 		if (request.user.userType !== UserTypeEnum.ADMIN) {
 			throw httpException(
 				"Apenas administradores podem reprovar contestações",
-				httpStatus.FORBIDDEN
+				httpStatus.FORBIDDEN,
 			);
 		}
 
@@ -209,12 +213,12 @@ export class InfractionController {
 
 	public async getInfractionAppealForAdmin(
 		request: FastifyRequest,
-		reply: FastifyReply
+		reply: FastifyReply,
 	): Promise<void> {
 		if (request.user.userType !== UserTypeEnum.ADMIN) {
 			throw httpException(
 				"Apenas administradores podem visualizar contestações",
-				httpStatus.FORBIDDEN
+				httpStatus.FORBIDDEN,
 			);
 		}
 
@@ -222,7 +226,8 @@ export class InfractionController {
 
 		return reply
 			.status(httpStatus.OK)
-			.send(await this.infractionService.getInfractionAppealForAdmin(infractionId));
+			.send(
+				await this.infractionService.getInfractionAppealForAdmin(infractionId),
+			);
 	}
 }
-

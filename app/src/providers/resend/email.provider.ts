@@ -70,14 +70,14 @@ export class EmailProvider {
 			return {
 				success: false,
 				error:
-					error instanceof Error ? error.message : "Erro desconhecido ao enviar email",
+					error instanceof Error
+						? error.message
+						: "Erro desconhecido ao enviar email",
 			};
 		}
 	}
 
-	public async sendBulkEmails(
-		emails: SendEmailOptions[],
-	): Promise<{
+	public async sendBulkEmails(emails: SendEmailOptions[]): Promise<{
 		success: boolean;
 		results: Array<{ success: boolean; messageId?: string; error?: string }>;
 	}> {
@@ -93,4 +93,3 @@ export class EmailProvider {
 		};
 	}
 }
-

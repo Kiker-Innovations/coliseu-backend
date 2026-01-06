@@ -58,13 +58,13 @@ export class ResidentRepository
 	): Promise<{ residents: ResidentEntity[]; total: number }> {
 		const skip = (page - 1) * limit;
 		const total = await this.collection.countDocuments(filter);
-		
+
 		const residents = await this.collection
 			.find(filter)
 			.skip(skip)
 			.limit(limit)
 			.toArray();
-		
+
 		return { residents: residents as ResidentEntity[], total };
 	}
 
@@ -157,21 +157,26 @@ export class ResidentRepository
 			filterBy?: "name" | "phone" | "email" | "apartment";
 			status?: string;
 		},
-	): Promise<Array<{
-		_id: string;
-		name: string;
-		email: string;
-		phone?: string;
-		apartmentId?: string;
-		apartmentNumber?: string;
-		status: string;
-	}>> {
+	): Promise<
+		Array<{
+			_id: string;
+			name: string;
+			email: string;
+			phone?: string;
+			apartmentId?: string;
+			apartmentNumber?: string;
+			status: string;
+		}>
+	> {
 		const filter: any = { buildingId };
 		if (params?.status) filter.status = params.status;
 		if (params?.search && params?.filterBy) {
-			if (params.filterBy === "name") filter.name = { $regex: params.search, $options: "i" };
-			else if (params.filterBy === "email") filter.email = { $regex: params.search, $options: "i" };
-			else if (params.filterBy === "phone") filter.phone = { $regex: params.search, $options: "i" };
+			if (params.filterBy === "name")
+				filter.name = { $regex: params.search, $options: "i" };
+			else if (params.filterBy === "email")
+				filter.email = { $regex: params.search, $options: "i" };
+			else if (params.filterBy === "phone")
+				filter.phone = { $regex: params.search, $options: "i" };
 		}
 
 		const pipeline: any[] = [
@@ -189,7 +194,9 @@ export class ResidentRepository
 
 		if (params?.filterBy === "apartment" && params?.search) {
 			pipeline.push({
-				$match: { "apartment.number": { $regex: params.search, $options: "i" } },
+				$match: {
+					"apartment.number": { $regex: params.search, $options: "i" },
+				},
 			});
 		}
 
@@ -213,7 +220,9 @@ export class ResidentRepository
 			email: String(r.email || ""),
 			phone: r.phone ? String(r.phone) : undefined,
 			apartmentId: r.apartmentId ? String(r.apartmentId) : undefined,
-			apartmentNumber: r.apartmentNumber ? String(r.apartmentNumber) : undefined,
+			apartmentNumber: r.apartmentNumber
+				? String(r.apartmentNumber)
+				: undefined,
 			status: String(r.status || ""),
 		}));
 	}
@@ -323,8 +332,12 @@ export class ResidentRepository
 			residentCode: String(resident.residentCode || ""),
 			rejectType: resident.rejectType ? String(resident.rejectType) : undefined,
 			rejectNote: resident.rejectNote ? String(resident.rejectNote) : undefined,
-			inactiveType: resident.inactiveType ? String(resident.inactiveType) : undefined,
-			inactiveNote: resident.inactiveNote ? String(resident.inactiveNote) : undefined,
+			inactiveType: resident.inactiveType
+				? String(resident.inactiveType)
+				: undefined,
+			inactiveNote: resident.inactiveNote
+				? String(resident.inactiveNote)
+				: undefined,
 			activatedAt: formatDate(resident.activatedAt),
 			inactivatedAt: formatDate(resident.inactivatedAt),
 			rejectedAt: formatDate(resident.rejectedAt),

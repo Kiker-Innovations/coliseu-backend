@@ -9,11 +9,12 @@ export const packageConfirmDeliverySchema = z.object({
 		.optional(),
 });
 
-export type PackageConfirmDeliveryDto = z.infer<typeof packageConfirmDeliverySchema>;
+export type PackageConfirmDeliveryDto = z.infer<
+	typeof packageConfirmDeliverySchema
+>;
 
 export const transformConfirmDeliveryPackageDto = (
 	data: PackageConfirmDeliveryDto,
 ): PackageConfirmDeliveryDto => {
 	return packageConfirmDeliverySchema.parse(data);
 };
-

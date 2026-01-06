@@ -15,4 +15,3 @@ export const transformForgetPasswordResidentDto = (
 ): ResidentForgetPasswordDto => {
 	return residentForgetPasswordSchema.parse(data);
 };
-

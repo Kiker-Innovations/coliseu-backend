@@ -24,9 +24,7 @@ export const visitorCreateSchema = z.object({
 			"Telefone deve conter apenas números, espaços, parênteses e hífens",
 		)
 		.transform((val) => (val === "" ? undefined : val)),
-	vehicleType: z
-		.enum([VehicleTypeEnum.CARRO, VehicleTypeEnum.MOTO])
-		.optional(),
+	vehicleType: z.enum([VehicleTypeEnum.CARRO, VehicleTypeEnum.MOTO]).optional(),
 	vehiclePlate: z
 		.string()
 		.optional()
@@ -50,9 +48,7 @@ export const visitorCreateSchema = z.object({
 
 export type VisitorCreateDto = z.infer<typeof visitorCreateSchema>;
 
-export const transformCreateVisitorDto = (
-	data: any,
-): VisitorCreateDto => {
+export const transformCreateVisitorDto = (data: any): VisitorCreateDto => {
 	// Handle array types from form data
 	if (typeof data.types === "string") {
 		data.types = [data.types];
@@ -74,4 +70,3 @@ export const transformCreateVisitorDto = (
 
 	return visitorCreateSchema.parse(data);
 };
-

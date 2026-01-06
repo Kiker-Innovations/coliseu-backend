@@ -19,7 +19,8 @@ export class ProjectRouteV1 {
 			schema: {
 				tags: ["Projects"],
 				summary: "Create a new project",
-				description: "Cria um novo projeto para o prédio do administrador na temporada atual",
+				description:
+					"Cria um novo projeto para o prédio do administrador na temporada atual",
 				...this.projectSchema.create,
 			},
 			handler: this.projectController.createProject.bind(
@@ -67,7 +68,8 @@ export class ProjectRouteV1 {
 			schema: {
 				tags: ["Projects"],
 				summary: "Get projects with pending payments",
-				description: "Lista todos os projetos com ofertas escolhidas que ainda possuem parcelas pendentes",
+				description:
+					"Lista todos os projetos com ofertas escolhidas que ainda possuem parcelas pendentes",
 				...this.projectSchema.getPendingPayments,
 			},
 			handler: this.projectController.getProjectsWithPendingPayments.bind(
@@ -119,4 +121,3 @@ export class ProjectRouteV1 {
 		];
 	};
 }
-

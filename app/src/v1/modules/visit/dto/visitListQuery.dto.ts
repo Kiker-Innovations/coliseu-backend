@@ -24,4 +24,3 @@ export type VisitListQueryDto = z.infer<typeof visitListQuerySchema>;
 export const transformVisitListQueryDto = (data: any): VisitListQueryDto => {
 	return visitListQuerySchema.parse(data);
 };
-

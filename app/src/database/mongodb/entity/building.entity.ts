@@ -22,4 +22,3 @@ export type CreateBuildingEntity = Omit<
 export type UpdateBuildingEntity = Partial<
 	Omit<BuildingEntity, "_id" | "createdAt">
 >;
-

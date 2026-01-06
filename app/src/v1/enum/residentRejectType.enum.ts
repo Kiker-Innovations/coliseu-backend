@@ -7,4 +7,3 @@ export const ResidentRejectTypeEnum = {
 } as const;
 
 export type ResidentRejectTypeEnumType = keyof typeof ResidentRejectTypeEnum;
-

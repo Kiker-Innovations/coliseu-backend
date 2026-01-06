@@ -1,6 +1,6 @@
 export const ApartmentStatusEnum = {
 	DESOCUPADO: "DESOCUPADO",
-	OCUPADO: "OCUPADO"
+	OCUPADO: "OCUPADO",
 } as const;
 
 export type ApartmentStatusEnumType = keyof typeof ApartmentStatusEnum;

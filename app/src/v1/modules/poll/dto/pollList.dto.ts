@@ -45,4 +45,3 @@ export const transformPollListByStatusDto = (
 ): PollListByStatusDto => {
 	return pollListByStatusSchema.parse(data);
 };
-

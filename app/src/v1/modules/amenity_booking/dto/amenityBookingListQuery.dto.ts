@@ -5,7 +5,9 @@ export const amenityBookingListQuerySchema = z.object({
 	limit: z.coerce.number().int().min(1).max(100).optional().default(10),
 });
 
-export type AmenityBookingListQueryDto = z.infer<typeof amenityBookingListQuerySchema>;
+export type AmenityBookingListQueryDto = z.infer<
+	typeof amenityBookingListQuerySchema
+>;
 
 export const transformAmenityBookingListQueryDto = (
 	query: any,
@@ -20,4 +22,3 @@ export const transformAmenityBookingListQueryDto = (
 	}
 	return amenityBookingListQuerySchema.parse(cleanedQuery);
 };
-

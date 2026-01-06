@@ -64,4 +64,3 @@ export const transformCreateProjectOfferDto = (
 ): ProjectOfferCreateDto => {
 	return projectOfferCreateSchema.parse(data);
 };
-

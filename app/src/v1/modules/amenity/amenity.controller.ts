@@ -56,9 +56,7 @@ export class AmenityController {
 
 			return reply
 				.status(httpStatus.OK)
-				.send(
-					await this.amenityService.getAllAmenitiesByBuilding(buildingId),
-				);
+				.send(await this.amenityService.getAllAmenitiesByBuilding(buildingId));
 		} catch (error: any) {
 			console.error("Erro ao buscar comodidades:", error);
 			return reply.status(httpStatus.INTERNAL_SERVER_ERROR).send({
@@ -99,7 +97,7 @@ export class AmenityController {
 	): Promise<void> {
 		try {
 			const { buildingId } = request.query as { buildingId: string };
-			
+
 			if (!buildingId) {
 				return reply.status(httpStatus.BAD_REQUEST).send({
 					success: false,
@@ -109,9 +107,7 @@ export class AmenityController {
 
 			return reply
 				.status(httpStatus.OK)
-				.send(
-					await this.amenityService.countAmenitiesByBuilding(buildingId),
-				);
+				.send(await this.amenityService.countAmenitiesByBuilding(buildingId));
 		} catch (error: any) {
 			console.error("Erro ao contar comodidades:", error);
 			return reply.status(httpStatus.INTERNAL_SERVER_ERROR).send({
@@ -149,4 +145,3 @@ export class AmenityController {
 			);
 	}
 }
-

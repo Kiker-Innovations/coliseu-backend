@@ -9,4 +9,3 @@ export type RefreshTokenDto = z.infer<typeof refreshTokenSchema>;
 export function transformRefreshTokenDto(data: unknown): RefreshTokenDto {
 	return refreshTokenSchema.parse(data);
 }
-

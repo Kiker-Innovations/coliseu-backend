@@ -51,14 +51,9 @@ export class AmenitySchema {
 				},
 				bookingType: {
 					type: "string",
-					enum: ["DIARIO", "POR_HORAS"],
-					description: "Tipo de reserva (DIARIO ou POR_HORAS)",
-					example: "POR_HORAS",
-				},
-				maxHours: {
-					type: "number",
-					description: "Máximo de horas que pode ser reservado (apenas para reserva por horas)",
-					example: 4,
+					enum: ["DIARIO"],
+					description: "Tipo de reserva (DIARIO)",
+					example: "DIARIO",
 				},
 				status: {
 					type: "string",
@@ -265,14 +260,9 @@ export class AmenitySchema {
 				},
 				bookingType: {
 					type: "string",
-					enum: ["DIARIO", "POR_HORAS"],
-					description: "Tipo de reserva (DIARIO ou POR_HORAS)",
-					example: "POR_HORAS",
-				},
-				maxHours: {
-					type: "number",
-					description: "Máximo de horas que pode ser reservado (apenas para reserva por horas)",
-					example: 4,
+					enum: ["DIARIO"],
+					description: "Tipo de reserva (DIARIO)",
+					example: "DIARIO",
 				},
 				status: {
 					type: "string",
@@ -443,4 +433,3 @@ export class AmenitySchema {
 		},
 	};
 }
-

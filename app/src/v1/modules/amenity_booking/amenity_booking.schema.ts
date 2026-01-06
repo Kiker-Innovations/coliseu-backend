@@ -18,25 +18,9 @@ export class AmenityBookingSchema {
 				endDate: {
 					type: "string",
 					format: "date-time",
-					description: "Data de término da reserva (ISO 8601) - obrigatório para DIARIO",
+					description:
+						"Data de término da reserva (ISO 8601) - obrigatório para DIARIO",
 					example: "2024-01-15T23:59:59Z",
-				},
-				startTime: {
-					type: "string",
-					pattern: "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$",
-					description: "Hora de início (HH:mm) - obrigatório para POR_HORAS",
-					example: "14:00",
-				},
-				endTime: {
-					type: "string",
-					pattern: "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$",
-					description: "Hora de término (HH:mm) - obrigatório para POR_HORAS",
-					example: "16:00",
-				},
-				numberOfHours: {
-					type: "number",
-					description: "Número de horas (opcional, calculado automaticamente se não fornecido)",
-					example: 2,
 				},
 				observation: {
 					type: "string",
@@ -95,9 +79,6 @@ export class AmenityBookingSchema {
 										residentId: { type: ["string", "null"] },
 										startDate: { type: ["string", "null"] },
 										endDate: { type: ["string", "null"] },
-										startTime: { type: ["string", "null"] },
-										endTime: { type: ["string", "null"] },
-										numberOfHours: { type: ["number", "null"] },
 										numberOfDays: { type: ["number", "null"] },
 										status: { type: "string" },
 										totalValue: { type: "number" },
@@ -117,7 +98,6 @@ export class AmenityBookingSchema {
 												fineValue: { type: ["number", "null"] },
 												maxResidents: { type: ["number", "null"] },
 												bookingType: { type: ["string", "null"] },
-												maxHours: { type: ["number", "null"] },
 											},
 										},
 									},
@@ -187,9 +167,6 @@ export class AmenityBookingSchema {
 										residentId: { type: ["string", "null"] },
 										startDate: { type: ["string", "null"] },
 										endDate: { type: ["string", "null"] },
-										startTime: { type: ["string", "null"] },
-										endTime: { type: ["string", "null"] },
-										numberOfHours: { type: ["number", "null"] },
 										numberOfDays: { type: ["number", "null"] },
 										status: { type: "string" },
 										totalValue: { type: "number" },
@@ -244,69 +221,4 @@ export class AmenityBookingSchema {
 			},
 		},
 	};
-
-	public getAvailableTimeSlots = {
-		params: {
-			type: "object",
-			required: ["id"],
-			properties: {
-				id: {
-					type: "string",
-					description: "ID da comodidade",
-				},
-			},
-		},
-		querystring: {
-			type: "object",
-			required: ["date"],
-			properties: {
-				date: {
-					type: "string",
-					format: "date",
-					description: "Data para verificar horários disponíveis (YYYY-MM-DD)",
-					example: "2024-01-15",
-				},
-			},
-		},
-		response: {
-			200: {
-				description: "Horários disponíveis",
-				type: "object",
-				properties: {
-					success: { type: "boolean" },
-					message: { type: "string" },
-					data: {
-						type: "object",
-						properties: {
-							availableSlots: {
-								type: "array",
-								items: { type: "string" },
-								description: "Lista de horários disponíveis (formato HH:mm)",
-							},
-							bookedSlots: {
-								type: "array",
-								items: {
-									type: "object",
-									properties: {
-										time: { type: "string" },
-										bookingId: { type: "string" },
-									},
-								},
-								description: "Lista de horários já agendados",
-							},
-						},
-					},
-				},
-			},
-			400: {
-				description: "Dados inválidos",
-				type: "object",
-				properties: {
-					success: { type: "boolean" },
-					message: { type: "string" },
-				},
-			},
-		},
-	};
 }
-

@@ -25,7 +25,8 @@ export class PollRouteV1 {
 			schema: {
 				tags: ["Polls"],
 				summary: "Create a new poll",
-				description: "Cria uma nova enquete no sistema. O ID do edifício é obtido automaticamente do token de autenticação do administrador.",
+				description:
+					"Cria uma nova enquete no sistema. O ID do edifício é obtido automaticamente do token de autenticação do administrador.",
 				...this.pollSchema.create,
 			},
 			preHandler: this.authMiddleware.authenticate,
@@ -42,7 +43,8 @@ export class PollRouteV1 {
 			schema: {
 				tags: ["Polls"],
 				summary: "Get polls by status",
-				description: "Lista enquetes filtradas por status(es) do prédio do administrador. O ID do edifício é obtido automaticamente do token de autenticação. Pode passar um ou mais status: ATIVO, PROGRAMADO, FINALIZADO, CANCELADO",
+				description:
+					"Lista enquetes filtradas por status(es) do prédio do administrador. O ID do edifício é obtido automaticamente do token de autenticação. Pode passar um ou mais status: ATIVO, PROGRAMADO, FINALIZADO, CANCELADO",
 				...this.pollSchema.getPollsByStatus,
 			},
 			preHandler: this.authMiddleware.authenticate,
@@ -59,7 +61,8 @@ export class PollRouteV1 {
 			schema: {
 				tags: ["Polls"],
 				summary: "Get active polls statistics",
-				description: "Retorna estatísticas das enquetes ativas do prédio do administrador. O ID do edifício é obtido automaticamente do token de autenticação. Retorna: total de polls, total de votos e percentual em relação aos residents",
+				description:
+					"Retorna estatísticas das enquetes ativas do prédio do administrador. O ID do edifício é obtido automaticamente do token de autenticação. Retorna: total de polls, total de votos e percentual em relação aos residents",
 				querystring: this.pollSchema.getActiveStats.querystring,
 				response: this.pollSchema.getActiveStats.response,
 			},
@@ -77,7 +80,8 @@ export class PollRouteV1 {
 			schema: {
 				tags: ["Polls"],
 				summary: "Cancel a poll",
-				description: "Cancela uma enquete do prédio do administrador (safe delete). O ID do edifício é obtido automaticamente do token de autenticação. A enquete não é deletada, apenas muda o status para CANCELADO e registra o motivo do cancelamento",
+				description:
+					"Cancela uma enquete do prédio do administrador (safe delete). O ID do edifício é obtido automaticamente do token de autenticação. A enquete não é deletada, apenas muda o status para CANCELADO e registra o motivo do cancelamento",
 				...this.pollSchema.cancel,
 			},
 			preHandler: this.authMiddleware.authenticate,
@@ -93,8 +97,9 @@ export class PollRouteV1 {
 			url: "/v1/polls/vote",
 			schema: {
 				tags: ["Polls"],
-			summary: "Vote in a poll",
-			description: "Registra ou atualiza o voto de um residente em uma enquete. Se o residente já votou, atualiza o voto para a nova opção escolhida. O ID do residente é obtido automaticamente do token de autenticação.",
+				summary: "Vote in a poll",
+				description:
+					"Registra ou atualiza o voto de um residente em uma enquete. Se o residente já votou, atualiza o voto para a nova opção escolhida. O ID do residente é obtido automaticamente do token de autenticação.",
 				...this.pollSchema.vote,
 			},
 			preHandler: this.authMiddleware.authenticate,
@@ -111,7 +116,8 @@ export class PollRouteV1 {
 			schema: {
 				tags: ["Polls"],
 				summary: "Delete vote",
-				description: "Deleta o voto de um residente em uma enquete. O ID do residente é obtido automaticamente do token de autenticação.",
+				description:
+					"Deleta o voto de um residente em uma enquete. O ID do residente é obtido automaticamente do token de autenticação.",
 				...this.pollSchema.deleteVote,
 			},
 			preHandler: this.authMiddleware.authenticate,
@@ -128,7 +134,8 @@ export class PollRouteV1 {
 			schema: {
 				tags: ["Polls"],
 				summary: "Get my vote in a poll",
-				description: "Retorna o voto do residente autenticado em uma enquete específica. O ID do residente é obtido automaticamente do token de autenticação. Retorna null se o residente ainda não votou.",
+				description:
+					"Retorna o voto do residente autenticado em uma enquete específica. O ID do residente é obtido automaticamente do token de autenticação. Retorna null se o residente ainda não votou.",
 				...this.pollSchema.getMyVote,
 			},
 			preHandler: this.authMiddleware.authenticate,
@@ -150,4 +157,3 @@ export class PollRouteV1 {
 		];
 	};
 }
-

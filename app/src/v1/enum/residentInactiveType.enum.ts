@@ -6,5 +6,5 @@ export const ResidentInactiveTypeEnum = {
 	OUTRO: "OUTRO",
 } as const;
 
-export type ResidentInactiveTypeEnumType = keyof typeof ResidentInactiveTypeEnum;
-
+export type ResidentInactiveTypeEnumType =
+	keyof typeof ResidentInactiveTypeEnum;

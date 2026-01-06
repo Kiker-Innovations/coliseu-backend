@@ -18,7 +18,8 @@ export class FineSchema {
 				description: {
 					type: "string",
 					description: "Descrição da multa",
-					example: "Fazer barulho excessivo após às 22h é proibido conforme o regimento interno.",
+					example:
+						"Fazer barulho excessivo após às 22h é proibido conforme o regimento interno.",
 				},
 				value: {
 					type: "number",
@@ -111,7 +112,8 @@ export class FineSchema {
 				description: {
 					type: "string",
 					description: "Descrição da multa",
-					example: "Fazer barulho excessivo após às 22h é proibido conforme o regimento interno.",
+					example:
+						"Fazer barulho excessivo após às 22h é proibido conforme o regimento interno.",
 				},
 				value: {
 					type: "number",

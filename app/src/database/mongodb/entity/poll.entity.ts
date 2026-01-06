@@ -32,7 +32,14 @@ export type CreatePollEntity = {
 };
 
 export type UpdatePollEntity = Partial<
-	Pick<PollEntity, "description" | "status" | "startDate" | "endDate" | "cancelReason" | "cancelledAt" | "updatedAt">
+	Pick<
+		PollEntity,
+		| "description"
+		| "status"
+		| "startDate"
+		| "endDate"
+		| "cancelReason"
+		| "cancelledAt"
+		| "updatedAt"
+	>
 >;
-
-

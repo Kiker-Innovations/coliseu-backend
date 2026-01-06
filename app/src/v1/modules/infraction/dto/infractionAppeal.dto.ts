@@ -21,8 +21,7 @@ export const infractionAppealSchema = z.object({
 export type InfractionAppealDto = z.infer<typeof infractionAppealSchema>;
 
 export const transformInfractionAppealDto = (
-	data: InfractionAppealDto
+	data: InfractionAppealDto,
 ): InfractionAppealDto => {
 	return infractionAppealSchema.parse(data);
 };
-

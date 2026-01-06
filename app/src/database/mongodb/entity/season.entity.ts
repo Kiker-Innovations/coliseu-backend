@@ -16,4 +16,3 @@ export type CreateSeasonEntity = Omit<
 export type UpdateSeasonEntity = Partial<
 	Pick<SeasonEntity, "reusedSuggestions" | "updatedAt">
 >;
-

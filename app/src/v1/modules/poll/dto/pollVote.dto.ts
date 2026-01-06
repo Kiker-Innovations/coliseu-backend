@@ -15,4 +15,3 @@ export type PollVoteDto = z.infer<typeof pollVoteSchema>;
 export const transformPollVoteDto = (data: PollVoteDto): PollVoteDto => {
 	return pollVoteSchema.parse(data);
 };
-

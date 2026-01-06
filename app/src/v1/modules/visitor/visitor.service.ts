@@ -47,11 +47,10 @@ export class VisitorService {
 	> {
 		// Validate document uniqueness if provided
 		if (visitorCreateDto.document) {
-			const existingVisitor =
-				await this.visitorRepository.findByDocument(
-					visitorCreateDto.document,
-					buildingId,
-				);
+			const existingVisitor = await this.visitorRepository.findByDocument(
+				visitorCreateDto.document,
+				buildingId,
+			);
 			if (existingVisitor) {
 				throw httpException(
 					"Já existe um visitante com este documento neste edifício",
@@ -63,10 +62,7 @@ export class VisitorService {
 		// Get concierge name
 		const concierge = await this.conciergeRepository.findById(conciergeId);
 		if (!concierge) {
-			throw httpException(
-				"Porteiro não encontrado",
-				httpStatus.NOT_FOUND,
-			);
+			throw httpException("Porteiro não encontrado", httpStatus.NOT_FOUND);
 		}
 
 		// Create visitor entity
@@ -191,9 +187,7 @@ export class VisitorService {
 	public async getVisitorById(
 		visitorId: string,
 		buildingId: string,
-	): Promise<
-		HttpResponse<VisitorEntity & { apartmentNumber?: string }>
-	> {
+	): Promise<HttpResponse<VisitorEntity & { apartmentNumber?: string }>> {
 		const visitor = await this.visitorRepository.findById(visitorId);
 
 		if (!visitor) {
@@ -235,7 +229,10 @@ export class VisitorService {
 		}
 
 		// Validate document uniqueness if provided and different from current
-		if (visitorUpdateDto.document && visitorUpdateDto.document !== visitor.document) {
+		if (
+			visitorUpdateDto.document &&
+			visitorUpdateDto.document !== visitor.document
+		) {
 			const existingVisitor = await this.visitorRepository.findByDocument(
 				visitorUpdateDto.document,
 				buildingId,
@@ -251,10 +248,7 @@ export class VisitorService {
 		// Get concierge name
 		const concierge = await this.conciergeRepository.findById(conciergeId);
 		if (!concierge) {
-			throw httpException(
-				"Porteiro não encontrado",
-				httpStatus.NOT_FOUND,
-			);
+			throw httpException("Porteiro não encontrado", httpStatus.NOT_FOUND);
 		}
 
 		// Prepare update data
@@ -288,18 +282,20 @@ export class VisitorService {
 		query: VisitorRecentQueryDto,
 		buildingId: string,
 	): Promise<
-		HttpResponse<{
-			_id: string;
-			name: string;
-			phone?: string;
-			vehicleType?: string;
-			vehiclePlate?: string;
-			types: string[];
-			photoUrl: string;
-			note?: string;
-			active: boolean;
-			apartmentNumber?: string;
-		}[]>
+		HttpResponse<
+			{
+				_id: string;
+				name: string;
+				phone?: string;
+				vehicleType?: string;
+				vehiclePlate?: string;
+				types: string[];
+				photoUrl: string;
+				note?: string;
+				active: boolean;
+				apartmentNumber?: string;
+			}[]
+		>
 	> {
 		const visitors = await this.visitorRepository.findRecent(
 			buildingId,
@@ -312,6 +308,4 @@ export class VisitorService {
 			data: visitors,
 		};
 	}
-
 }
-

@@ -44,9 +44,7 @@ export class ApartmentController {
 		const { buildingId } = request.query as { buildingId: string };
 		return reply
 			.status(httpStatus.OK)
-			.send(
-				await this.apartmentService.getAllApartmentsByBuilding(buildingId),
-			);
+			.send(await this.apartmentService.getAllApartmentsByBuilding(buildingId));
 	}
 
 	public async updateApartment(
@@ -74,4 +72,3 @@ export class ApartmentController {
 			.send(await this.apartmentService.deleteApartment(id));
 	}
 }
-

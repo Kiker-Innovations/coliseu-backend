@@ -24,34 +24,34 @@ import { FineRouteV1 } from "./v1/modules/fine/fine.route";
 import { InfractionRouteV1 } from "./v1/modules/infraction/infraction.route";
 
 export class Route {
-  public registerRoutes = async (server: FastifyInstance): Promise<void> => {
-    const mongoClient = mongoConnection.getClient();
+	public registerRoutes = async (server: FastifyInstance): Promise<void> => {
+		const mongoClient = mongoConnection.getClient();
 
-    for (const route of [
-      ...new AuthRouteV1(mongoClient).routes(),
-      ...new ResidentRouteV1(mongoClient).routes(),
-      ...new ConciergeRouteV1(mongoClient).routes(),
-      ...new AdminRouteV1(mongoClient).routes(),
-      ...new BuildingRouteV1(mongoClient).routes(),
-      ...new PackageRouteV1(mongoClient).routes(),
-      ...new ApartmentRouteV1(mongoClient).routes(),
-      ...new PollRouteV1(mongoClient).routes(),
-      ...new ResidentSuggestionRouteV1(mongoClient).routes(),
-      ...new SeasonRouteV1(mongoClient).routes(),
-      ...new ProjectRouteV1(mongoClient).routes(),
-      ...new ProjectOfferRouteV1(mongoClient).routes(),
-      ...new ProjectSuggestionRouteV1(mongoClient).routes(),
-      ...new VisitorRouteV1(mongoClient).routes(),
-      ...new VisitRouteV1(mongoClient).routes(),
-      ...new FinancialRouteV1(mongoClient).routes(),
-      ...new DocumentRouteV1(mongoClient).routes(),
-      ...new AmenityRouteV1(mongoClient).routes(),
-      ...new AmenityBookingRouteV1(mongoClient).routes(),
-      ...new NoticeRouteV1(mongoClient).routes(),
-      ...new FineRouteV1(mongoClient).routes(),
-      ...new InfractionRouteV1(mongoClient).routes(),
-    ]) {
-      server.route(route);
-    }
-  };
+		for (const route of [
+			...new AuthRouteV1(mongoClient).routes(),
+			...new ResidentRouteV1(mongoClient).routes(),
+			...new ConciergeRouteV1(mongoClient).routes(),
+			...new AdminRouteV1(mongoClient).routes(),
+			...new BuildingRouteV1(mongoClient).routes(),
+			...new PackageRouteV1(mongoClient).routes(),
+			...new ApartmentRouteV1(mongoClient).routes(),
+			...new PollRouteV1(mongoClient).routes(),
+			...new ResidentSuggestionRouteV1(mongoClient).routes(),
+			...new SeasonRouteV1(mongoClient).routes(),
+			...new ProjectRouteV1(mongoClient).routes(),
+			...new ProjectOfferRouteV1(mongoClient).routes(),
+			...new ProjectSuggestionRouteV1(mongoClient).routes(),
+			...new VisitorRouteV1(mongoClient).routes(),
+			...new VisitRouteV1(mongoClient).routes(),
+			...new FinancialRouteV1(mongoClient).routes(),
+			...new DocumentRouteV1(mongoClient).routes(),
+			...new AmenityRouteV1(mongoClient).routes(),
+			...new AmenityBookingRouteV1(mongoClient).routes(),
+			...new NoticeRouteV1(mongoClient).routes(),
+			...new FineRouteV1(mongoClient).routes(),
+			...new InfractionRouteV1(mongoClient).routes(),
+		]) {
+			server.route(route);
+		}
+	};
 }

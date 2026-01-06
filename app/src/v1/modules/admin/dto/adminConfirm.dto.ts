@@ -17,4 +17,3 @@ export const transformConfirmAdminDto = (
 ): AdminConfirmDto => {
 	return adminConfirmSchema.parse(data);
 };
-

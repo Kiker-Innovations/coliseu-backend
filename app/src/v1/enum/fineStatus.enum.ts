@@ -5,7 +5,10 @@ export const FineStatusEnum = {
 	CANCELADA: "CANCELADA",
 } as const;
 
-export type FineStatusEnumType = typeof FineStatusEnum[keyof typeof FineStatusEnum];
+export type FineStatusEnumType =
+	(typeof FineStatusEnum)[keyof typeof FineStatusEnum];
 
-export const FineStatusEnumValues = Object.values(FineStatusEnum) as [string, ...string[]];
-
+export const FineStatusEnumValues = Object.values(FineStatusEnum) as [
+	string,
+	...string[],
+];

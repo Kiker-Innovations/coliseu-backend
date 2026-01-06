@@ -41,7 +41,7 @@ export class S3Provider {
 		});
 
 		const presignedUrl = await getSignedUrl(this.s3Client, command, {
-			expiresIn
+			expiresIn,
 		});
 
 		return presignedUrl;

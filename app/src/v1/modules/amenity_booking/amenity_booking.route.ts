@@ -73,7 +73,8 @@ export class AmenityBookingRouteV1 {
 			schema: {
 				tags: ["Amenity Bookings"],
 				summary: "List amenity bookings by building (Admin)",
-				description: "Lista todas as reservas de comodidades do edifício (exclui FINALIZADO e CANCELADO)",
+				description:
+					"Lista todas as reservas de comodidades do edifício (exclui FINALIZADO e CANCELADO)",
 				...this.amenityBookingSchema.listByBuilding,
 			},
 			preHandler: this.authMiddleware.authenticate,
@@ -83,31 +84,7 @@ export class AmenityBookingRouteV1 {
 		};
 	};
 
-	private getAvailableTimeSlots = (): RouteOptions => {
-		return {
-			method: "GET",
-			url: "/v1/amenity-bookings/:id/available-slots",
-			schema: {
-				tags: ["Amenity Bookings"],
-				summary: "Get available time slots for an amenity",
-				description: "Lista horários disponíveis para reserva de uma comodidade em uma data específica",
-				...this.amenityBookingSchema.getAvailableTimeSlots,
-			},
-			preHandler: this.authMiddleware.authenticate,
-			handler: this.amenityBookingController.getAvailableTimeSlots.bind(
-				this.amenityBookingController,
-			) as RouteHandlerMethod,
-		};
-	};
-
 	public routes = (): RouteOptions[] => {
-		return [
-			this.create(),
-			this.list(),
-			this.cancel(),
-			this.listByBuilding(),
-			this.getAvailableTimeSlots(),
-		];
+		return [this.create(), this.list(), this.cancel(), this.listByBuilding()];
 	};
 }
-

@@ -20,4 +20,3 @@ export const transformUpdateProjectDto = (
 ): ProjectUpdateDto => {
 	return projectUpdateSchema.parse(data);
 };
-

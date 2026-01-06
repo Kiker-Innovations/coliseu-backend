@@ -23,7 +23,7 @@ export class InfractionRouteV1 {
 				...this.infractionSchema.createFine,
 			},
 			handler: this.infractionController.createFineInfraction.bind(
-				this.infractionController
+				this.infractionController,
 			) as RouteHandlerMethod,
 		};
 	};
@@ -39,7 +39,7 @@ export class InfractionRouteV1 {
 				...this.infractionSchema.createNotification,
 			},
 			handler: this.infractionController.createNotificationInfraction.bind(
-				this.infractionController
+				this.infractionController,
 			) as RouteHandlerMethod,
 		};
 	};
@@ -55,7 +55,7 @@ export class InfractionRouteV1 {
 				...this.infractionSchema.getAll,
 			},
 			handler: this.infractionController.getInfractions.bind(
-				this.infractionController
+				this.infractionController,
 			) as RouteHandlerMethod,
 		};
 	};
@@ -67,11 +67,12 @@ export class InfractionRouteV1 {
 			schema: {
 				tags: ["Infractions"],
 				summary: "Get my fines",
-				description: "Lista as multas do morador autenticado, ordenadas por data (apenas resident)",
+				description:
+					"Lista as multas do morador autenticado, ordenadas por data (apenas resident)",
 				...this.infractionSchema.getMyFines,
 			},
 			handler: this.infractionController.getMyFines.bind(
-				this.infractionController
+				this.infractionController,
 			) as RouteHandlerMethod,
 		};
 	};
@@ -83,11 +84,12 @@ export class InfractionRouteV1 {
 			schema: {
 				tags: ["Infractions"],
 				summary: "Contest infraction",
-				description: "Contesta uma infração com texto e arquivo de evidência (apenas resident)",
+				description:
+					"Contesta uma infração com texto e arquivo de evidência (apenas resident)",
 				...this.infractionSchema.contestInfraction,
 			},
 			handler: this.infractionController.contestInfraction.bind(
-				this.infractionController
+				this.infractionController,
 			) as RouteHandlerMethod,
 		};
 	};
@@ -103,7 +105,7 @@ export class InfractionRouteV1 {
 				...this.infractionSchema.getInfractionAppeal,
 			},
 			handler: this.infractionController.getInfractionAppeal.bind(
-				this.infractionController
+				this.infractionController,
 			) as RouteHandlerMethod,
 		};
 	};
@@ -115,11 +117,12 @@ export class InfractionRouteV1 {
 			schema: {
 				tags: ["Infractions"],
 				summary: "Approve appeal",
-				description: "Aprova a contestação de uma infração, cancelando a multa (apenas admin)",
+				description:
+					"Aprova a contestação de uma infração, cancelando a multa (apenas admin)",
 				...this.infractionSchema.approveAppeal,
 			},
 			handler: this.infractionController.approveAppeal.bind(
-				this.infractionController
+				this.infractionController,
 			) as RouteHandlerMethod,
 		};
 	};
@@ -131,11 +134,12 @@ export class InfractionRouteV1 {
 			schema: {
 				tags: ["Infractions"],
 				summary: "Reject appeal",
-				description: "Reprova a contestação de uma infração, voltando a multa para pendente (apenas admin)",
+				description:
+					"Reprova a contestação de uma infração, voltando a multa para pendente (apenas admin)",
 				...this.infractionSchema.rejectAppeal,
 			},
 			handler: this.infractionController.rejectAppeal.bind(
-				this.infractionController
+				this.infractionController,
 			) as RouteHandlerMethod,
 		};
 	};
@@ -151,7 +155,7 @@ export class InfractionRouteV1 {
 				...this.infractionSchema.getInfractionAppealForAdmin,
 			},
 			handler: this.infractionController.getInfractionAppealForAdmin.bind(
-				this.infractionController
+				this.infractionController,
 			) as RouteHandlerMethod,
 		};
 	};
@@ -170,4 +174,3 @@ export class InfractionRouteV1 {
 		];
 	};
 }
-

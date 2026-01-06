@@ -4,7 +4,10 @@ import type { MongoClient } from "mongodb";
 import { httpException } from "../../../config/error";
 import { NoticeService } from "./notice.service";
 import { UserTypeEnum } from "../../enum/userType.enum";
-import { NoticeStatusEnum, type NoticeStatusEnumType } from "../../enum/noticeStatus.enum";
+import {
+	NoticeStatusEnum,
+	type NoticeStatusEnumType,
+} from "../../enum/noticeStatus.enum";
 import { transformCreateNoticeDto } from "./dto";
 
 export class NoticeController {
@@ -16,12 +19,12 @@ export class NoticeController {
 
 	public async createNotice(
 		request: FastifyRequest,
-		reply: FastifyReply
+		reply: FastifyReply,
 	): Promise<void> {
 		if (request.user.userType !== UserTypeEnum.ADMIN) {
 			throw httpException(
 				"Apenas administradores podem criar avisos",
-				httpStatus.FORBIDDEN
+				httpStatus.FORBIDDEN,
 			);
 		}
 
@@ -37,7 +40,7 @@ export class NoticeController {
 
 	public async getNotices(
 		request: FastifyRequest,
-		reply: FastifyReply
+		reply: FastifyReply,
 	): Promise<void> {
 		if (
 			request.user.userType !== UserTypeEnum.ADMIN &&
@@ -45,7 +48,7 @@ export class NoticeController {
 		) {
 			throw httpException(
 				"Apenas administradores e moradores podem visualizar avisos",
-				httpStatus.FORBIDDEN
+				httpStatus.FORBIDDEN,
 			);
 		}
 
@@ -57,12 +60,15 @@ export class NoticeController {
 
 		let statusEnum: NoticeStatusEnumType | undefined;
 		if (status) {
-			if (status === NoticeStatusEnum.ATIVO || status === NoticeStatusEnum.INATIVO) {
+			if (
+				status === NoticeStatusEnum.ATIVO ||
+				status === NoticeStatusEnum.INATIVO
+			) {
 				statusEnum = status as NoticeStatusEnumType;
 			} else {
 				throw httpException(
 					"Status inválido. Use ATIVO ou INATIVO",
-					httpStatus.BAD_REQUEST
+					httpStatus.BAD_REQUEST,
 				);
 			}
 		}
@@ -77,14 +83,14 @@ export class NoticeController {
 					request.user.buildingId,
 					statusEnum,
 					pageNumber,
-					limitNumber
-				)
+					limitNumber,
+				),
 			);
 	}
 
 	public async getNoticeById(
 		request: FastifyRequest,
-		reply: FastifyReply
+		reply: FastifyReply,
 	): Promise<void> {
 		if (
 			request.user.userType !== UserTypeEnum.ADMIN &&
@@ -92,7 +98,7 @@ export class NoticeController {
 		) {
 			throw httpException(
 				"Apenas administradores e moradores podem visualizar avisos",
-				httpStatus.FORBIDDEN
+				httpStatus.FORBIDDEN,
 			);
 		}
 
@@ -104,12 +110,12 @@ export class NoticeController {
 
 	public async deleteNotice(
 		request: FastifyRequest,
-		reply: FastifyReply
+		reply: FastifyReply,
 	): Promise<void> {
 		if (request.user.userType !== UserTypeEnum.ADMIN) {
 			throw httpException(
 				"Apenas administradores podem deletar avisos",
-				httpStatus.FORBIDDEN
+				httpStatus.FORBIDDEN,
 			);
 		}
 
@@ -119,13 +125,18 @@ export class NoticeController {
 		if (!deletedNote || deletedNote.trim().length < 3) {
 			throw httpException(
 				"Motivo da deleção é obrigatório e deve ter no mínimo 3 caracteres",
-				httpStatus.BAD_REQUEST
+				httpStatus.BAD_REQUEST,
 			);
 		}
 
 		return reply
 			.status(httpStatus.OK)
-			.send(await this.noticeService.deleteNotice(id, deletedNote, request.user.buildingId));
+			.send(
+				await this.noticeService.deleteNotice(
+					id,
+					deletedNote,
+					request.user.buildingId,
+				),
+			);
 	}
 }
-

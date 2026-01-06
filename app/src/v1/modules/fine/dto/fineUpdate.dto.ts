@@ -22,9 +22,6 @@ export const fineUpdateSchema = z.object({
 
 export type FineUpdateDto = z.infer<typeof fineUpdateSchema>;
 
-export const transformUpdateFineDto = (
-	data: FineUpdateDto
-): FineUpdateDto => {
+export const transformUpdateFineDto = (data: FineUpdateDto): FineUpdateDto => {
 	return fineUpdateSchema.parse(data);
 };
-

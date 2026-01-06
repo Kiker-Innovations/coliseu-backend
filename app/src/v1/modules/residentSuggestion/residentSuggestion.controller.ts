@@ -75,8 +75,8 @@ export class ResidentSuggestionController {
 		if (!request.user.actualSeasonId) {
 			throw httpException(
 				"Não há temporadas ativas para colocar sugestões.",
-				httpStatus.BAD_REQUEST
-			)
+				httpStatus.BAD_REQUEST,
+			);
 		}
 
 		return reply
@@ -193,4 +193,3 @@ export class ResidentSuggestionController {
 			.send(await this.residentSuggestionService.getAllSuggestions());
 	}
 }
-

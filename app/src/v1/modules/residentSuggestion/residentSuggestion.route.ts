@@ -8,7 +8,9 @@ export class ResidentSuggestionRouteV1 {
 	private residentSuggestionSchema: ResidentSuggestionSchema;
 
 	constructor(mongoClient: MongoClient) {
-		this.residentSuggestionController = new ResidentSuggestionController(mongoClient);
+		this.residentSuggestionController = new ResidentSuggestionController(
+			mongoClient,
+		);
 		this.residentSuggestionSchema = new ResidentSuggestionSchema();
 	}
 
@@ -38,9 +40,10 @@ export class ResidentSuggestionRouteV1 {
 				description: "Lista todas as sugestões do apartamento do morador",
 				...this.residentSuggestionSchema.getAll,
 			},
-			handler: this.residentSuggestionController.getAllSuggestionsByApartmentAndSeason.bind(
-				this.residentSuggestionController,
-			) as RouteHandlerMethod,
+			handler:
+				this.residentSuggestionController.getAllSuggestionsByApartmentAndSeason.bind(
+					this.residentSuggestionController,
+				) as RouteHandlerMethod,
 		};
 	};
 

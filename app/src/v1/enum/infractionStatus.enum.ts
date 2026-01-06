@@ -4,7 +4,8 @@ export const InfractionStatusEnum = {
 } as const;
 
 export type InfractionStatusEnumType =
-	typeof InfractionStatusEnum[keyof typeof InfractionStatusEnum];
+	(typeof InfractionStatusEnum)[keyof typeof InfractionStatusEnum];
 
-export const InfractionStatusEnumValues = Object.values(InfractionStatusEnum) as [string, ...string[]];
-
+export const InfractionStatusEnumValues = Object.values(
+	InfractionStatusEnum,
+) as [string, ...string[]];

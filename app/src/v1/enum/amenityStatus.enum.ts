@@ -3,7 +3,10 @@ export const AmenityStatusEnum = {
 	INATIVO: "INATIVO",
 } as const;
 
-export type AmenityStatusEnumType = typeof AmenityStatusEnum[keyof typeof AmenityStatusEnum];
+export type AmenityStatusEnumType =
+	(typeof AmenityStatusEnum)[keyof typeof AmenityStatusEnum];
 
-export const AmenityStatusEnumValues = Object.values(AmenityStatusEnum) as [string, ...string[]];
-
+export const AmenityStatusEnumValues = Object.values(AmenityStatusEnum) as [
+	string,
+	...string[],
+];

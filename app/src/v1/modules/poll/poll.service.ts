@@ -17,7 +17,10 @@ import type {
 import { httpException } from "../../../config/error";
 import httpStatus from "http-status";
 import type { HttpResponse } from "../../../interface/httpResponse.interface";
-import { PollStatusEnum, type PollStatusEnumType } from "@/v1/enum/pollStatus.enum";
+import {
+	PollStatusEnum,
+	type PollStatusEnumType,
+} from "@/v1/enum/pollStatus.enum";
 import { getDate, toDate } from "@/v1/utils/utils";
 
 interface PollResponse {
@@ -48,10 +51,7 @@ export class PollService {
 	private async validateBuildingExists(buildingId: string): Promise<void> {
 		const building = await this.buildingRepository.findById(buildingId);
 		if (!building) {
-			throw httpException(
-				"Edifício não encontrado",
-				httpStatus.NOT_FOUND,
-			);
+			throw httpException("Edifício não encontrado", httpStatus.NOT_FOUND);
 		}
 	}
 
@@ -114,9 +114,10 @@ export class PollService {
 		});
 	}
 
-	public async getPollsByStatus(
-		pollListDto: { buildingId: string; status: string[] },
-	): Promise<HttpResponse<PollResponse[]>> {
+	public async getPollsByStatus(pollListDto: {
+		buildingId: string;
+		status: string[];
+	}): Promise<HttpResponse<PollResponse[]>> {
 		await this.validateBuildingExists(pollListDto.buildingId);
 
 		const polls = await this.pollRepository.findByStatus(
@@ -136,8 +137,12 @@ export class PollService {
 			const pollResponse: any = {
 				id: String(poll._id),
 				description: poll.description,
-				startDate: poll.startDate instanceof Date ? poll.startDate : new Date(poll.startDate),
-				endDate: poll.endDate instanceof Date ? poll.endDate : new Date(poll.endDate),
+				startDate:
+					poll.startDate instanceof Date
+						? poll.startDate
+						: new Date(poll.startDate),
+				endDate:
+					poll.endDate instanceof Date ? poll.endDate : new Date(poll.endDate),
 				votes: poll.votes,
 				options: this.calculateOptionsPercent(poll.options, poll.votes),
 				status: poll.status,
@@ -145,7 +150,10 @@ export class PollService {
 
 			if (poll.status === PollStatusEnum.CANCELADO && poll.cancelledAt) {
 				pollResponse.cancelReason = poll.cancelReason;
-				pollResponse.cancelledAt = poll.cancelledAt instanceof Date ? poll.cancelledAt : new Date(poll.cancelledAt);
+				pollResponse.cancelledAt =
+					poll.cancelledAt instanceof Date
+						? poll.cancelledAt
+						: new Date(poll.cancelledAt);
 			}
 
 			return pollResponse;
@@ -158,10 +166,7 @@ export class PollService {
 		};
 	}
 
-
-	public async getActivePollsStats(
-		buildingId: string,
-	): Promise<
+	public async getActivePollsStats(buildingId: string): Promise<
 		HttpResponse<{
 			totalPolls: number;
 			totalVotes: number;
@@ -173,22 +178,22 @@ export class PollService {
 			await this.validateBuildingExists(buildingId);
 
 			// Get only ACTIVE polls (not PROGRAMADO)
-			const polls = await this.pollRepository.findByStatus(
-				buildingId,
-				[PollStatusEnum.ATIVO],
-			);
+			const polls = await this.pollRepository.findByStatus(buildingId, [
+				PollStatusEnum.ATIVO,
+			]);
 
 			// Calculate total polls
 			const totalPolls = polls.length;
 
 			// Calculate total votes from all active polls
-			const totalVotes = polls.reduce((sum, poll) => sum + (poll.votes || 0), 0);
+			const totalVotes = polls.reduce(
+				(sum, poll) => sum + (poll.votes || 0),
+				0,
+			);
 
 			// Get total active residents count for the building
 			const totalActiveResidents =
-				await this.residentRepository.countActiveByBuildingId(
-					buildingId,
-				);
+				await this.residentRepository.countActiveByBuildingId(buildingId);
 
 			// Get poll IDs from active polls
 			const pollIds = polls.map((poll) => poll._id);
@@ -240,35 +245,32 @@ export class PollService {
 			// - Total of votes (totalVotes)
 			// - Total of active residents (totalActiveResidents)
 			// - Active residents who voted (activeResidentsWhoVoted)
-			// 
+			//
 			// Formula: Weighted average = (participation_rate * poll_weight + vote_weight) / 2
 			// Where:
 			// - participation_rate = active residents who voted / total active residents
 			// - poll_weight = normalized number of active polls (0 to 1)
 			// - vote_weight = normalized number of votes per resident (0 to 1)
 			const activeResidentsWhoVoted = activeResidentIds.length;
-			
+
 			// Participation rate: percentage of active residents who voted
-			const participationRate = totalActiveResidents > 0
-				? activeResidentsWhoVoted / totalActiveResidents
-				: 0;
-			
+			const participationRate =
+				totalActiveResidents > 0
+					? activeResidentsWhoVoted / totalActiveResidents
+					: 0;
+
 			// Poll weight: normalized by max expected polls (assume 10 as max)
 			const pollWeight = Math.min(totalPolls / 10, 1);
-			
+
 			// Vote weight: normalized votes per active resident (assume 1 vote per resident per poll as ideal)
 			const idealVotes = totalActiveResidents * totalPolls;
-			const voteWeight = idealVotes > 0
-				? Math.min(totalVotes / idealVotes, 1)
-				: 0;
-			
+			const voteWeight =
+				idealVotes > 0 ? Math.min(totalVotes / idealVotes, 1) : 0;
+
 			// Weighted average: combines participation rate with poll and vote weights
 			// 60% weight on participation, 20% on poll count, 20% on vote count
-			const totalPercent = (
-				participationRate * 0.6 +
-				pollWeight * 0.2 +
-				voteWeight * 0.2
-			) * 100;
+			const totalPercent =
+				(participationRate * 0.6 + pollWeight * 0.2 + voteWeight * 0.2) * 100;
 
 			return {
 				success: true,
@@ -302,10 +304,7 @@ export class PollService {
 		// Find poll by ID
 		const poll = await this.pollRepository.findById(pollId);
 		if (!poll) {
-			throw httpException(
-				"Enquete não encontrada",
-				httpStatus.NOT_FOUND,
-			);
+			throw httpException("Enquete não encontrada", httpStatus.NOT_FOUND);
 		}
 
 		// Check if poll belongs to the building
@@ -318,10 +317,7 @@ export class PollService {
 
 		// Check if poll is already cancelled
 		if (poll.status === PollStatusEnum.CANCELADO) {
-			throw httpException(
-				"Enquete já está cancelada",
-				httpStatus.BAD_REQUEST,
-			);
+			throw httpException("Enquete já está cancelada", httpStatus.BAD_REQUEST);
 		}
 
 		// Check if poll is already finished
@@ -356,9 +352,11 @@ export class PollService {
 				description: updatedPoll.description,
 				status: updatedPoll.status,
 				cancelReason: updatedPoll.cancelReason!,
-				cancelledAt: updatedPoll.cancelledAt instanceof Date ? updatedPoll.cancelledAt : new Date(updatedPoll.cancelledAt!),
+				cancelledAt:
+					updatedPoll.cancelledAt instanceof Date
+						? updatedPoll.cancelledAt
+						: new Date(updatedPoll.cancelledAt!),
 			},
 		};
 	}
 }
-

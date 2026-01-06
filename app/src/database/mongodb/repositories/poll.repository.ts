@@ -25,7 +25,7 @@ export class PollRepository
 
 	public async create(data: CreatePollEntity): Promise<PollEntity> {
 		const now = getDate();
-		
+
 		// Convert array of strings to array of PollOption objects with unique IDs
 		const options: PollOption[] = data.options.map((description, index) => ({
 			id: index,
@@ -54,13 +54,13 @@ export class PollRepository
 	public async findById(_id: string): Promise<PollEntity | null> {
 		const poll = await this.collection.findOne({ _id });
 		if (!poll) return null;
-		
+
 		// Normalize dates to ensure they are Date objects
 		// Handle MongoDB date format { $date: "..." } or direct Date objects
 		const normalizeDate = (date: any): Date => {
 			if (!date) return date;
 			if (date instanceof Date) return date;
-			if (typeof date === 'object' && '$date' in date) {
+			if (typeof date === "object" && "$date" in date) {
 				return new Date(date.$date);
 			}
 			return new Date(date);
@@ -84,9 +84,7 @@ export class PollRepository
 		return await this.collection.findOne(filter);
 	}
 
-	public async findMany(
-		filter?: Partial<PollEntity>,
-	): Promise<PollEntity[]> {
+	public async findMany(filter?: Partial<PollEntity>): Promise<PollEntity[]> {
 		return await this.collection.find(filter || {}).toArray();
 	}
 
@@ -126,14 +124,14 @@ export class PollRepository
 			.find(query)
 			.sort({ startDate: -1 })
 			.toArray();
-		
+
 		// Normalize dates to ensure they are Date objects
 		// Handle MongoDB date format { $date: "..." } or direct Date objects
 		return polls.map((poll) => {
 			const normalizeDate = (date: any): Date => {
 				if (!date) return date;
 				if (date instanceof Date) return date;
-				if (typeof date === 'object' && '$date' in date) {
+				if (typeof date === "object" && "$date" in date) {
 					return new Date(date.$date);
 				}
 				return new Date(date);
@@ -268,4 +266,3 @@ export class PollRepository
 		return result || null;
 	}
 }
-

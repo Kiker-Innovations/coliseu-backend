@@ -1,8 +1,7 @@
 import type { MongoClient } from "mongodb";
-import type {
-    CreateConciergeEntity,
-} from "@/database/mongodb/entity/concierge.entity";
+import type { CreateConciergeEntity } from "@/database/mongodb/entity/concierge.entity";
 import { ConciergeRepository } from "@/database/mongodb/repositories/concierge.repository";
+import { RoleRepository } from "@/database/mongodb/repositories/role.repository";
 import { ConciergeStatusEnum } from "../../enum/conciergeStatus.enum";
 import { httpException } from "@/config/error";
 import httpStatus from "http-status";
@@ -14,9 +13,7 @@ import {
 	generateResetCode,
 	comparePassword,
 } from "@/v1/utils/cryptoHelper";
-import {
-	sendPasswordResetEmail,
-} from "@/v1/utils/emailHelper";
+import { sendPasswordResetEmail } from "@/v1/utils/emailHelper";
 import { ConciergeUpdateDto } from "./dto/conciergeUpdate.dto";
 import { ConciergeConfirmDto } from "./dto/conciergeConfirm.dto";
 import { ConciergeForgetPasswordDto } from "./dto/conciergeForgetPassword.dto";
@@ -25,311 +22,327 @@ import { getDate } from "@/v1/utils/utils";
 import { ConciergeEmail } from "./concierge.emails";
 
 export class ConciergeService {
-    private conciergeRepository: ConciergeRepository;
+	private conciergeRepository: ConciergeRepository;
+	private roleRepository: RoleRepository;
 
-    constructor(mongoClient: MongoClient) {
-        this.conciergeRepository = new ConciergeRepository(mongoClient);
-    }
+	constructor(mongoClient: MongoClient) {
+		this.conciergeRepository = new ConciergeRepository(mongoClient);
+		this.roleRepository = new RoleRepository(mongoClient);
+	}
 
-    public async createConcierge(
-        conciergeCreateDto: ConciergeCreateDto,
-        buildingId: string,
-    ): Promise<
-        HttpResponse<{
-            email: string;
-            phone: string;
-        }>
-    > {
-        const existingConcierge = await this.conciergeRepository.findByEmail(
-            conciergeCreateDto.email,
-        );
+	public async createConcierge(
+		conciergeCreateDto: ConciergeCreateDto,
+		buildingId: string,
+	): Promise<
+		HttpResponse<{
+			email: string;
+			phone: string;
+		}>
+	> {
+		const existingConcierge = await this.conciergeRepository.findByEmail(
+			conciergeCreateDto.email,
+		);
 
-        if (existingConcierge) {
-            throw httpException(
-                "Email já cadastrado no sistema.",
-                httpStatus.CONFLICT,
-            );
-        }
+		if (existingConcierge) {
+			throw httpException(
+				"Email já cadastrado no sistema.",
+				httpStatus.CONFLICT,
+			);
+		}
 
-        const passwordHash = await hashPassword(conciergeCreateDto.password);
-        const conciergeCode = await generateCode();
+		const passwordHash = await hashPassword(conciergeCreateDto.password);
+		const conciergeCode = await generateCode();
 
-        const conciergeEntity: CreateConciergeEntity = {
-            buildingId: buildingId,
-            name: conciergeCreateDto.name,
-            email: conciergeCreateDto.email,
-            passwordHash,
-            phone: conciergeCreateDto.phone,
-            status: conciergeCreateDto.status,
-            shift: conciergeCreateDto.shift,
-            code: conciergeCode,
-        };
+		// Buscar role "concierge"
+		const conciergeRole = await this.roleRepository.findByName("concierge");
+		if (!conciergeRole) {
+			throw httpException(
+				"Role 'concierge' não encontrado no sistema.",
+				httpStatus.NOT_FOUND,
+			);
+		}
 
-        const createdConcierge =
-            await this.conciergeRepository.create(conciergeEntity);
+		const conciergeEntity: CreateConciergeEntity = {
+			buildingId: buildingId,
+			roleId: conciergeRole._id,
+			name: conciergeCreateDto.name,
+			email: conciergeCreateDto.email,
+			passwordHash,
+			phone: conciergeCreateDto.phone,
+			status: conciergeCreateDto.status,
+			shift: conciergeCreateDto.shift,
+			code: conciergeCode,
+		};
 
-        const conciergeEmail = new ConciergeEmail();
-        conciergeEmail.sendConfirmationEmailAsync(
-            createdConcierge.email,
-            createdConcierge.name,
-            createdConcierge.shift,
-            conciergeCode,
-        );
+		const createdConcierge =
+			await this.conciergeRepository.create(conciergeEntity);
 
-        return {
-            success: true,
-            message:
-                "Porteiro cadastrado com sucesso! Verifique o email registrado para confirmar o cadastro.",
-            data: {
-                email: createdConcierge.email,
-                phone: createdConcierge.phone,
-            },
-        };
-    }
+		const conciergeEmail = new ConciergeEmail();
+		conciergeEmail.sendConfirmationEmailAsync(
+			createdConcierge.email,
+			createdConcierge.name,
+			createdConcierge.shift,
+			conciergeCode,
+		);
 
-    public async getConcierge(conciergeId: string): Promise<
-        HttpResponse<{
-            _id: string;
-            name: string;
-            email: string;
-            phone: string;
-            shift: string;
-            status: string;
-            createdAt: Date;
-            updatedAt: Date;
-        }>
-    > {
-        const concierge = await this.conciergeRepository.findById(conciergeId);
+		return {
+			success: true,
+			message:
+				"Porteiro cadastrado com sucesso! Verifique o email registrado para confirmar o cadastro.",
+			data: {
+				email: createdConcierge.email,
+				phone: createdConcierge.phone,
+			},
+		};
+	}
 
-        if (!concierge) {
-            throw httpException("Porteiro não encontrado", httpStatus.NOT_FOUND);
-        }
+	public async getConcierge(conciergeId: string): Promise<
+		HttpResponse<{
+			_id: string;
+			name: string;
+			email: string;
+			phone: string;
+			shift: string;
+			status: string;
+			createdAt: Date;
+			updatedAt: Date;
+		}>
+	> {
+		const concierge = await this.conciergeRepository.findById(conciergeId);
 
-        return {
-            success: true,
-            message: "Porteiro encontrado com sucesso",
-            data: {
-                _id: concierge._id,
-                name: concierge.name,
-                email: concierge.email,
-                phone: concierge.phone,
-                shift: concierge.shift,
-                status: concierge.status,
-                createdAt: concierge.createdAt,
-                updatedAt: concierge.updatedAt,
-            },
-        };
-    }
+		if (!concierge) {
+			throw httpException("Porteiro não encontrado", httpStatus.NOT_FOUND);
+		}
 
-    public async updateConcierge(
-        conciergeId: string,
-        conciergeUpdateDto: ConciergeUpdateDto,
-    ): Promise<
-        HttpResponse<{
-            name: string;
-            email: string;
-            phone: string;
-            shift: string;
-        }>
-    > {
-        const concierge = await this.conciergeRepository.findById(conciergeId);
+		return {
+			success: true,
+			message: "Porteiro encontrado com sucesso",
+			data: {
+				_id: concierge._id,
+				name: concierge.name,
+				email: concierge.email,
+				phone: concierge.phone,
+				shift: concierge.shift,
+				status: concierge.status,
+				createdAt: concierge.createdAt,
+				updatedAt: concierge.updatedAt,
+			},
+		};
+	}
 
-        if (!concierge) {
-            throw httpException("Porteiro não encontrado", httpStatus.NOT_FOUND);
-        }
+	public async updateConcierge(
+		conciergeId: string,
+		conciergeUpdateDto: ConciergeUpdateDto,
+	): Promise<
+		HttpResponse<{
+			name: string;
+			email: string;
+			phone: string;
+			shift: string;
+		}>
+	> {
+		const concierge = await this.conciergeRepository.findById(conciergeId);
 
-        const updatedConcierge = await this.conciergeRepository.update(
-            conciergeId,
-            conciergeUpdateDto,
-        );
+		if (!concierge) {
+			throw httpException("Porteiro não encontrado", httpStatus.NOT_FOUND);
+		}
 
-        if (!updatedConcierge) {
-            throw httpException(
-                "Erro ao atualizar porteiro",
-                httpStatus.INTERNAL_SERVER_ERROR,
-            );
-        }
+		const updatedConcierge = await this.conciergeRepository.update(
+			conciergeId,
+			conciergeUpdateDto,
+		);
 
-        return {
-            success: true,
-            message: "Porteiro atualizado com sucesso",
-            data: {
-                name: updatedConcierge.name,
-                email: updatedConcierge.email,
-                phone: updatedConcierge.phone,
-                shift: updatedConcierge.shift,
-            },
-        };
-    }
+		if (!updatedConcierge) {
+			throw httpException(
+				"Erro ao atualizar porteiro",
+				httpStatus.INTERNAL_SERVER_ERROR,
+			);
+		}
 
-    public async deleteConcierge(conciergeId: string): Promise<HttpResponse<null>> {
-        const concierge = await this.conciergeRepository.findById(conciergeId);
+		return {
+			success: true,
+			message: "Porteiro atualizado com sucesso",
+			data: {
+				name: updatedConcierge.name,
+				email: updatedConcierge.email,
+				phone: updatedConcierge.phone,
+				shift: updatedConcierge.shift,
+			},
+		};
+	}
 
-        if (!concierge) {
-            throw httpException("Porteiro não encontrado", httpStatus.NOT_FOUND);
-        }
+	public async deleteConcierge(
+		conciergeId: string,
+	): Promise<HttpResponse<null>> {
+		const concierge = await this.conciergeRepository.findById(conciergeId);
 
-        const deleted = await this.conciergeRepository.delete(conciergeId);
+		if (!concierge) {
+			throw httpException("Porteiro não encontrado", httpStatus.NOT_FOUND);
+		}
 
-        if (!deleted) {
-            throw httpException(
-                "Erro ao deletar porteiro",
-                httpStatus.INTERNAL_SERVER_ERROR,
-            );
-        }
+		const deleted = await this.conciergeRepository.delete(conciergeId);
 
-        return {
-            success: true,
-            message: "Porteiro deletado com sucesso",
-            data: null,
-        };
-    }
+		if (!deleted) {
+			throw httpException(
+				"Erro ao deletar porteiro",
+				httpStatus.INTERNAL_SERVER_ERROR,
+			);
+		}
 
-    public async confirmConciergeCode(
-        conciergeConfirmDto: ConciergeConfirmDto,
-    ): Promise<HttpResponse<null>> {
-        const concierge = await this.conciergeRepository.findByEmail(conciergeConfirmDto.email);
-        if (!concierge) {
-            throw httpException("Porteiro não encontrado", httpStatus.NOT_FOUND);
-        }
+		return {
+			success: true,
+			message: "Porteiro deletado com sucesso",
+			data: null,
+		};
+	}
 
-        if (
-            concierge.status === ConciergeStatusEnum.VALIDADO ||
-            concierge.status === ConciergeStatusEnum.ATIVO
-        ) {
-            throw httpException(
-                "Cadastro já foi confirmado anteriormente",
-                httpStatus.BAD_REQUEST,
-            );
-        }
+	public async confirmConciergeCode(
+		conciergeConfirmDto: ConciergeConfirmDto,
+	): Promise<HttpResponse<null>> {
+		const concierge = await this.conciergeRepository.findByEmail(
+			conciergeConfirmDto.email,
+		);
+		if (!concierge) {
+			throw httpException("Porteiro não encontrado", httpStatus.NOT_FOUND);
+		}
 
-        if (concierge.code !== conciergeConfirmDto.code) {
-            throw httpException(
-                "Código de confirmação inválido",
-                httpStatus.BAD_REQUEST,
-            );
-        }
+		if (
+			concierge.status === ConciergeStatusEnum.VALIDADO ||
+			concierge.status === ConciergeStatusEnum.ATIVO
+		) {
+			throw httpException(
+				"Cadastro já foi confirmado anteriormente",
+				httpStatus.BAD_REQUEST,
+			);
+		}
 
-        await this.conciergeRepository.updateByEmail(conciergeConfirmDto.email, {
-            status: ConciergeStatusEnum.ATIVO,
-        });
+		if (concierge.code !== conciergeConfirmDto.code) {
+			throw httpException(
+				"Código de confirmação inválido",
+				httpStatus.BAD_REQUEST,
+			);
+		}
 
-        return {
-            success: true,
-            message:
-                "Cadastro confirmado com sucesso!",
-            data: null,
-        };
-    }
+		await this.conciergeRepository.updateByEmail(conciergeConfirmDto.email, {
+			status: ConciergeStatusEnum.ATIVO,
+		});
 
+		return {
+			success: true,
+			message: "Cadastro confirmado com sucesso!",
+			data: null,
+		};
+	}
 
-    public async getAllConciergesByBuilding(buildingId: string): Promise<
-        HttpResponse<{
-            _id: string;
-            name: string;
-            email: string;
-            phone: string;
-            shift: string;
-            status: string;
-        }[]>
-    > {
-        const concierges = await this.conciergeRepository.findManyByBuildingId(buildingId);
+	public async getAllConciergesByBuilding(buildingId: string): Promise<
+		HttpResponse<
+			{
+				_id: string;
+				name: string;
+				email: string;
+				phone: string;
+				shift: string;
+				status: string;
+			}[]
+		>
+	> {
+		const concierges =
+			await this.conciergeRepository.findManyByBuildingId(buildingId);
 
-        return {
-            success: true,
-            message: "Porteiros encontrados com sucesso",
-            data: concierges.map((concierge) => ({
-                _id: concierge._id,
-                name: concierge.name,
-                email: concierge.email,
-                phone: concierge.phone,
-                shift: concierge.shift,
-                status: concierge.status,
-            })),
-        };
-    }
+		return {
+			success: true,
+			message: "Porteiros encontrados com sucesso",
+			data: concierges.map((concierge) => ({
+				_id: concierge._id,
+				name: concierge.name,
+				email: concierge.email,
+				phone: concierge.phone,
+				shift: concierge.shift,
+				status: concierge.status,
+			})),
+		};
+	}
 
-    public async forgetPassword(
-        forgetPasswordDto: ConciergeForgetPasswordDto,
-    ): Promise<HttpResponse<null>> {
-        const concierge = await this.conciergeRepository.findByEmail(
-            forgetPasswordDto.email,
-        );
+	public async forgetPassword(
+		forgetPasswordDto: ConciergeForgetPasswordDto,
+	): Promise<HttpResponse<null>> {
+		const concierge = await this.conciergeRepository.findByEmail(
+			forgetPasswordDto.email,
+		);
 
-        if (!concierge) {
-            throw httpException("Email não encontrado", httpStatus.NOT_FOUND);
-        }
+		if (!concierge) {
+			throw httpException("Email não encontrado", httpStatus.NOT_FOUND);
+		}
 
-        const resetCode = generateResetCode();
-        const resetTokenExpiry = getDate();
-        resetTokenExpiry.setMinutes(resetTokenExpiry.getMinutes() + 15);
+		const resetCode = generateResetCode();
+		const resetTokenExpiry = getDate();
+		resetTokenExpiry.setMinutes(resetTokenExpiry.getMinutes() + 15);
 
-        await this.conciergeRepository.updateByEmail(forgetPasswordDto.email, {
-            resetPasswordToken: resetCode,
-            resetPasswordTokenExpiry: resetTokenExpiry,
-        });
+		await this.conciergeRepository.updateByEmail(forgetPasswordDto.email, {
+			resetPasswordToken: resetCode,
+			resetPasswordTokenExpiry: resetTokenExpiry,
+		});
 
-        sendPasswordResetEmail(
-            concierge.email,
-            concierge.name,
-            resetCode,
-            "https://coliseucondo.com.br/concierge/reset-password",
-        );
+		sendPasswordResetEmail(
+			concierge.email,
+			concierge.name,
+			resetCode,
+			"https://coliseucondo.com.br/concierge/reset-password",
+		);
 
-        return {
-            success: true,
-            message:
-                "Código de recuperação enviado para seu email. Verifique sua caixa de entrada.",
-            data: null,
-        };
-    }
+		return {
+			success: true,
+			message:
+				"Código de recuperação enviado para seu email. Verifique sua caixa de entrada.",
+			data: null,
+		};
+	}
 
-    public async resetPassword(
-        resetPasswordDto: ConciergeResetPasswordDto,
-    ): Promise<HttpResponse<null>> {        
-        const concierge = await this.conciergeRepository.findByEmail(
-            resetPasswordDto.email,
-        );
+	public async resetPassword(
+		resetPasswordDto: ConciergeResetPasswordDto,
+	): Promise<HttpResponse<null>> {
+		const concierge = await this.conciergeRepository.findByEmail(
+			resetPasswordDto.email,
+		);
 
-        if (!concierge) {
-            throw httpException("Email não encontrado", httpStatus.NOT_FOUND);
-        }
+		if (!concierge) {
+			throw httpException("Email não encontrado", httpStatus.NOT_FOUND);
+		}
 
-        if (!concierge.resetPasswordToken || !concierge.resetPasswordTokenExpiry) {
-            throw httpException(
-                "Nenhuma solicitação de recuperação de senha encontrada",
-                httpStatus.BAD_REQUEST,
-            );
-        }
+		if (!concierge.resetPasswordToken || !concierge.resetPasswordTokenExpiry) {
+			throw httpException(
+				"Nenhuma solicitação de recuperação de senha encontrada",
+				httpStatus.BAD_REQUEST,
+			);
+		}
 
-        if (concierge.resetPasswordToken !== resetPasswordDto.code) {
-            throw httpException(
-                "Código de recuperação inválido",
-                httpStatus.BAD_REQUEST,
-            );
-        }
+		if (concierge.resetPasswordToken !== resetPasswordDto.code) {
+			throw httpException(
+				"Código de recuperação inválido",
+				httpStatus.BAD_REQUEST,
+			);
+		}
 
-        const now = getDate();
-        if (now > concierge.resetPasswordTokenExpiry) {
-            throw httpException(
-                "Código de recuperação expirado. Solicite um novo código.",
-                httpStatus.BAD_REQUEST,
-            );
-        }
-        
+		const now = getDate();
+		if (now > concierge.resetPasswordTokenExpiry) {
+			throw httpException(
+				"Código de recuperação expirado. Solicite um novo código.",
+				httpStatus.BAD_REQUEST,
+			);
+		}
 
-        const passwordHash = await hashPassword(resetPasswordDto.newPassword);
+		const passwordHash = await hashPassword(resetPasswordDto.newPassword);
 
-        await this.conciergeRepository.updateByEmail(concierge.email, {
-            passwordHash,
-            resetPasswordToken: undefined,
-            resetPasswordTokenExpiry: undefined,
-        });
+		await this.conciergeRepository.updateByEmail(concierge.email, {
+			passwordHash,
+			resetPasswordToken: undefined,
+			resetPasswordTokenExpiry: undefined,
+		});
 
-        return {
-            success: true,
-            message: "Senha redefinida com sucesso! Você já pode fazer login.",
-            data: null,
-        };
-    }
+		return {
+			success: true,
+			message: "Senha redefinida com sucesso! Você já pode fazer login.",
+			data: null,
+		};
+	}
 }

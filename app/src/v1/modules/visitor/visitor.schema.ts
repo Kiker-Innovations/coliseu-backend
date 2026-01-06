@@ -491,6 +491,4 @@ export class VisitorSchema {
 			},
 		},
 	};
-
 }
-

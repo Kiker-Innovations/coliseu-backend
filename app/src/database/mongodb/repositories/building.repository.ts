@@ -78,4 +78,3 @@ export class BuildingRepository
 		return await this.findOne({ cnpj });
 	}
 }
-

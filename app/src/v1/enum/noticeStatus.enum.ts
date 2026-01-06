@@ -5,4 +5,3 @@ export const NoticeStatusEnum = {
 
 export type NoticeStatusEnumType =
 	(typeof NoticeStatusEnum)[keyof typeof NoticeStatusEnum];
-

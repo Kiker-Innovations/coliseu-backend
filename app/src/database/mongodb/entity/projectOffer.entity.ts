@@ -21,6 +21,8 @@ export type CreateProjectOfferEntity = Omit<
 >;
 
 export type UpdateProjectOfferEntity = Partial<
-	Pick<ProjectOfferEntity, "paidInstallments" | "paymentStartDate" | "votes" | "updatedAt">
+	Pick<
+		ProjectOfferEntity,
+		"paidInstallments" | "paymentStartDate" | "votes" | "updatedAt"
+	>
 >;
-

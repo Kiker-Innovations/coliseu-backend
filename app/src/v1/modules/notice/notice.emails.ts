@@ -16,7 +16,7 @@ export class NoticeEmail {
 		noticeTitle: string,
 		noticeContent: string,
 		noticeUrl: string,
-		hasAttachment: boolean
+		hasAttachment: boolean,
 	): Promise<{ success: boolean; messageId?: string; error?: string }> {
 		const htmlContent = TemplateEngine.render(
 			EmailTemplates.NOTICE_NOTIFICATION,
@@ -27,7 +27,7 @@ export class NoticeEmail {
 				noticeContent,
 				noticeUrl,
 				hasAttachment,
-			}
+			},
 		);
 
 		const emailOptions: any = {
@@ -51,7 +51,7 @@ export class NoticeEmail {
 		noticeTitle: string,
 		noticeContent: string,
 		noticeUrl: string,
-		hasAttachment: boolean
+		hasAttachment: boolean,
 	): Promise<void> {
 		try {
 			const result = await this.sendNoticeNotificationEmail(
@@ -61,7 +61,7 @@ export class NoticeEmail {
 				noticeTitle,
 				noticeContent,
 				noticeUrl,
-				hasAttachment
+				hasAttachment,
 			);
 			if (result.success) {
 				console.log(`✅ Email de aviso enviado para ${email}`);
@@ -69,15 +69,14 @@ export class NoticeEmail {
 			} else {
 				console.error(
 					`❌ Erro ao enviar email de aviso para ${email}:`,
-					result.error
+					result.error,
 				);
 			}
 		} catch (error) {
 			console.error(
 				`❌ Erro inesperado ao enviar email de aviso para ${email}:`,
-				error
+				error,
 			);
 		}
 	}
 }
-

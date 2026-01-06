@@ -15,10 +15,23 @@ export interface ProjectEntity {
 
 export type CreateProjectEntity = Omit<
 	ProjectEntity,
-	"_id" | "chosenOfferId" | "offerStartDate" | "offerEndDate" | "rank" | "createdAt" | "updatedAt"
+	| "_id"
+	| "chosenOfferId"
+	| "offerStartDate"
+	| "offerEndDate"
+	| "rank"
+	| "createdAt"
+	| "updatedAt"
 >;
 
 export type UpdateProjectEntity = Partial<
-	Pick<ProjectEntity, "title" | "description" | "chosenOfferId" | "offerStartDate" | "offerEndDate" | "updatedAt">
+	Pick<
+		ProjectEntity,
+		| "title"
+		| "description"
+		| "chosenOfferId"
+		| "offerStartDate"
+		| "offerEndDate"
+		| "updatedAt"
+	>
 >;
-

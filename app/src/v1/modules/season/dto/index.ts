@@ -9,4 +9,3 @@ export {
 	transformUpdateSeasonDto,
 	type SeasonUpdateDto,
 } from "./seasonUpdate.dto";
-

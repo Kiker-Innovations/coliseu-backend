@@ -218,7 +218,8 @@ export class AdminRouteV1 {
 			schema: {
 				tags: ["Admins"],
 				summary: "Get resident by ID",
-				description: "Busca um residente específico por ID com todos os dados (incluindo apartamento)",
+				description:
+					"Busca um residente específico por ID com todos os dados (incluindo apartamento)",
 				...this.adminSchema.getResidentById,
 			},
 			preHandler: [
@@ -238,7 +239,8 @@ export class AdminRouteV1 {
 			schema: {
 				tags: ["Admins"],
 				summary: "Approve resident",
-				description: "Aprova um residente que está com status A_VALIDACAO, mudando para ATIVO",
+				description:
+					"Aprova um residente que está com status A_VALIDACAO, mudando para ATIVO",
 				...this.adminSchema.approveResident,
 			},
 			preHandler: [
@@ -258,7 +260,8 @@ export class AdminRouteV1 {
 			schema: {
 				tags: ["Admins"],
 				summary: "Reject resident",
-				description: "Rejeita um residente que está com status A_VALIDACAO, mudando para REJEITADO",
+				description:
+					"Rejeita um residente que está com status A_VALIDACAO, mudando para REJEITADO",
 				...this.adminSchema.rejectResident,
 			},
 			preHandler: [
@@ -278,7 +281,8 @@ export class AdminRouteV1 {
 			schema: {
 				tags: ["Admins"],
 				summary: "Deactivate resident",
-				description: "Inativa um residente que está com status ATIVO, mudando para INATIVO",
+				description:
+					"Inativa um residente que está com status ATIVO, mudando para INATIVO",
 				...this.adminSchema.deactivateResident,
 			},
 			preHandler: [
@@ -298,7 +302,8 @@ export class AdminRouteV1 {
 			schema: {
 				tags: ["Admins"],
 				summary: "Activate resident",
-				description: "Ativa um residente que está com status INATIVO, mudando para ATIVO",
+				description:
+					"Ativa um residente que está com status INATIVO, mudando para ATIVO",
 				...this.adminSchema.activateResident,
 			},
 			preHandler: [
@@ -329,28 +334,6 @@ export class AdminRouteV1 {
 			this.rejectResident(),
 			this.deactivateResident(),
 			this.activateResident(),
-			this.generatePresignedUrlForPhoto(),
 		];
 	};
-
-	private generatePresignedUrlForPhoto = (): RouteOptions => {
-		return {
-			method: "POST",
-			url: "/v1/admins/:id/photo/presigned-url",
-			schema: {
-				tags: ["Admins"],
-				summary: "Generate presigned URL for photo upload",
-				description: "Gera uma URL pré-assinada para upload de foto do administrador",
-				...this.adminSchema.generatePresignedUrl,
-			},
-			preHandler: [
-				this.authMiddleware.authenticate,
-				this.authMiddleware.authorize([UserTypeEnum.ADMIN]),
-			],
-			handler: this.adminController.generatePresignedUrlForPhoto.bind(
-				this.adminController,
-			) as RouteHandlerMethod,
-		};
-	};
 }
-

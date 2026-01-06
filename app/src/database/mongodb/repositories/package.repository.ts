@@ -78,7 +78,7 @@ export class PackageRepository
 
 	public async findPending(buildingId: string): Promise<PackageEntity[]> {
 		return await this.collection
-			.find({ 
+			.find({
 				status: PackageStatusEnum.PENDENTE,
 				buildingId: buildingId,
 			})
@@ -87,14 +87,16 @@ export class PackageRepository
 
 	public async findDelivered(buildingId: string): Promise<PackageEntity[]> {
 		return await this.collection
-			.find({ 
+			.find({
 				status: PackageStatusEnum.ENTREGUE,
 				buildingId: buildingId,
 			})
 			.toArray();
 	}
 
-	public async findDeliveredLast7Days(buildingId: string): Promise<PackageEntity[]> {
+	public async findDeliveredLast7Days(
+		buildingId: string,
+	): Promise<PackageEntity[]> {
 		const now = getDate();
 		const sevenDaysAgo = toDate(now).subtract(7, "day").startOf("day").toDate();
 
@@ -134,10 +136,13 @@ export class PackageRepository
 	public async countDeliveredThisWeek(buildingId: string): Promise<number> {
 		const now = getDate();
 		const currentDate = toDate(now);
-		const dayOfWeek = currentDate.day(); 
-		
+		const dayOfWeek = currentDate.day();
+
 		const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-		const startOfWeek = currentDate.subtract(daysToMonday, "day").startOf("day").toDate();
+		const startOfWeek = currentDate
+			.subtract(daysToMonday, "day")
+			.startOf("day")
+			.toDate();
 		const endOfWeek = toDate(startOfWeek).add(7, "day").toDate();
 
 		return await this.collection.countDocuments({
@@ -150,7 +155,10 @@ export class PackageRepository
 		});
 	}
 
-	public async findCancelledLastDays(days: number, buildingId: string): Promise<PackageEntity[]> {
+	public async findCancelledLastDays(
+		days: number,
+		buildingId: string,
+	): Promise<PackageEntity[]> {
 		const now = getDate();
 		const startDate = toDate(now).subtract(days, "day").startOf("day").toDate();
 
@@ -166,16 +174,20 @@ export class PackageRepository
 			.toArray();
 	}
 
-	public async findByApartmentId(apartmentId: string): Promise<PackageEntity[]> {
+	public async findByApartmentId(
+		apartmentId: string,
+	): Promise<PackageEntity[]> {
 		return await this.collection
 			.find({ apartmentId })
 			.sort({ receiverDate: -1 })
 			.toArray();
 	}
 
-	public async findPendingByApartmentId(apartmentId: string): Promise<PackageEntity[]> {
+	public async findPendingByApartmentId(
+		apartmentId: string,
+	): Promise<PackageEntity[]> {
 		return await this.collection
-			.find({ 
+			.find({
 				apartmentId,
 				status: PackageStatusEnum.PENDENTE,
 			})
@@ -183,9 +195,11 @@ export class PackageRepository
 			.toArray();
 	}
 
-	public async findDeliveredByApartmentId(apartmentId: string): Promise<PackageEntity[]> {
+	public async findDeliveredByApartmentId(
+		apartmentId: string,
+	): Promise<PackageEntity[]> {
 		return await this.collection
-			.find({ 
+			.find({
 				apartmentId,
 				status: PackageStatusEnum.ENTREGUE,
 			})
@@ -193,7 +207,9 @@ export class PackageRepository
 			.toArray();
 	}
 
-	public async countPendingThisMonthByApartmentId(apartmentId: string): Promise<number> {
+	public async countPendingThisMonthByApartmentId(
+		apartmentId: string,
+	): Promise<number> {
 		const now = getDate();
 		const startOfMonth = toDate(now).startOf("month").toDate();
 		const endOfMonth = toDate(now).endOf("month").toDate();
@@ -208,18 +224,21 @@ export class PackageRepository
 		});
 	}
 
-	public async countDeliveredAllByApartmentId(apartmentId: string): Promise<number> {
+	public async countDeliveredAllByApartmentId(
+		apartmentId: string,
+	): Promise<number> {
 		return await this.collection.countDocuments({
 			apartmentId,
 			status: PackageStatusEnum.ENTREGUE,
 		});
 	}
 
-	public async countPendingAllByApartmentId(apartmentId: string): Promise<number> {
+	public async countPendingAllByApartmentId(
+		apartmentId: string,
+	): Promise<number> {
 		return await this.collection.countDocuments({
 			apartmentId,
 			status: PackageStatusEnum.PENDENTE,
 		});
 	}
 }
-

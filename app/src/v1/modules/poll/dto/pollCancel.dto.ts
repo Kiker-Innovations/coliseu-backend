@@ -9,9 +9,6 @@ export const pollCancelSchema = z.object({
 
 export type PollCancelDto = z.infer<typeof pollCancelSchema>;
 
-export const transformCancelPollDto = (
-	data: PollCancelDto,
-): PollCancelDto => {
+export const transformCancelPollDto = (data: PollCancelDto): PollCancelDto => {
 	return pollCancelSchema.parse(data);
 };
-

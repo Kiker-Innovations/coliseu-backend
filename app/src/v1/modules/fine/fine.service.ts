@@ -13,9 +13,7 @@ export class FineService {
 		this.fineRepository = new FineRepository(mongoClient);
 	}
 
-	public async createFine(
-		fineCreateDto: FineCreateDto
-	): Promise<
+	public async createFine(fineCreateDto: FineCreateDto): Promise<
 		HttpResponse<{
 			_id: string;
 			name: string;
@@ -58,7 +56,7 @@ export class FineService {
 		if (!deleted) {
 			throw httpException(
 				"Erro ao deletar multa",
-				httpStatus.INTERNAL_SERVER_ERROR
+				httpStatus.INTERNAL_SERVER_ERROR,
 			);
 		}
 
@@ -102,7 +100,7 @@ export class FineService {
 
 	public async updateFine(
 		fineId: string,
-		fineUpdateDto: FineUpdateDto
+		fineUpdateDto: FineUpdateDto,
 	): Promise<
 		HttpResponse<{
 			_id: string;
@@ -120,15 +118,12 @@ export class FineService {
 			throw httpException("Multa não encontrada", httpStatus.NOT_FOUND);
 		}
 
-		const updatedFine = await this.fineRepository.update(
-			fineId,
-			fineUpdateDto
-		);
+		const updatedFine = await this.fineRepository.update(fineId, fineUpdateDto);
 
 		if (!updatedFine) {
 			throw httpException(
 				"Erro ao atualizar multa",
-				httpStatus.INTERNAL_SERVER_ERROR
+				httpStatus.INTERNAL_SERVER_ERROR,
 			);
 		}
 

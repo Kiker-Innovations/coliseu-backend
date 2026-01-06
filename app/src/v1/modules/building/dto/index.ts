@@ -9,4 +9,3 @@ export {
 	transformUpdateBuildingDto,
 	type BuildingUpdateDto,
 } from "./buildingUpdate.dto";
-

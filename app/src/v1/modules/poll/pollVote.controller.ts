@@ -52,9 +52,7 @@ export class PollVoteController {
 
 		return reply
 			.status(httpStatus.OK)
-			.send(
-				await this.pollVoteService.deleteVote(pollId, residentId),
-			);
+			.send(await this.pollVoteService.deleteVote(pollId, residentId));
 	}
 
 	public async getMyVote(
@@ -73,9 +71,6 @@ export class PollVoteController {
 
 		return reply
 			.status(httpStatus.OK)
-			.send(
-				await this.pollVoteService.getMyVote(pollId, residentId),
-			);
+			.send(await this.pollVoteService.getMyVote(pollId, residentId));
 	}
 }
-

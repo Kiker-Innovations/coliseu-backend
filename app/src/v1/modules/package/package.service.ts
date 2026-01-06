@@ -8,11 +8,18 @@ import { ApartmentRepository } from "../../../database/mongodb/repositories/apar
 import { ConciergeRepository } from "../../../database/mongodb/repositories/concierge.repository";
 import { ResidentRepository } from "../../../database/mongodb/repositories/resident.repository";
 import { BuildingRepository } from "../../../database/mongodb/repositories/building.repository";
-import type { PackageCreateDto, PackageConfirmDeliveryDto, PackageCancelDto } from "./dto";
+import type {
+	PackageCreateDto,
+	PackageConfirmDeliveryDto,
+	PackageCancelDto,
+} from "./dto";
 import { httpException } from "../../../config/error";
 import httpStatus from "http-status";
 import type { HttpResponse } from "../../../interface/httpResponse.interface";
-import { PackageStatusEnum, type PackageStatusEnumType } from "@/v1/enum/packageStatus.enum";
+import {
+	PackageStatusEnum,
+	type PackageStatusEnumType,
+} from "@/v1/enum/packageStatus.enum";
 import { ResidentStatusEnum } from "@/v1/enum/residentStatus.enum";
 import { getDate, formatDate } from "@/v1/utils/utils";
 import { sendPackageArrivalEmail } from "@/v1/utils/emailHelper";
@@ -67,10 +74,7 @@ export class PackageService {
 			packageCreateDto.apartmentId,
 		);
 		if (!apartment) {
-			throw httpException(
-				"Apartamento não encontrado",
-				httpStatus.NOT_FOUND,
-			);
+			throw httpException("Apartamento não encontrado", httpStatus.NOT_FOUND);
 		}
 
 		// Verify apartment belongs to the same building
@@ -165,10 +169,7 @@ export class PackageService {
 			}
 
 			// Format date in Brazilian format
-			const formattedDate = formatDate(
-				receiverDate,
-				"DD/MM/YYYY [às] HH:mm",
-			);
+			const formattedDate = formatDate(receiverDate, "DD/MM/YYYY [às] HH:mm");
 
 			// Format apartment number with block if available
 			const apartmentDisplay = apartment.block
@@ -211,10 +212,14 @@ export class PackageService {
 		if (status === PackageStatusEnum.PENDENTE) {
 			packages = await this.packageRepository.findPending(buildingId);
 		} else if (status === PackageStatusEnum.ENTREGUE) {
-			packages = await this.packageRepository.findDeliveredLast7Days(buildingId);
+			packages =
+				await this.packageRepository.findDeliveredLast7Days(buildingId);
 		} else if (status === PackageStatusEnum.CANCELADO) {
 			const daysToUse = days || 7;
-			packages = await this.packageRepository.findCancelledLastDays(daysToUse, buildingId);
+			packages = await this.packageRepository.findCancelledLastDays(
+				daysToUse,
+				buildingId,
+			);
 		} else {
 			packages = await this.packageRepository.findMany({ buildingId });
 		}
@@ -284,7 +289,10 @@ export class PackageService {
 		};
 	}
 
-	public async getPackageById(packageId: string, buildingId: string): Promise<
+	public async getPackageById(
+		packageId: string,
+		buildingId: string,
+	): Promise<
 		HttpResponse<
 			PackageEntity & {
 				apartmentNumber?: string;
@@ -344,10 +352,7 @@ export class PackageService {
 		}
 
 		if (packageEntity.status === PackageStatusEnum.ENTREGUE) {
-			throw httpException(
-				"Encomenda já foi entregue",
-				httpStatus.BAD_REQUEST,
-			);
+			throw httpException("Encomenda já foi entregue", httpStatus.BAD_REQUEST);
 		}
 
 		// Verify concierge exists and belongs to the same building
@@ -391,11 +396,12 @@ export class PackageService {
 			totalPendingsWeek: number;
 		}>
 	> {
-		const [totalPendings, totalConfirmed, totalPendingsWeek] = await Promise.all([
-			this.packageRepository.countPending(buildingId),
-			this.packageRepository.countDeliveredToday(buildingId),
-			this.packageRepository.countDeliveredThisWeek(buildingId),
-		]);
+		const [totalPendings, totalConfirmed, totalPendingsWeek] =
+			await Promise.all([
+				this.packageRepository.countPending(buildingId),
+				this.packageRepository.countDeliveredToday(buildingId),
+				this.packageRepository.countDeliveredThisWeek(buildingId),
+			]);
 
 		return {
 			success: true,
@@ -436,10 +442,7 @@ export class PackageService {
 		}
 
 		if (packageEntity.status === PackageStatusEnum.CANCELADO) {
-			throw httpException(
-				"Encomenda já foi cancelada",
-				httpStatus.BAD_REQUEST,
-			);
+			throw httpException("Encomenda já foi cancelada", httpStatus.BAD_REQUEST);
 		}
 
 		// Verify concierge exists and belongs to the same building
@@ -476,7 +479,6 @@ export class PackageService {
 		};
 	}
 
-
 	public async getMyPackages(
 		apartmentId: string,
 		status?: PackageStatusEnumType,
@@ -493,9 +495,11 @@ export class PackageService {
 
 		if (status) {
 			if (status === PackageStatusEnum.PENDENTE) {
-				packages = await this.packageRepository.findPendingByApartmentId(apartmentId);
+				packages =
+					await this.packageRepository.findPendingByApartmentId(apartmentId);
 			} else if (status === PackageStatusEnum.ENTREGUE) {
-				packages = await this.packageRepository.findDeliveredByApartmentId(apartmentId);
+				packages =
+					await this.packageRepository.findDeliveredByApartmentId(apartmentId);
 			} else if (status === PackageStatusEnum.CANCELADO) {
 				packages = await this.packageRepository.findMany({
 					apartmentId,
@@ -535,7 +539,11 @@ export class PackageService {
 			totalAguardandoRetirada: number;
 		}>
 	> {
-		const [totalAguardandoRetiradaMes, totalEntregues, totalAguardandoRetirada] = await Promise.all([
+		const [
+			totalAguardandoRetiradaMes,
+			totalEntregues,
+			totalAguardandoRetirada,
+		] = await Promise.all([
 			this.packageRepository.countPendingThisMonthByApartmentId(apartmentId),
 			this.packageRepository.countDeliveredAllByApartmentId(apartmentId),
 			this.packageRepository.countPendingAllByApartmentId(apartmentId),
@@ -552,4 +560,3 @@ export class PackageService {
 		};
 	}
 }
-

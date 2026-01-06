@@ -147,23 +147,23 @@ export class AdminController {
 			limit?: string;
 			search?: string;
 			filterBy?: "name" | "phone" | "email" | "apartment";
-			status?: "A_CONFIRMACAO_EMAIL" | "A_VALIDACAO" | "REJEITADO" | "INATIVO" | "ATIVO";
+			status?:
+				| "A_CONFIRMACAO_EMAIL"
+				| "A_VALIDACAO"
+				| "REJEITADO"
+				| "INATIVO"
+				| "ATIVO";
 		};
 
-		return reply
-			.status(httpStatus.OK)
-			.send(
-				await this.adminService.getResidents(
-					buildingId,
-					{
-						page: page ? Number(page) : undefined,
-						limit: limit ? Number(limit) : undefined,
-						search,
-						filterBy,
-						status,
-					},
-				),
-			);
+		return reply.status(httpStatus.OK).send(
+			await this.adminService.getResidents(buildingId, {
+				page: page ? Number(page) : undefined,
+				limit: limit ? Number(limit) : undefined,
+				search,
+				filterBy,
+				status,
+			}),
+		);
 	}
 
 	public async countResidents(
@@ -180,7 +180,8 @@ export class AdminController {
 				});
 			}
 
-			const result = await this.adminService.countResidentsByBuilding(buildingId);
+			const result =
+				await this.adminService.countResidentsByBuilding(buildingId);
 
 			return reply.status(httpStatus.OK).send(result);
 		} catch (error: any) {
@@ -491,35 +492,4 @@ export class AdminController {
 			});
 		}
 	}
-
-	public async generatePresignedUrlForPhoto(
-		request: FastifyRequest,
-		reply: FastifyReply,
-	): Promise<void> {
-		try {
-			const { id } = request.params as { id: string };
-			const body = request.body as { fileExtension?: string };
-			const fileExtension = body.fileExtension || "jpg";
-
-			const result = await this.adminService.generatePresignedUrlForPhoto(
-				id,
-				fileExtension,
-			);
-
-			return reply.status(httpStatus.OK).send(result);
-		} catch (error: any) {
-			if (error.statusCode) {
-				return reply.status(error.statusCode).send({
-					success: false,
-					message: error.message,
-				});
-			}
-			console.error("Erro ao gerar presigned URL:", error);
-			return reply.status(httpStatus.INTERNAL_SERVER_ERROR).send({
-				success: false,
-				message: "Erro interno do servidor",
-			});
-		}
-	}
 }
-

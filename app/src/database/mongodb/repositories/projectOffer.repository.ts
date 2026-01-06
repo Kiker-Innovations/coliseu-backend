@@ -11,7 +11,11 @@ import { getDate } from "@/v1/utils/utils";
 
 export class ProjectOfferRepository
 	implements
-		IRepository<ProjectOfferEntity, CreateProjectOfferEntity, UpdateProjectOfferEntity>
+		IRepository<
+			ProjectOfferEntity,
+			CreateProjectOfferEntity,
+			UpdateProjectOfferEntity
+		>
 {
 	private collection: Collection<ProjectOfferEntity>;
 
@@ -22,7 +26,9 @@ export class ProjectOfferRepository
 		);
 	}
 
-	public async create(data: CreateProjectOfferEntity): Promise<ProjectOfferEntity> {
+	public async create(
+		data: CreateProjectOfferEntity,
+	): Promise<ProjectOfferEntity> {
 		const now = getDate();
 
 		const projectOfferEntity: ProjectOfferEntity = {
@@ -36,7 +42,9 @@ export class ProjectOfferRepository
 		return projectOfferEntity;
 	}
 
-	public async createMany(data: CreateProjectOfferEntity[]): Promise<ProjectOfferEntity[]> {
+	public async createMany(
+		data: CreateProjectOfferEntity[],
+	): Promise<ProjectOfferEntity[]> {
 		const now = getDate();
 
 		const projectOfferEntities: ProjectOfferEntity[] = data.map((item) => ({
@@ -60,7 +68,9 @@ export class ProjectOfferRepository
 		return await this.collection.findOne(filter);
 	}
 
-	public async findMany(filter?: Partial<ProjectOfferEntity>): Promise<ProjectOfferEntity[]> {
+	public async findMany(
+		filter?: Partial<ProjectOfferEntity>,
+	): Promise<ProjectOfferEntity[]> {
 		return await this.collection.find(filter || {}).toArray();
 	}
 
@@ -75,7 +85,9 @@ export class ProjectOfferRepository
 			.toArray();
 	}
 
-	public async findManyByProjectId(projectId: string): Promise<ProjectOfferEntity[]> {
+	public async findManyByProjectId(
+		projectId: string,
+	): Promise<ProjectOfferEntity[]> {
 		return await this.collection
 			.find({ projectId })
 			.sort({ votes: -1 })
@@ -83,9 +95,7 @@ export class ProjectOfferRepository
 	}
 
 	public async findByIds(ids: string[]): Promise<ProjectOfferEntity[]> {
-		return await this.collection
-			.find({ _id: { $in: ids } })
-			.toArray();
+		return await this.collection.find({ _id: { $in: ids } }).toArray();
 	}
 
 	public async findPendingPaymentsByOfferIds(
@@ -145,4 +155,3 @@ export class ProjectOfferRepository
 		return result.deletedCount > 0;
 	}
 }
-

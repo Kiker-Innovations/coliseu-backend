@@ -22,8 +22,7 @@ export type InfractionCreateNotificationDto = z.infer<
 >;
 
 export const transformCreateInfractionNotificationDto = (
-	data: InfractionCreateNotificationDto
+	data: InfractionCreateNotificationDto,
 ): InfractionCreateNotificationDto => {
 	return infractionCreateNotificationSchema.parse(data);
 };
-

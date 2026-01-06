@@ -24,7 +24,7 @@ export class NoticeRouteV1 {
 				...this.noticeSchema.create,
 			},
 			handler: this.noticeController.createNotice.bind(
-				this.noticeController
+				this.noticeController,
 			) as RouteHandlerMethod,
 		};
 	};
@@ -41,7 +41,7 @@ export class NoticeRouteV1 {
 				...this.noticeSchema.getAll,
 			},
 			handler: this.noticeController.getNotices.bind(
-				this.noticeController
+				this.noticeController,
 			) as RouteHandlerMethod,
 		};
 	};
@@ -53,11 +53,12 @@ export class NoticeRouteV1 {
 			schema: {
 				tags: ["Notices"],
 				summary: "Get notice by ID",
-				description: "Busca um aviso específico por ID (apenas admin e resident)",
+				description:
+					"Busca um aviso específico por ID (apenas admin e resident)",
 				...this.noticeSchema.getById,
 			},
 			handler: this.noticeController.getNoticeById.bind(
-				this.noticeController
+				this.noticeController,
 			) as RouteHandlerMethod,
 		};
 	};
@@ -73,18 +74,12 @@ export class NoticeRouteV1 {
 				...this.noticeSchema.remove,
 			},
 			handler: this.noticeController.deleteNotice.bind(
-				this.noticeController
+				this.noticeController,
 			) as RouteHandlerMethod,
 		};
 	};
 
 	public routes = (): RouteOptions[] => {
-		return [
-			this.create(),
-			this.getAll(),
-			this.getById(),
-			this.remove(),
-		];
+		return [this.create(), this.getAll(), this.getById(), this.remove()];
 	};
 }
-

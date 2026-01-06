@@ -30,10 +30,13 @@ export class ApartmentService {
 			number: apartmentCreateDto.number,
 			block: apartmentCreateDto.block,
 			floor: apartmentCreateDto.floor,
-			status: apartmentCreateDto.status ? apartmentCreateDto.status : ApartmentStatusEnum.DESOCUPADO,
+			status: apartmentCreateDto.status
+				? apartmentCreateDto.status
+				: ApartmentStatusEnum.DESOCUPADO,
 		};
 
-		const createdApartment = await this.apartmentRepository.create(apartmentEntity);
+		const createdApartment =
+			await this.apartmentRepository.create(apartmentEntity);
 
 		return {
 			success: true,
@@ -47,9 +50,9 @@ export class ApartmentService {
 		};
 	}
 
-	public async getApartment(apartmentId: string): Promise<
-		HttpResponse<ApartmentEntity>
-	> {
+	public async getApartment(
+		apartmentId: string,
+	): Promise<HttpResponse<ApartmentEntity>> {
 		const apartment = await this.apartmentRepository.findById(apartmentId);
 
 		if (!apartment) {
@@ -129,4 +132,3 @@ export class ApartmentService {
 		};
 	}
 }
-

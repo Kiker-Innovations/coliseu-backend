@@ -6,7 +6,9 @@ export const AmenityBookingStatusEnum = {
 	CANCELADO: "CANCELADO",
 } as const;
 
-export type AmenityBookingStatusEnumType = typeof AmenityBookingStatusEnum[keyof typeof AmenityBookingStatusEnum];
+export type AmenityBookingStatusEnumType =
+	(typeof AmenityBookingStatusEnum)[keyof typeof AmenityBookingStatusEnum];
 
-export const AmenityBookingStatusEnumValues = Object.values(AmenityBookingStatusEnum) as [string, ...string[]];
-
+export const AmenityBookingStatusEnumValues = Object.values(
+	AmenityBookingStatusEnum,
+) as [string, ...string[]];

@@ -1,0 +1,173 @@
+name: Auto Create PR to Develop
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-pr:
+    name: Create PR to Develop
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get branch name
+        id: branch
+        run: |
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          echo "name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          echo "📌 Branch: $BRANCH_NAME"
+
+      - name: Check if develop exists
+        id: check-develop
+        run: |
+          if git ls-remote --heads origin develop | grep -q develop; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Branch develop exists"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Branch develop does not exist"
+          fi
+
+      - name: Check for existing PR to develop from feature branch
+        if: steps.check-develop.outputs.exists == 'true'
+        id: check-pr
+        run: |
+          # Procura por qualquer PR (aberta, mergeada ou fechada) dessa branch para develop
+          # Mas só vamos nos importar com a PR mais recente (para evitar criar múltiplas)
+          PULL_REQUEST_JSON=$(gh pr list \
+            --state all \
+            --head "${{ steps.branch.outputs.name }}" \
+            --base develop \
+            --json number,state,mergedAt,closedAt \
+            --jq 'sort_by(.number) | reverse | .[0]')
+          if [ "$PULL_REQUEST_JSON" != "" ]; then
+            PR_NUMBER=$(echo "$PULL_REQUEST_JSON" | jq -r '.number')
+            PR_STATE=$(echo "$PULL_REQUEST_JSON" | jq -r '.state')
+            PR_MERGED_AT=$(echo "$PULL_REQUEST_JSON" | jq -r '.mergedAt')
+            echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+            echo "exists=true" >> $GITHUB_OUTPUT
+            if [ "$PR_STATE" = "OPEN" ]; then
+              echo "open=true" >> $GITHUB_OUTPUT
+              echo "merged=false" >> $GITHUB_OUTPUT
+              echo "reopen=false" >> $GITHUB_OUTPUT
+              echo "ℹ️ PR #$PR_NUMBER já está aberta dessa feature para develop, a criação será ignorada."
+            elif [ "$PR_MERGED_AT" != "null" ] && [ "$PR_MERGED_AT" != "" ]; then
+              echo "open=false" >> $GITHUB_OUTPUT
+              echo "merged=true" >> $GITHUB_OUTPUT
+              # Verifica se há novos commits após o merge e reabre a mesma PR se possível
+              PR_COMMITS=$(gh pr view "$PR_NUMBER" --json commits --jq '.commits | map(.oid)')
+              LAST_PR_COMMIT=$(echo "$PR_COMMITS" | jq -r '.[-1]')
+              if [ "$LAST_PR_COMMIT" != "${{ github.sha }}" ] && [ "$LAST_PR_COMMIT" != "" ]; then
+                # Novo commit detectado: reabrir PR existente
+                REOPEN_OUT=$(gh pr reopen "$PR_NUMBER" && echo "ok" || echo "fail")
+                if [ "$REOPEN_OUT" = "ok" ]; then
+                  echo "reopen=true" >> $GITHUB_OUTPUT
+                  echo "ℹ️ PR #$PR_NUMBER foi reaberta devido a novo commit."
+                else
+                  echo "reopen=false" >> $GITHUB_OUTPUT
+                  echo "⚠️ Falha ao reabrir PR #$PR_NUMBER."
+                fi
+              else
+                echo "reopen=false" >> $GITHUB_OUTPUT
+              fi
+              echo "ℹ️ PR #$PR_NUMBER já foi mergeada anteriormente."
+            else
+              echo "open=false" >> $GITHUB_OUTPUT
+              echo "merged=false" >> $GITHUB_OUTPUT
+              echo "reopen=false" >> $GITHUB_OUTPUT
+              echo "ℹ️ PR #$PR_NUMBER já foi fechada mas não mergeada - nova PR será criada."
+            fi
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "open=false" >> $GITHUB_OUTPUT
+            echo "merged=false" >> $GITHUB_OUTPUT
+            echo "reopen=false" >> $GITHUB_OUTPUT
+            echo "📝 Nenhuma PR anterior encontrada dessa feature para develop"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create or Reopen Pull Request
+        if: steps.check-develop.outputs.exists == 'true' && (
+              steps.check-pr.outputs.exists == 'false'
+              || 
+              (steps.check-pr.outputs.merged == 'true' && steps.check-pr.outputs.reopen != 'true')
+            )
+        id: create-pr
+        continue-on-error: true
+        run: |
+          PR_BODY="## 🚀 Pull Request
+
+          This PR was automatically created when the branch \`${{ steps.branch.outputs.name }}\` was pushed.
+
+          ### ℹ️ Details
+          - **Source Branch:** \`${{ steps.branch.outputs.name }}\`
+          - **Target Branch:** \`develop\`
+          - **Commit:** ${{ github.sha }}
+          - **Author:** @${{ github.actor }}
+
+          ---
+          _Please review and merge manually._"
+
+          if [ "${{ steps.check-pr.outputs.merged }}" == "true" ]; then
+            PR_BODY="${PR_BODY}
+
+          ---
+          _This PR was merged previously, but new commits have been pushed. This PR should remain unique until merged again._"
+            echo "✅ PR anterior já foi mergeada, criando nova PR única."
+          fi
+
+          set +e
+          PR_URL_OUTPUT=$(gh pr create \
+            --head "${{ steps.branch.outputs.name }}" \
+            --base develop \
+            --title "🔀 ${{ steps.branch.outputs.name }} → develop" \
+            --body "$PR_BODY" 2>&1)
+          STATUS=$?
+          # Output PR URL if created
+          PR_URL=$(echo "$PR_URL_OUTPUT" | grep -oE 'https://github.com/[^ ]+/pull/[0-9]+')
+          if [ -n "$PR_URL" ]; then
+            echo "url=$PR_URL" >> $GITHUB_OUTPUT
+            echo "✅ PR created: $PR_URL"
+          fi
+          # Detect "Resource not accessible by integration" and ignore exit code if PR was actually created
+          if echo "$PR_URL_OUTPUT" | grep -q "Resource not accessible by integration"; then
+            echo "⚠️ Resource not accessible by integration error ignored."
+            exit 0
+          fi
+          exit $STATUS
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "## 📋 PR Creation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Source Branch | \`${{ steps.branch.outputs.name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Target Branch | \`develop\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ steps.create-pr.outputs.url }}" ]; then
+            echo "| PR URL | ${{ steps.create-pr.outputs.url }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Status | ✅ Created |" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.check-pr.outputs.open }}" == "true" ]; then
+            echo "| PR Number | #${{ steps.check-pr.outputs.pr_number }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Status | ℹ️ PR já aberta, ignorada |" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.check-pr.outputs.reopen }}" == "true" ]; then
+            echo "| PR Number | #${{ steps.check-pr.outputs.pr_number }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Status | 🔄 PR reaberta por novo commit |" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.check-pr.outputs.merged }}" == "true" ]; then
+            echo "| PR Number | (old) #${{ steps.check-pr.outputs.pr_number }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Status | ✅ Nova PR criada após merge, única |" >> $GITHUB_STEP_SUMMARY
+          fi

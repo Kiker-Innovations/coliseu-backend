@@ -73,8 +73,7 @@ jobs:
           - **Author:** @${{ github.actor }}
 
           ---
-          _Please review and merge manually._" \
-            --label "feature")
+          _Please review and merge manually._")
           
           echo "url=$PR_URL" >> $GITHUB_OUTPUT
           echo "✅ PR created: $PR_URL"

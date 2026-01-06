@@ -7,7 +7,8 @@ on:
 
 permissions:
   id-token: write
-  contents: read
+  contents: write
+  pull-requests: write
 
 env:
   AWS_REGION: us-east-1
@@ -165,7 +166,125 @@ jobs:
         run: terraform output -no-color
 
   release-auto-pr:
-    name: Call release-auto-pr workflow
-    if: ${{ success() }}
+    name: Auto Create Release PR to Main
     needs: deploy
-    uses: ./.github/workflows/release-auto-pr.yml
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch branches and tags
+        run: |
+          git fetch --all --tags
+
+      - name: Determine next release version
+        id: version
+        run: |
+          echo "🔍 Detectando última release..."
+
+          LAST_TAG=$(git tag -l "release/*" | sed 's|release/||' | sort -V | tail -n1)
+
+          if [[ -z "$LAST_TAG" ]]; then
+            NEXT_VERSION="0.1.0"
+          else
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$LAST_TAG"
+            PATCH=$((PATCH + 1))
+            NEXT_VERSION="$MAJOR.$MINOR.$PATCH"
+          fi
+
+          RELEASE_BRANCH="release/$NEXT_VERSION"
+
+          echo "next_version=$NEXT_VERSION" >> $GITHUB_OUTPUT
+          echo "release_branch=$RELEASE_BRANCH" >> $GITHUB_OUTPUT
+
+          echo "✅ Próxima versão: $NEXT_VERSION"
+          echo "📦 Release branch: $RELEASE_BRANCH"
+
+      - name: Create or checkout release branch
+        run: |
+          git checkout develop
+          git pull origin develop
+
+          if git ls-remote --heads origin "${{ steps.version.outputs.release_branch }}" | grep -q "${{ steps.version.outputs.release_branch }}"; then
+            echo "⚠️ Branch já existe, usando a existente"
+            git checkout "${{ steps.version.outputs.release_branch }}"
+            git pull origin "${{ steps.version.outputs.release_branch }}"
+          else
+            git checkout -b "${{ steps.version.outputs.release_branch }}"
+            git push origin "${{ steps.version.outputs.release_branch }}"
+            echo "✅ Branch criada"
+          fi
+
+      - name: Check if main exists
+        id: check-main
+        run: |
+          if git ls-remote --heads origin main | grep -q main; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check for existing open PR
+        id: check-pr
+        if: steps.check-main.outputs.exists == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING_PR=$(gh pr list \
+            --state open \
+            --head "${{ steps.version.outputs.release_branch }}" \
+            --base main \
+            --json number \
+            --jq '.[0].number // empty')
+
+          if [[ -n "$EXISTING_PR" ]]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "pr_number=$EXISTING_PR" >> $GITHUB_OUTPUT
+            echo "ℹ️ PR já existe: #$EXISTING_PR"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "📝 Nenhuma PR aberta encontrada"
+          fi
+
+      - name: Create Release Pull Request
+        if: steps.check-main.outputs.exists == 'true' && steps.check-pr.outputs.exists != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --head "${{ steps.version.outputs.release_branch }}" \
+            --base main \
+            --title "🏗️ Release v${{ steps.version.outputs.next_version }}" \
+            --body "## 🏗️ Release
+
+          PR criada automaticamente após **deploy bem-sucedido em homologação**.
+
+          ### 📦 Detalhes
+          - **Version:** v${{ steps.version.outputs.next_version }}
+          - **Source:** \`${{ steps.version.outputs.release_branch }}\`
+          - **Target:** \`main\`
+          - **Triggered by:** Deploy Lambda - Homologation
+          - **Actor:** @${{ github.actor }}
+
+            ---
+            ⚠️ Merge esta PR apenas após validação completa do ambiente.
+            "
+
+      - name: Summary
+        run: |
+          echo "## 📋 PR Creation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Release Branch | \`${{ steps.version.outputs.release_branch }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Target Branch | \`main\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | \`${{ steps.version.outputs.next_version }}\` |" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.check-pr.outputs.exists }}" == "true" ]; then
+            echo "| PR Number | #${{ steps.check-pr.outputs.pr_number }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Status | ℹ️ PR já aberta, ignorada |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Status | ✅ PR criada |" >> $GITHUB_STEP_SUMMARY
+          fi

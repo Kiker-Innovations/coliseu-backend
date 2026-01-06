@@ -43,12 +43,13 @@ jobs:
         id: check-pr
         run: |
           # Procura por qualquer PR (aberta, mergeada ou fechada) dessa branch para develop
+          # Mas só vamos nos importar com a PR mais recente (para evitar criar múltiplas)
           PULL_REQUEST_JSON=$(gh pr list \
             --state all \
             --head "${{ steps.branch.outputs.name }}" \
             --base develop \
-            --json number,state,mergedAt \
-            --jq '.[0]')
+            --json number,state,mergedAt,closedAt \
+            --jq 'sort_by(.number) | reverse | .[0]')
           if [ "$PULL_REQUEST_JSON" != "" ]; then
             PR_NUMBER=$(echo "$PULL_REQUEST_JSON" | jq -r '.number')
             PR_STATE=$(echo "$PULL_REQUEST_JSON" | jq -r '.state')
@@ -58,28 +59,52 @@ jobs:
             if [ "$PR_STATE" = "OPEN" ]; then
               echo "open=true" >> $GITHUB_OUTPUT
               echo "merged=false" >> $GITHUB_OUTPUT
+              echo "reopen=false" >> $GITHUB_OUTPUT
               echo "ℹ️ PR #$PR_NUMBER já está aberta dessa feature para develop, a criação será ignorada."
             elif [ "$PR_MERGED_AT" != "null" ] && [ "$PR_MERGED_AT" != "" ]; then
               echo "open=false" >> $GITHUB_OUTPUT
               echo "merged=true" >> $GITHUB_OUTPUT
-              echo "ℹ️ PR #$PR_NUMBER já foi mergeada. Será criada uma nova PR para novos commits."
+              # Verifica se há novos commits após o merge e reabre a mesma PR se possível
+              PR_COMMITS=$(gh pr view "$PR_NUMBER" --json commits --jq '.commits | map(.oid)')
+              LAST_PR_COMMIT=$(echo "$PR_COMMITS" | jq -r '.[-1]')
+              if [ "$LAST_PR_COMMIT" != "${{ github.sha }}" ] && [ "$LAST_PR_COMMIT" != "" ]; then
+                # Novo commit detectado: reabrir PR existente
+                REOPEN_OUT=$(gh pr reopen "$PR_NUMBER" && echo "ok" || echo "fail")
+                if [ "$REOPEN_OUT" = "ok" ]; then
+                  echo "reopen=true" >> $GITHUB_OUTPUT
+                  echo "ℹ️ PR #$PR_NUMBER foi reaberta devido a novo commit."
+                else
+                  echo "reopen=false" >> $GITHUB_OUTPUT
+                  echo "⚠️ Falha ao reabrir PR #$PR_NUMBER."
+                fi
+              else
+                echo "reopen=false" >> $GITHUB_OUTPUT
+              fi
+              echo "ℹ️ PR #$PR_NUMBER já foi mergeada anteriormente."
             else
               echo "open=false" >> $GITHUB_OUTPUT
               echo "merged=false" >> $GITHUB_OUTPUT
+              echo "reopen=false" >> $GITHUB_OUTPUT
               echo "ℹ️ PR #$PR_NUMBER já foi fechada mas não mergeada - nova PR será criada."
             fi
           else
             echo "exists=false" >> $GITHUB_OUTPUT
             echo "open=false" >> $GITHUB_OUTPUT
             echo "merged=false" >> $GITHUB_OUTPUT
+            echo "reopen=false" >> $GITHUB_OUTPUT
             echo "📝 Nenhuma PR anterior encontrada dessa feature para develop"
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create Pull Request
-        if: steps.check-develop.outputs.exists == 'true' && (steps.check-pr.outputs.exists == 'false' || steps.check-pr.outputs.merged == 'true')
+      - name: Create or Reopen Pull Request
+        if: steps.check-develop.outputs.exists == 'true' && (
+              steps.check-pr.outputs.exists == 'false'
+              || 
+              (steps.check-pr.outputs.merged == 'true' && steps.check-pr.outputs.reopen != 'true')
+            )
         id: create-pr
+        continue-on-error: true
         run: |
           PR_BODY="## 🚀 Pull Request
 
@@ -94,22 +119,33 @@ jobs:
           ---
           _Please review and merge manually._"
 
-          # Se PR anterior foi mergeada, sinalize no corpo da PR
           if [ "${{ steps.check-pr.outputs.merged }}" == "true" ]; then
             PR_BODY="${PR_BODY}
 
           ---
-          _New PR created because the previous was already merged and there are new commits._"
-            echo "✅ PR anterior já foi mergeada, criando nova PR."
+          _This PR was merged previously, but new commits have been pushed. This PR should remain unique until merged again._"
+            echo "✅ PR anterior já foi mergeada, criando nova PR única."
           fi
 
-          PR_URL=$(gh pr create \
+          set +e
+          PR_URL_OUTPUT=$(gh pr create \
             --head "${{ steps.branch.outputs.name }}" \
             --base develop \
             --title "🔀 ${{ steps.branch.outputs.name }} → develop" \
-            --body "$PR_BODY")
-          echo "url=$PR_URL" >> $GITHUB_OUTPUT
-          echo "✅ PR created: $PR_URL"
+            --body "$PR_BODY" 2>&1)
+          STATUS=$?
+          # Output PR URL if created
+          PR_URL=$(echo "$PR_URL_OUTPUT" | grep -oE 'https://github.com/[^ ]+/pull/[0-9]+')
+          if [ -n "$PR_URL" ]; then
+            echo "url=$PR_URL" >> $GITHUB_OUTPUT
+            echo "✅ PR created: $PR_URL"
+          fi
+          # Detect "Resource not accessible by integration" and ignore exit code if PR was actually created
+          if echo "$PR_URL_OUTPUT" | grep -q "Resource not accessible by integration"; then
+            echo "⚠️ Resource not accessible by integration error ignored."
+            exit 0
+          fi
+          exit $STATUS
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -128,7 +164,10 @@ jobs:
           elif [ "${{ steps.check-pr.outputs.open }}" == "true" ]; then
             echo "| PR Number | #${{ steps.check-pr.outputs.pr_number }} |" >> $GITHUB_STEP_SUMMARY
             echo "| Status | ℹ️ PR já aberta, ignorada |" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.check-pr.outputs.reopen }}" == "true" ]; then
+            echo "| PR Number | #${{ steps.check-pr.outputs.pr_number }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Status | 🔄 PR reaberta por novo commit |" >> $GITHUB_STEP_SUMMARY
           elif [ "${{ steps.check-pr.outputs.merged }}" == "true" ]; then
             echo "| PR Number | (old) #${{ steps.check-pr.outputs.pr_number }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| Status | ✅ Nova PR criada após merge |" >> $GITHUB_STEP_SUMMARY
+            echo "| Status | ✅ Nova PR criada após merge, única |" >> $GITHUB_STEP_SUMMARY
           fi

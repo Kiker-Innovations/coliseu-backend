@@ -1,0 +1,99 @@
+name: Auto Create PR to Main
+
+on:
+  push:
+    branches:
+      - 'develop'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  create-pr:
+    name: Create PR to Main
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get branch name
+        id: branch
+        run: |
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          echo "name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          echo "📌 Branch: $BRANCH_NAME"
+
+      - name: Check if main exists
+        id: check-main
+        run: |
+          if git ls-remote --heads origin main | grep -q main; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Branch main exists"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Branch main does not exist"
+          fi
+
+      - name: Check for existing PR
+        if: steps.check-main.outputs.exists == 'true'
+        id: check-pr
+        run: |
+          EXISTING_PR=$(gh pr list --head "${{ steps.branch.outputs.name }}" --base main --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING_PR" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "pr_number=$EXISTING_PR" >> $GITHUB_OUTPUT
+            echo "ℹ️ PR #$EXISTING_PR already exists"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "📝 No existing PR found"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Pull Request
+        if: steps.check-main.outputs.exists == 'true' && steps.check-pr.outputs.exists != 'true'
+        id: create-pr
+        run: |
+          PR_URL=$(gh pr create \
+            --head "${{ steps.branch.outputs.name }}" \
+            --base main \
+            --title "🚀 Release: ${{ steps.branch.outputs.name }} → main" \
+            --body "## 🚀 Release PR
+
+          This PR was automatically created when changes were pushed/merged into \`${{ steps.branch.outputs.name }}\` (develop).
+
+          ### ℹ️ Details
+          - **Source Branch:** \`${{ steps.branch.outputs.name }}\`
+          - **Target Branch:** \`main\`
+          - **Commit:** ${{ github.sha }}
+          - **Author:** @${{ github.actor }}
+
+          ---
+          _Please review and merge manually for production deploy._" \
+            --label "release")
+          
+          echo "url=$PR_URL" >> $GITHUB_OUTPUT
+          echo "✅ PR created: $PR_URL"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "## 📋 Release PR Creation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Source Branch | \`${{ steps.branch.outputs.name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Target Branch | \`main\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ steps.create-pr.outputs.url }}" ]; then
+            echo "| PR URL | ${{ steps.create-pr.outputs.url }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Status | ✅ Created |" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.check-pr.outputs.exists }}" == "true" ]; then
+            echo "| PR Number | #${{ steps.check-pr.outputs.pr_number }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Status | ℹ️ Already exists |" >> $GITHUB_STEP_SUMMARY
+          fi

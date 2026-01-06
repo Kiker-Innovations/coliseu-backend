@@ -1,152 +1,165 @@
-# name: Deploy Lambda - Homologation
+name: Deploy Lambda - Homologation
 
-# on:
-#   push:
-#     branches:
-#       - develop
+on:
+  push:
+    branches:
+      - develop
 
-# permissions:
-#   id-token: write
-#   contents: read
+permissions:
+  id-token: write
+  contents: read
 
-# env:
-#   AWS_REGION: us-east-1
-#   ENVIRONMENT: hml
-#   TF_VERSION: 1.6.0
-#   NODE_VERSION: 20
+env:
+  AWS_REGION: us-east-1
+  AWS_ACCOUNT_ID: "913173953684"
+  ENVIRONMENT: hml
+  TF_VERSION: 1.6.0
+  ECR_REPOSITORY: coliseu-hml
+  LAMBDA_FUNCTION_NAME: coliseu-hml
+  SECRETS_NAME: coliseu/hml/app
 
-# jobs:
-#   build:
-#     name: Build Lambda Package
-#     runs-on: ubuntu-latest
+jobs:
+  deploy:
+    name: Deploy to Homologation
+    runs-on: ubuntu-latest
 
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@v4
+    defaults:
+      run:
+        working-directory: infra/terraform/inventories/hml/lambda
 
-#       - name: Setup Bun
-#         uses: oven-sh/setup-bun@v1
-#         with:
-#           bun-version: latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-#       - name: Build Lambda Package
-#         working-directory: app
-#         run: |
-#           bun run pipe:lambda
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::913173953684:role/github-coliseu-infra
+          role-session-name: github-actions-deploy-hml
+          aws-region: ${{ env.AWS_REGION }}
 
-#       - name: Upload Lambda Artifact
-#         uses: actions/upload-artifact@v4
-#         with:
-#           name: lambda-package
-#           path: app/dist/lambda.zip
-#           retention-days: 1
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
 
-#   upload-s3:
-#     name: Upload to S3
-#     runs-on: ubuntu-latest
-#     needs: build
+      # ============================================================
+      # Step 1: Create Secrets Manager + ECR (infrastructure first)
+      # ============================================================
+      - name: Terraform Init
+        run: terraform init
 
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@v4
+      - name: Terraform Apply - Secrets & ECR
+        run: |
+          terraform apply -auto-approve \
+            -target=module.secrets \
+            -target=module.ecr
+        env:
+          TF_VAR_environment: ${{ env.ENVIRONMENT }}
+          TF_VAR_aws_account_id: ${{ env.AWS_ACCOUNT_ID }}
+          # Placeholder values for initial infrastructure setup
+          TF_VAR_app_base_url: "https://placeholder.com"
+          TF_VAR_jwt_secret: "placeholder"
+          TF_VAR_mongodb_url: "mongodb://placeholder"
+          TF_VAR_resend_api_key: "placeholder"
 
-#       - name: Download Lambda Artifact
-#         uses: actions/download-artifact@v4
-#         with:
-#           name: lambda-package
-#           path: ./
+      - name: Get Terraform Outputs
+        id: tf-infra
+        run: |
+          echo "ecr_repository_url=$(terraform output -raw ecr_repository_url)" >> $GITHUB_OUTPUT
+          echo "secrets_name=$(terraform output -raw secrets_name)" >> $GITHUB_OUTPUT
+          echo "📦 ECR Repository: $(terraform output -raw ecr_repository_url)"
+          echo "🔐 Secrets: $(terraform output -raw secrets_name)"
 
-#       - name: Configure AWS Credentials
-#         uses: aws-actions/configure-aws-credentials@v4
-#         with:
-#           role-to-assume: ${{ secrets.AWS_ROLE_ARN_HML }}
-#           role-session-name: github-actions-upload-lambda-hml
-#           aws-region: ${{ env.AWS_REGION }}
+      # ============================================================
+      # Step 2: Fetch Secrets from AWS Secrets Manager
+      # ============================================================
+      - name: Fetch Secrets from Secrets Manager
+        id: secrets
+        run: |
+          echo "🔐 Fetching secrets from AWS Secrets Manager..."
 
-#       - name: Upload Lambda to S3
-#         run: |
-#           aws s3 cp lambda.zip s3://coliseu-condo-hml/lambda/coliseu/lambda.zip
+          SECRET_JSON=$(aws secretsmanager get-secret-value \
+            --secret-id "${{ steps.tf-infra.outputs.secrets_name }}" \
+            --query 'SecretString' \
+            --output text)
 
-#   terraform:
-#     name: Terraform Apply
-#     runs-on: ubuntu-latest
-#     needs: upload-s3
+          # Parse and export as environment variables (masked in logs)
+          APP_BASE_URL=$(echo "$SECRET_JSON" | jq -r '.APP_BASE_URL')
+          JWT_SECRET=$(echo "$SECRET_JSON" | jq -r '.JWT_SECRET')
+          MONGODB_URL=$(echo "$SECRET_JSON" | jq -r '.MONGODB_URL')
+          RESEND_API_KEY=$(echo "$SECRET_JSON" | jq -r '.RESEND_API_KEY')
 
-#     defaults:
-#       run:
-#         working-directory: infra/terraform/inventories/hml/lambda
+          # Mask sensitive values in GitHub logs
+          echo "::add-mask::$JWT_SECRET"
+          echo "::add-mask::$MONGODB_URL"
+          echo "::add-mask::$RESEND_API_KEY"
 
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@v4
+          # Export to GITHUB_OUTPUT for use in subsequent steps
+          echo "app_base_url=$APP_BASE_URL" >> $GITHUB_OUTPUT
+          echo "jwt_secret=$JWT_SECRET" >> $GITHUB_OUTPUT
+          echo "mongodb_url=$MONGODB_URL" >> $GITHUB_OUTPUT
+          echo "resend_api_key=$RESEND_API_KEY" >> $GITHUB_OUTPUT
 
-#       - name: Configure AWS Credentials
-#         uses: aws-actions/configure-aws-credentials@v4
-#         with:
-#           role-to-assume: ${{ secrets.AWS_ROLE_ARN_HML }}
-#           role-session-name: github-actions-terraform-lambda-hml
-#           aws-region: ${{ env.AWS_REGION }}
+          echo "✅ Secrets fetched successfully"
+        working-directory: ${{ github.workspace }}
 
-#       - name: Setup Terraform
-#         uses: hashicorp/setup-terraform@v3
-#         with:
-#           terraform_version: ${{ env.TF_VERSION }}
+      # ============================================================
+      # Step 3: Build and Push Docker Image
+      # ============================================================
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
 
-#       - name: Terraform Format Check
-#         id: fmt
-#         run: terraform fmt -check -recursive
-#         continue-on-error: true
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-#       - name: Terraform Init
-#         id: init
-#         run: terraform init
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ github.workspace }}/app
+          file: ${{ github.workspace }}/app/Dockerfile
+          push: true
+          platforms: linux/arm64
+          tags: |
+            ${{ steps.tf-infra.outputs.ecr_repository_url }}:latest
+            ${{ steps.tf-infra.outputs.ecr_repository_url }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
 
-#       - name: Terraform Validate
-#         id: validate
-#         run: terraform validate -no-color
+      - name: Show image info
+        run: |
+          echo "✅ Image pushed successfully!"
+          echo "   Repository: ${{ steps.tf-infra.outputs.ecr_repository_url }}"
+          echo "   Tags: latest, ${{ github.sha }}"
 
-#       - name: Terraform Plan
-#         id: plan
-#         run: terraform plan -no-color -out=tfplan
-#         env:
-#           TF_VAR_environment: ${{ env.ENVIRONMENT }}
-#           TF_VAR_aws_account_id: ${{ secrets.AWS_ACCOUNT_ID_HML }}
-#           TF_VAR_app_base_url: ${{ secrets.APP_BASE_URL_HML }}
-#           TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET_HML }}
-#           TF_VAR_mongodb_url: ${{ secrets.MONGODB_URL_HML }}
-#           TF_VAR_resend_api_key: ${{ secrets.RESEND_API_KEY_HML }}
+      # ============================================================
+      # Step 4: Apply Full Infrastructure with Secrets
+      # ============================================================
+      - name: Terraform Apply - Full Infrastructure
+        run: terraform apply -auto-approve
+        env:
+          TF_VAR_environment: ${{ env.ENVIRONMENT }}
+          TF_VAR_aws_account_id: ${{ env.AWS_ACCOUNT_ID }}
+          # Secrets from AWS Secrets Manager
+          TF_VAR_app_base_url: ${{ steps.secrets.outputs.app_base_url }}
+          TF_VAR_jwt_secret: ${{ steps.secrets.outputs.jwt_secret }}
+          TF_VAR_mongodb_url: ${{ steps.secrets.outputs.mongodb_url }}
+          TF_VAR_resend_api_key: ${{ steps.secrets.outputs.resend_api_key }}
 
-#       - name: Terraform Apply
-#         id: apply
-#         run: terraform apply -auto-approve tfplan
-#         env:
-#           TF_VAR_environment: ${{ env.ENVIRONMENT }}
-#           TF_VAR_aws_account_id: ${{ secrets.AWS_ACCOUNT_ID_HML }}
-#           TF_VAR_app_base_url: ${{ secrets.APP_BASE_URL_HML }}
-#           TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET_HML }}
-#           TF_VAR_mongodb_url: ${{ secrets.MONGODB_URL_HML }}
-#           TF_VAR_resend_api_key: ${{ secrets.RESEND_API_KEY_HML }}
+      - name: Update Lambda to use new image
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
+            --image-uri ${{ steps.tf-infra.outputs.ecr_repository_url }}:${{ github.sha }}
 
-#       - name: Terraform Output
-#         if: success()
-#         run: terraform output -no-color
+      - name: Wait for Lambda update
+        run: |
+          echo "⏳ Waiting for Lambda function update..."
+          aws lambda wait function-updated \
+            --function-name ${{ env.LAMBDA_FUNCTION_NAME }}
+          echo "✅ Lambda function updated successfully!"
 
-#   update-lambda:
-#     name: Update Lambda Code
-#     runs-on: ubuntu-latest
-#     needs: terraform
-
-#     steps:
-#       - name: Configure AWS Credentials
-#         uses: aws-actions/configure-aws-credentials@v4
-#         with:
-#           role-to-assume: ${{ secrets.AWS_ROLE_ARN_HML }}
-#           role-session-name: github-actions-update-lambda-hml
-#           aws-region: ${{ env.AWS_REGION }}
-
-#       - name: Update Lambda Function Code
-#         run: |
-#           aws lambda update-function-code \
-#             --function-name coliseu-hml \
-#             --s3-bucket coliseu-condo-hml \
-#             --s3-key lambda/coliseu/lambda.zip
+      - name: Terraform Outputs
+        run: terraform output -no-color

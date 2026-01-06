@@ -9,7 +9,10 @@ export const buildingUpdateSchema = z.object({
 		.optional(),
 	cnpj: z
 		.string()
-		.regex(/^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/, "CNPJ deve estar no formato 00.000.000/0000-00")
+		.regex(
+			/^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/,
+			"CNPJ deve estar no formato 00.000.000/0000-00",
+		)
 		.optional(),
 	state: z
 		.string()
@@ -44,7 +47,10 @@ export const buildingUpdateSchema = z.object({
 		.optional(),
 	phone: z
 		.string()
-		.regex(/^\(\d{2}\) \d{4,5}-\d{4}$/, "Telefone deve estar no formato (00) 00000-0000")
+		.regex(
+			/^\(\d{2}\) \d{4,5}-\d{4}$/,
+			"Telefone deve estar no formato (00) 00000-0000",
+		)
 		.optional(),
 	floorCount: z
 		.number()
@@ -60,4 +66,3 @@ export const transformUpdateBuildingDto = (
 ): BuildingUpdateDto => {
 	return buildingUpdateSchema.parse(data);
 };
-

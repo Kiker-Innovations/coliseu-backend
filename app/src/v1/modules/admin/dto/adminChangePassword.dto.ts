@@ -29,13 +29,10 @@ export const adminChangePasswordSchema = z
 		path: ["confirmPassword"],
 	});
 
-export type AdminChangePasswordDto = z.infer<
-	typeof adminChangePasswordSchema
->;
+export type AdminChangePasswordDto = z.infer<typeof adminChangePasswordSchema>;
 
 export const transformChangePasswordAdminDto = (
 	data: AdminChangePasswordDto,
 ): AdminChangePasswordDto => {
 	return adminChangePasswordSchema.parse(data);
 };
-

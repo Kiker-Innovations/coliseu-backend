@@ -15,12 +15,12 @@ export class FineController {
 
 	public async createFine(
 		request: FastifyRequest,
-		reply: FastifyReply
+		reply: FastifyReply,
 	): Promise<void> {
 		if (request.user.userType !== UserTypeEnum.ADMIN) {
 			throw httpException(
 				"Apenas administradores podem criar multas",
-				httpStatus.FORBIDDEN
+				httpStatus.FORBIDDEN,
 			);
 		}
 
@@ -36,12 +36,12 @@ export class FineController {
 
 	public async deleteFine(
 		request: FastifyRequest,
-		reply: FastifyReply
+		reply: FastifyReply,
 	): Promise<void> {
 		if (request.user.userType !== UserTypeEnum.ADMIN) {
 			throw httpException(
 				"Apenas administradores podem deletar multas",
-				httpStatus.FORBIDDEN
+				httpStatus.FORBIDDEN,
 			);
 		}
 
@@ -54,7 +54,7 @@ export class FineController {
 
 	public async getFines(
 		request: FastifyRequest,
-		reply: FastifyReply
+		reply: FastifyReply,
 	): Promise<void> {
 		if (
 			request.user.userType !== UserTypeEnum.ADMIN &&
@@ -62,25 +62,23 @@ export class FineController {
 		) {
 			throw httpException(
 				"Apenas administradores e moradores podem visualizar multas",
-				httpStatus.FORBIDDEN
+				httpStatus.FORBIDDEN,
 			);
 		}
 
 		return reply
 			.status(httpStatus.OK)
-			.send(
-				await this.fineService.getAllFines(request.user.buildingId)
-			);
+			.send(await this.fineService.getAllFines(request.user.buildingId));
 	}
 
 	public async updateFine(
 		request: FastifyRequest,
-		reply: FastifyReply
+		reply: FastifyReply,
 	): Promise<void> {
 		if (request.user.userType !== UserTypeEnum.ADMIN) {
 			throw httpException(
 				"Apenas administradores podem editar multas",
-				httpStatus.FORBIDDEN
+				httpStatus.FORBIDDEN,
 			);
 		}
 

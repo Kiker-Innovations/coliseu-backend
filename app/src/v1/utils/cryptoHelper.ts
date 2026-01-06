@@ -2,42 +2,42 @@ import { randomBytes } from "node:crypto";
 import bcrypt from "bcrypt";
 
 export async function hashPassword(password: string): Promise<string> {
-    const saltRounds = 10;
-    return await bcrypt.hash(password, saltRounds);
+	const saltRounds = 10;
+	return await bcrypt.hash(password, saltRounds);
 }
 
 export async function comparePassword(
-    password: string,
-    hash: string,
+	password: string,
+	hash: string,
 ): Promise<boolean> {
-    return await bcrypt.compare(password, hash);
+	return await bcrypt.compare(password, hash);
 }
 
 export async function generateCode(): Promise<string> {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    const bytes = randomBytes(6);
-    let code = "";
-    for (const byte of bytes) {
-        code += chars[byte % chars.length];
-    }
-    return code;
+	const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+	const bytes = randomBytes(6);
+	let code = "";
+	for (const byte of bytes) {
+		code += chars[byte % chars.length];
+	}
+	return code;
 }
 
 export async function generateResetToken(): Promise<string> {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    const bytes = randomBytes(32);
-    let token = "";
-    for (const byte of bytes) {
-        token += chars[byte % chars.length];
-    }
-    return token;
+	const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+	const bytes = randomBytes(32);
+	let token = "";
+	for (const byte of bytes) {
+		token += chars[byte % chars.length];
+	}
+	return token;
 }
 
 export function generateResetCode(): string {
-    const bytes = randomBytes(3);
-    let code = "";
-    for (const byte of bytes) {
-        code += (byte % 10).toString();
-    }
-    return code.padStart(6, "0");
+	const bytes = randomBytes(3);
+	let code = "";
+	for (const byte of bytes) {
+		code += (byte % 10).toString();
+	}
+	return code.padStart(6, "0");
 }

@@ -7,6 +7,7 @@ export interface ResidentEntity {
 	name: string;
 	buildingId: string;
 	apartmentId: string;
+	roleId: string;
 	email: string;
 	passwordHash: string;
 	phone: string;

@@ -23,4 +23,3 @@ export type CreateNoticeEntity = Omit<
 export type UpdateNoticeEntity = Partial<
 	Pick<NoticeEntity, "title" | "content" | "status" | "deletedAt">
 >;
-

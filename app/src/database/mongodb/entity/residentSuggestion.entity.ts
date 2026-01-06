@@ -18,4 +18,3 @@ export type CreateResidentSuggestionEntity = Omit<
 export type UpdateResidentSuggestionEntity = Partial<
 	Pick<ResidentSuggestionEntity, "title" | "description" | "updatedAt">
 >;
-

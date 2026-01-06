@@ -43,9 +43,9 @@ export const noticeCreateSchema = z.object({
 		.refine(
 			(name) =>
 				ACCEPTED_FILE_EXTENSIONS.some((ext) =>
-					name.toLowerCase().endsWith(ext)
+					name.toLowerCase().endsWith(ext),
 				),
-			`Extensão do arquivo deve ser: ${ACCEPTED_FILE_EXTENSIONS.join(", ")}`
+			`Extensão do arquivo deve ser: ${ACCEPTED_FILE_EXTENSIONS.join(", ")}`,
 		),
 	fileSize: z
 		.number({ required_error: "Tamanho do arquivo é obrigatório" })
@@ -55,7 +55,7 @@ export const noticeCreateSchema = z.object({
 		.string({ required_error: "Tipo do arquivo é obrigatório" })
 		.refine(
 			(type) => ACCEPTED_FILE_TYPES.includes(type),
-			`Tipo de arquivo deve ser: PDF, DOC, DOCX, PPT, PPTX, JPEG, JPG ou PNG`
+			`Tipo de arquivo deve ser: PDF, DOC, DOCX, PPT, PPTX, JPEG, JPG ou PNG`,
 		),
 	status: z
 		.enum(["ATIVO", "INATIVO"], {
@@ -67,10 +67,9 @@ export const noticeCreateSchema = z.object({
 export type NoticeCreateDto = z.infer<typeof noticeCreateSchema>;
 
 export const transformCreateNoticeDto = (
-	data: NoticeCreateDto
+	data: NoticeCreateDto,
 ): NoticeCreateDto => {
 	return noticeCreateSchema.parse(data);
 };
 
 export { MAX_FILE_SIZE, ACCEPTED_FILE_TYPES, ACCEPTED_FILE_EXTENSIONS };
-

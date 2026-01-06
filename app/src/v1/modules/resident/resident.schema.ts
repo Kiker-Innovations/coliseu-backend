@@ -8,7 +8,14 @@ export class ResidentSchema {
 	public create = {
 		body: {
 			type: "object",
-			required: ["name", "buildingId", "apartmentId", "email", "password", "phone"],
+			required: [
+				"name",
+				"buildingId",
+				"apartmentId",
+				"email",
+				"password",
+				"phone",
+			],
 			properties: {
 				name: {
 					type: "string",
@@ -384,7 +391,8 @@ export class ResidentSchema {
 				},
 				newPassword: {
 					type: "string",
-					description: "Nova senha (mínimo 8 caracteres, com maiúscula, minúscula e caractere especial)",
+					description:
+						"Nova senha (mínimo 8 caracteres, com maiúscula, minúscula e caractere especial)",
 					minLength: 8,
 				},
 				confirmPassword: {

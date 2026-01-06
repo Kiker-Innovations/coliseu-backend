@@ -7,12 +7,7 @@ export class PollSchema {
 	public create = {
 		body: {
 			type: "object",
-			required: [
-				"description",
-				"options",
-				"startDate",
-				"endDate",
-			],
+			required: ["description", "options", "startDate", "endDate"],
 			properties: {
 				description: {
 					type: "string",
@@ -31,7 +26,8 @@ export class PollSchema {
 				},
 				startDate: {
 					type: "string",
-					description: "Data de início da enquete (DD/MM/YYYY HH:mm). O status será determinado automaticamente: PROGRAMADO se a data for futura, ATIVO se for hoje ou passado",
+					description:
+						"Data de início da enquete (DD/MM/YYYY HH:mm). O status será determinado automaticamente: PROGRAMADO se a data for futura, ATIVO se for hoje ou passado",
 					example: "15/01/2025 10:30",
 				},
 				endDate: {
@@ -108,13 +104,15 @@ export class PollSchema {
 							maxItems: 4,
 						},
 					],
-					description: "Status para filtrar as enquetes. Pode ser uma string (ex: ATIVO), string separada por vírgula (ex: ATIVO,PROGRAMADO), ou array (ex: status=ATIVO&status=PROGRAMADO). Valores possíveis: ATIVO, PROGRAMADO, FINALIZADO, CANCELADO. As enquetes são ordenadas por data de início (mais recentes primeiro)",
+					description:
+						"Status para filtrar as enquetes. Pode ser uma string (ex: ATIVO), string separada por vírgula (ex: ATIVO,PROGRAMADO), ou array (ex: status=ATIVO&status=PROGRAMADO). Valores possíveis: ATIVO, PROGRAMADO, FINALIZADO, CANCELADO. As enquetes são ordenadas por data de início (mais recentes primeiro)",
 				},
 			},
 		},
 		response: {
 			200: {
-				description: "Enquetes encontradas (retorna array vazio se não houver enquetes)",
+				description:
+					"Enquetes encontradas (retorna array vazio se não houver enquetes)",
 				type: "object",
 				properties: {
 					success: { type: "boolean" },
@@ -206,7 +204,8 @@ export class PollSchema {
 		},
 		response: {
 			200: {
-				description: "Enquetes ativas encontradas (retorna array vazio se não houver enquetes)",
+				description:
+					"Enquetes ativas encontradas (retorna array vazio se não houver enquetes)",
 				type: "object",
 				properties: {
 					success: { type: "boolean" },
@@ -278,7 +277,8 @@ export class PollSchema {
 		},
 		response: {
 			200: {
-				description: "Enquetes encerradas e canceladas encontradas (retorna array vazio se não houver enquetes)",
+				description:
+					"Enquetes encerradas e canceladas encontradas (retorna array vazio se não houver enquetes)",
 				type: "object",
 				properties: {
 					success: { type: "boolean" },
@@ -354,7 +354,8 @@ export class PollSchema {
 							},
 							totalPercent: {
 								type: "number",
-								description: "Média ponderada considerando: taxa de participação dos residents ativos (60%), quantidade de enquetes ativas (20%) e quantidade de votos (20%)",
+								description:
+									"Média ponderada considerando: taxa de participação dos residents ativos (60%), quantidade de enquetes ativas (20%) e quantidade de votos (20%)",
 							},
 						},
 					},
@@ -453,7 +454,8 @@ export class PollSchema {
 					example: 0,
 				},
 			},
-			description: "O ID do residente é obtido automaticamente do token de autenticação. Não é necessário enviar o residentId no body da requisição.",
+			description:
+				"O ID do residente é obtido automaticamente do token de autenticação. Não é necessário enviar o residentId no body da requisição.",
 		},
 		response: {
 			200: {
@@ -607,4 +609,3 @@ export class PollSchema {
 		},
 	};
 }
-

@@ -84,9 +84,6 @@ export class VisitController {
 
 		return reply
 			.status(httpStatus.OK)
-			.send(
-				await this.visitService.listRecentVisits(query, buildingId),
-			);
+			.send(await this.visitService.listRecentVisits(query, buildingId));
 	}
 }
-

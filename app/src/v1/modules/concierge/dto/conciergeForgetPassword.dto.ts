@@ -6,11 +6,12 @@ export const conciergeForgetPasswordSchema = z.object({
 		.email("Email deve ser válido"),
 });
 
-export type ConciergeForgetPasswordDto = z.infer<typeof conciergeForgetPasswordSchema>;
+export type ConciergeForgetPasswordDto = z.infer<
+	typeof conciergeForgetPasswordSchema
+>;
 
 export const transformForgetPasswordConciergeDto = (
 	data: ConciergeForgetPasswordDto,
 ): ConciergeForgetPasswordDto => {
 	return conciergeForgetPasswordSchema.parse(data);
 };
-

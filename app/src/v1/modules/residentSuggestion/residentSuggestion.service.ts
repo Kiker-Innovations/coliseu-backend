@@ -18,7 +18,9 @@ export class ResidentSuggestionService {
 	private apartmentRepository: ApartmentRepository;
 
 	constructor(mongoClient: MongoClient) {
-		this.residentSuggestionRepository = new ResidentSuggestionRepository(mongoClient);
+		this.residentSuggestionRepository = new ResidentSuggestionRepository(
+			mongoClient,
+		);
 		this.apartmentRepository = new ApartmentRepository(mongoClient);
 	}
 
@@ -75,7 +77,10 @@ export class ResidentSuggestionService {
 		actualSeasonId: string,
 	): Promise<HttpResponse<ResidentSuggestionEntity[]>> {
 		const residentSuggestions =
-			await this.residentSuggestionRepository.findManyByApartmentIdAndSeason(apartmentId, actualSeasonId);
+			await this.residentSuggestionRepository.findManyByApartmentIdAndSeason(
+				apartmentId,
+				actualSeasonId,
+			);
 
 		return {
 			success: true,
@@ -88,7 +93,8 @@ export class ResidentSuggestionService {
 		residentSuggestionId: string,
 		apartmentId: string,
 	): Promise<HttpResponse<ResidentSuggestionEntity>> {
-		const residentSuggestion = await this.residentSuggestionRepository.findById(residentSuggestionId);
+		const residentSuggestion =
+			await this.residentSuggestionRepository.findById(residentSuggestionId);
 
 		if (!residentSuggestion) {
 			throw httpException("Sugestão não encontrada", httpStatus.NOT_FOUND);
@@ -113,7 +119,8 @@ export class ResidentSuggestionService {
 		residentSuggestionUpdateDto: ResidentSuggestionUpdateDto,
 		apartmentId: string,
 	): Promise<HttpResponse<ResidentSuggestionEntity>> {
-		const residentSuggestion = await this.residentSuggestionRepository.findById(residentSuggestionId);
+		const residentSuggestion =
+			await this.residentSuggestionRepository.findById(residentSuggestionId);
 
 		if (!residentSuggestion) {
 			throw httpException("Sugestão não encontrada", httpStatus.NOT_FOUND);
@@ -126,10 +133,11 @@ export class ResidentSuggestionService {
 			);
 		}
 
-		const updatedResidentSuggestion = await this.residentSuggestionRepository.update(
-			residentSuggestionId,
-			residentSuggestionUpdateDto,
-		);
+		const updatedResidentSuggestion =
+			await this.residentSuggestionRepository.update(
+				residentSuggestionId,
+				residentSuggestionUpdateDto,
+			);
 
 		if (!updatedResidentSuggestion) {
 			throw httpException(
@@ -149,7 +157,8 @@ export class ResidentSuggestionService {
 		residentSuggestionId: string,
 		apartmentId: string,
 	): Promise<HttpResponse<null>> {
-		const residentSuggestion = await this.residentSuggestionRepository.findById(residentSuggestionId);
+		const residentSuggestion =
+			await this.residentSuggestionRepository.findById(residentSuggestionId);
 
 		if (!residentSuggestion) {
 			throw httpException("Sugestão não encontrada", httpStatus.NOT_FOUND);
@@ -162,7 +171,8 @@ export class ResidentSuggestionService {
 			);
 		}
 
-		const deleted = await this.residentSuggestionRepository.delete(residentSuggestionId);
+		const deleted =
+			await this.residentSuggestionRepository.delete(residentSuggestionId);
 
 		if (!deleted) {
 			throw httpException(
@@ -178,8 +188,11 @@ export class ResidentSuggestionService {
 		};
 	}
 
-	public async getAllSuggestions(): Promise<HttpResponse<ResidentSuggestionEntity[]>> {
-		const residentSuggestions = await this.residentSuggestionRepository.findMany();
+	public async getAllSuggestions(): Promise<
+		HttpResponse<ResidentSuggestionEntity[]>
+	> {
+		const residentSuggestions =
+			await this.residentSuggestionRepository.findMany();
 
 		return {
 			success: true,

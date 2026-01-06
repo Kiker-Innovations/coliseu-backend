@@ -5,6 +5,7 @@ import type {
 	ResidentEntity,
 } from "../../../database/mongodb/entity/resident.entity";
 import { ResidentRepository } from "../../../database/mongodb/repositories/resident.repository";
+import { RoleRepository } from "../../../database/mongodb/repositories/role.repository";
 import { S3Provider } from "../../../providers/aws/s3.provider";
 import { ResidentStatusEnum } from "../../enum/residentStatus.enum";
 import type {
@@ -34,12 +35,14 @@ export class ResidentService {
 	private residentRepository: ResidentRepository;
 	private apartmentRepository: ApartmentRepository;
 	private buildingRepository: BuildingRepository;
+	private roleRepository: RoleRepository;
 	private s3Provider: S3Provider;
 
 	constructor(mongoClient: MongoClient) {
 		this.residentRepository = new ResidentRepository(mongoClient);
 		this.apartmentRepository = new ApartmentRepository(mongoClient);
 		this.buildingRepository = new BuildingRepository(mongoClient);
+		this.roleRepository = new RoleRepository(mongoClient);
 		this.s3Provider = new S3Provider();
 	}
 
@@ -65,10 +68,20 @@ export class ResidentService {
 		const passwordHash = await hashPassword(residentCreateDto.password);
 		const residentCode = await generateCode();
 
+		// Buscar role "resident"
+		const residentRole = await this.roleRepository.findByName("resident");
+		if (!residentRole) {
+			throw httpException(
+				"Role 'resident' não encontrado no sistema.",
+				httpStatus.NOT_FOUND,
+			);
+		}
+
 		const residentEntity: CreateResidentEntity = {
 			name: residentCreateDto.name,
 			buildingId: residentCreateDto.buildingId,
 			apartmentId: residentCreateDto.apartmentId,
+			roleId: residentRole._id,
 			email: residentCreateDto.email,
 			passwordHash,
 			phone: residentCreateDto.phone,
@@ -161,7 +174,9 @@ export class ResidentService {
 			? await this.apartmentRepository.findById(resident.apartmentId)
 			: null;
 
-		const building = await this.buildingRepository.findById(resident.buildingId);
+		const building = await this.buildingRepository.findById(
+			resident.buildingId,
+		);
 
 		return {
 			success: true,
@@ -305,13 +320,15 @@ export class ResidentService {
 	public async generatePresignedUrlForPhoto(
 		residentId: string,
 		fileExtension: string,
-	): Promise<HttpResponse<{
-		presignedUrl: string;
-		photoUrl: string;
-		s3Key: string;
-		instructions: string;
-		expiresIn: string;
-	}>> {
+	): Promise<
+		HttpResponse<{
+			presignedUrl: string;
+			photoUrl: string;
+			s3Key: string;
+			instructions: string;
+			expiresIn: string;
+		}>
+	> {
 		const result = await this.generatePresignedUrl(residentId, fileExtension);
 
 		return {
@@ -407,11 +424,15 @@ export class ResidentService {
 			status: ResidentStatusEnum.A_VALIDACAO,
 		});
 
-		const apartment = await this.apartmentRepository.findById(resident.apartmentId);
+		const apartment = await this.apartmentRepository.findById(
+			resident.apartmentId,
+		);
 
 		if (apartment) {
 			if (apartment.status === ApartmentStatusEnum.DESOCUPADO) {
-				await this.apartmentRepository.update(resident.apartmentId, { status: ApartmentStatusEnum.OCUPADO });
+				await this.apartmentRepository.update(resident.apartmentId, {
+					status: ApartmentStatusEnum.OCUPADO,
+				});
 			}
 		}
 
@@ -458,19 +479,19 @@ export class ResidentService {
 		};
 	}
 
-	public async getResidentStatusByEmail(
-		email: string,
-	): Promise<HttpResponse<{
-		name: string;
-		email: string;
-		apartmentNumber?: string;
-		apartmentBlock?: string;
-		status: string;
-		rejectType?: string;
-		rejectNote?: string;
-		buildingId?: string;
-		apartmentId?: string;
-	}>> {
+	public async getResidentStatusByEmail(email: string): Promise<
+		HttpResponse<{
+			name: string;
+			email: string;
+			apartmentNumber?: string;
+			apartmentBlock?: string;
+			status: string;
+			rejectType?: string;
+			rejectNote?: string;
+			buildingId?: string;
+			apartmentId?: string;
+		}>
+	> {
 		const resident = await this.getResidentByEmail(email);
 
 		if (!resident) {
@@ -478,7 +499,9 @@ export class ResidentService {
 		}
 
 		// Buscar dados do apartamento
-		const apartment = await this.apartmentRepository.findById(resident.apartmentId);
+		const apartment = await this.apartmentRepository.findById(
+			resident.apartmentId,
+		);
 
 		return {
 			success: true,
@@ -531,12 +554,14 @@ export class ResidentService {
 	public async updateRejectedResident(
 		email: string,
 		residentUpdateDto: ResidentUpdateDto,
-	): Promise<HttpResponse<{
-		email: string;
-		phone: string;
-		status: string;
-		presignedUrl?: string;
-	}>> {
+	): Promise<
+		HttpResponse<{
+			email: string;
+			phone: string;
+			status: string;
+			presignedUrl?: string;
+		}>
+	> {
 		const resident = await this.getResidentByEmail(email);
 
 		if (!resident) {
@@ -622,7 +647,8 @@ export class ResidentService {
 
 		return {
 			success: true,
-			message: "Dados atualizados com sucesso. Seu cadastro será revisado novamente.",
+			message:
+				"Dados atualizados com sucesso. Seu cadastro será revisado novamente.",
 			data: {
 				email: updatedResident.email,
 				phone: updatedResident.phone,

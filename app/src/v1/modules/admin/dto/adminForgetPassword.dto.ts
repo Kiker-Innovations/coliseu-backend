@@ -13,4 +13,3 @@ export const transformForgetPasswordAdminDto = (
 ): AdminForgetPasswordDto => {
 	return adminForgetPasswordSchema.parse(data);
 };
-

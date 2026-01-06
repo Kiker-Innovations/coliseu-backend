@@ -18,9 +18,7 @@ export const visitorListQuerySchema = z.object({
 		})
 		.pipe(z.number().int().positive().max(100).default(10)),
 	search: z.string().optional(),
-	filterBy: z
-		.enum(["name", "document", "apartment"])
-		.optional(),
+	filterBy: z.enum(["name", "document", "apartment"]).optional(),
 });
 
 export type VisitorListQueryDto = z.infer<typeof visitorListQuerySchema>;
@@ -30,4 +28,3 @@ export const transformVisitorListQueryDto = (
 ): VisitorListQueryDto => {
 	return visitorListQuerySchema.parse(query);
 };
-

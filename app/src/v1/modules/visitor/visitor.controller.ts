@@ -101,13 +101,13 @@ export class VisitorController {
 		return reply
 			.status(httpStatus.OK)
 			.send(
-			await this.visitorService.updateVisitor(
-				id,
-				visitorUpdateDto,
-				buildingId,
-				conciergeId,
-			),
-		);
+				await this.visitorService.updateVisitor(
+					id,
+					visitorUpdateDto,
+					buildingId,
+					conciergeId,
+				),
+			);
 	}
 
 	public async listRecentVisitors(
@@ -126,10 +126,6 @@ export class VisitorController {
 
 		return reply
 			.status(httpStatus.OK)
-			.send(
-				await this.visitorService.listRecentVisitors(query, buildingId),
-			);
+			.send(await this.visitorService.listRecentVisitors(query, buildingId));
 	}
-
 }
-

@@ -73,4 +73,3 @@ export class VisitRouteV1 {
 		return [this.create(), this.listByVisitorId(), this.listRecent()];
 	};
 }
-

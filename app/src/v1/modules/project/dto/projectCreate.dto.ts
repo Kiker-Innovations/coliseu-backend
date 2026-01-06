@@ -22,4 +22,3 @@ export const transformCreateProjectDto = (
 ): ProjectCreateDto => {
 	return projectCreateSchema.parse(data);
 };
-

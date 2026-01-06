@@ -29,4 +29,3 @@ export type CreateVisitorEntity = Omit<
 export type UpdateVisitorEntity = Partial<
 	Omit<VisitorEntity, "_id" | "createdAt" | "deletedAt">
 >;
-

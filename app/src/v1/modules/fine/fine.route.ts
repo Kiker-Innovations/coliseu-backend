@@ -23,7 +23,7 @@ export class FineRouteV1 {
 				...this.fineSchema.create,
 			},
 			handler: this.fineController.createFine.bind(
-				this.fineController
+				this.fineController,
 			) as RouteHandlerMethod,
 		};
 	};
@@ -35,12 +35,11 @@ export class FineRouteV1 {
 			schema: {
 				tags: ["Fines"],
 				summary: "Get all fines",
-				description:
-					"Lista todas as multas (apenas admin e resident)",
+				description: "Lista todas as multas (apenas admin e resident)",
 				...this.fineSchema.getAll,
 			},
 			handler: this.fineController.getFines.bind(
-				this.fineController
+				this.fineController,
 			) as RouteHandlerMethod,
 		};
 	};
@@ -56,7 +55,7 @@ export class FineRouteV1 {
 				...this.fineSchema.update,
 			},
 			handler: this.fineController.updateFine.bind(
-				this.fineController
+				this.fineController,
 			) as RouteHandlerMethod,
 		};
 	};
@@ -72,7 +71,7 @@ export class FineRouteV1 {
 				...this.fineSchema.remove,
 			},
 			handler: this.fineController.deleteFine.bind(
-				this.fineController
+				this.fineController,
 			) as RouteHandlerMethod,
 		};
 	};

@@ -18,4 +18,3 @@ export const transformVisitRecentQueryDto = (
 ): VisitRecentQueryDto => {
 	return visitRecentQuerySchema.parse(data);
 };
-

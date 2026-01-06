@@ -7,4 +7,3 @@ export type VehicleTypeEnumType =
 	(typeof VehicleTypeEnum)[keyof typeof VehicleTypeEnum];
 
 export const VehicleTypeEnumValues = Object.values(VehicleTypeEnum);
-

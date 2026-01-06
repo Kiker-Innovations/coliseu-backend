@@ -128,4 +128,3 @@ export class PollVoteRepository
 		return result.map((item) => item.residentId);
 	}
 }
-

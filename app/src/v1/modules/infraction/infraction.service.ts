@@ -32,12 +32,14 @@ export class InfractionService {
 		this.infractionRepository = new InfractionRepository(mongoClient);
 		this.fineRepository = new FineRepository(mongoClient);
 		this.apartmentRepository = new ApartmentRepository(mongoClient);
-		this.infractionAppealRepository = new InfractionAppealRepository(mongoClient);
+		this.infractionAppealRepository = new InfractionAppealRepository(
+			mongoClient,
+		);
 		this.s3Provider = new S3Provider();
 	}
 
 	public async createFineInfraction(
-		infractionCreateFineDto: InfractionCreateFineDto
+		infractionCreateFineDto: InfractionCreateFineDto,
 	): Promise<
 		HttpResponse<{
 			_id: string;
@@ -52,7 +54,7 @@ export class InfractionService {
 	> {
 		// Verificar se o fine existe
 		const fine = await this.fineRepository.findById(
-			infractionCreateFineDto.fineId
+			infractionCreateFineDto.fineId,
 		);
 		if (!fine) {
 			throw httpException("Multa não encontrada", httpStatus.NOT_FOUND);
@@ -60,7 +62,7 @@ export class InfractionService {
 
 		// Verificar se o apartamento existe
 		const apartment = await this.apartmentRepository.findById(
-			infractionCreateFineDto.apartmentId
+			infractionCreateFineDto.apartmentId,
 		);
 		if (!apartment) {
 			throw httpException("Apartamento não encontrado", httpStatus.NOT_FOUND);
@@ -76,9 +78,8 @@ export class InfractionService {
 			status: FineStatusEnum.PENDENTE,
 		};
 
-		const createdInfraction = await this.infractionRepository.create(
-			infractionEntity
-		);
+		const createdInfraction =
+			await this.infractionRepository.create(infractionEntity);
 
 		return {
 			success: true,
@@ -97,7 +98,7 @@ export class InfractionService {
 	}
 
 	public async createNotificationInfraction(
-		infractionCreateNotificationDto: InfractionCreateNotificationDto
+		infractionCreateNotificationDto: InfractionCreateNotificationDto,
 	): Promise<
 		HttpResponse<{
 			_id: string;
@@ -112,15 +113,18 @@ export class InfractionService {
 	> {
 		// Verificar se o fine existe
 		const fine = await this.fineRepository.findById(
-			infractionCreateNotificationDto.fineId
+			infractionCreateNotificationDto.fineId,
 		);
 		if (!fine) {
-			throw httpException("Multa/Notificação não encontrada", httpStatus.NOT_FOUND);
+			throw httpException(
+				"Multa/Notificação não encontrada",
+				httpStatus.NOT_FOUND,
+			);
 		}
 
 		// Verificar se o apartamento existe
 		const apartment = await this.apartmentRepository.findById(
-			infractionCreateNotificationDto.apartmentId
+			infractionCreateNotificationDto.apartmentId,
 		);
 		if (!apartment) {
 			throw httpException("Apartamento não encontrado", httpStatus.NOT_FOUND);
@@ -136,9 +140,8 @@ export class InfractionService {
 			status: InfractionStatusEnum.ATIVO,
 		};
 
-		const createdInfraction = await this.infractionRepository.create(
-			infractionEntity
-		);
+		const createdInfraction =
+			await this.infractionRepository.create(infractionEntity);
 
 		return {
 			success: true,
@@ -159,7 +162,7 @@ export class InfractionService {
 	public async getInfractions(
 		buildingId: string,
 		apartmentId?: string,
-		status?: string
+		status?: string,
 	): Promise<
 		HttpResponse<
 			Array<{
@@ -197,10 +200,11 @@ export class InfractionService {
 			}>
 		>
 	> {
-		const apartments = await this.apartmentRepository.findManyWithInfractionsAndResidents(
-			buildingId,
-			{ apartmentId, status }
-		);
+		const apartments =
+			await this.apartmentRepository.findManyWithInfractionsAndResidents(
+				buildingId,
+				{ apartmentId, status },
+			);
 
 		return {
 			success: true,
@@ -222,7 +226,7 @@ export class InfractionService {
 
 	public async getMyFines(
 		apartmentId: string,
-		status?: string
+		status?: string,
 	): Promise<
 		HttpResponse<
 			Array<{
@@ -256,7 +260,7 @@ export class InfractionService {
 
 		const fines = await this.infractionRepository.findManySortedByDateWithFine(
 			filter,
-			-1
+			-1,
 		);
 
 		return {
@@ -287,7 +291,7 @@ export class InfractionService {
 	public async contestInfraction(
 		infractionAppealDto: InfractionAppealDto,
 		residentId: string,
-		apartmentId: string
+		apartmentId: string,
 	): Promise<
 		HttpResponse<{
 			_id: string;
@@ -298,7 +302,7 @@ export class InfractionService {
 	> {
 		// Verificar se a infraction existe
 		const infraction = await this.infractionRepository.findById(
-			infractionAppealDto.infractionId
+			infractionAppealDto.infractionId,
 		);
 		if (!infraction) {
 			throw httpException("Infração não encontrada", httpStatus.NOT_FOUND);
@@ -308,7 +312,7 @@ export class InfractionService {
 		if (infraction.apartmentId !== apartmentId) {
 			throw httpException(
 				"Você não tem permissão para contestar esta infração",
-				httpStatus.FORBIDDEN
+				httpStatus.FORBIDDEN,
 			);
 		}
 
@@ -320,7 +324,7 @@ export class InfractionService {
 		if (existingAppeal) {
 			throw httpException(
 				"Esta infração já foi contestada",
-				httpStatus.BAD_REQUEST
+				httpStatus.BAD_REQUEST,
 			);
 		}
 
@@ -336,7 +340,7 @@ export class InfractionService {
 		const presignedUrl = await this.s3Provider.getPresignedUrlForPut(
 			s3Key,
 			infractionAppealDto.mimeType,
-			300 // 5 minutos
+			300, // 5 minutos
 		);
 
 		const publicUrl = this.s3Provider.getPublicUrl(s3Key);
@@ -360,7 +364,8 @@ export class InfractionService {
 
 		return {
 			success: true,
-			message: "Contestação criada com sucesso! Faça upload do arquivo usando a URL assinada.",
+			message:
+				"Contestação criada com sucesso! Faça upload do arquivo usando a URL assinada.",
 			data: {
 				_id: appealEntity._id,
 				infractionId: infraction._id,
@@ -373,7 +378,7 @@ export class InfractionService {
 	public async getInfractionAppeal(
 		infractionId: string,
 		residentId: string,
-		apartmentId: string
+		apartmentId: string,
 	): Promise<
 		HttpResponse<{
 			_id: string;
@@ -395,7 +400,7 @@ export class InfractionService {
 		if (infraction.apartmentId !== apartmentId) {
 			throw httpException(
 				"Você não tem permissão para visualizar esta contestação",
-				httpStatus.FORBIDDEN
+				httpStatus.FORBIDDEN,
 			);
 		}
 
@@ -406,10 +411,7 @@ export class InfractionService {
 		});
 
 		if (!appeal) {
-			throw httpException(
-				"Contestação não encontrada",
-				httpStatus.NOT_FOUND
-			);
+			throw httpException("Contestação não encontrada", httpStatus.NOT_FOUND);
 		}
 
 		return {
@@ -427,9 +429,7 @@ export class InfractionService {
 		};
 	}
 
-	public async getInfractionAppealForAdmin(
-		infractionId: string
-	): Promise<
+	public async getInfractionAppealForAdmin(infractionId: string): Promise<
 		HttpResponse<{
 			_id: string;
 			infractionId: string;
@@ -453,10 +453,7 @@ export class InfractionService {
 		});
 
 		if (!appeal) {
-			throw httpException(
-				"Contestação não encontrada",
-				httpStatus.NOT_FOUND
-			);
+			throw httpException("Contestação não encontrada", httpStatus.NOT_FOUND);
 		}
 
 		return {
@@ -476,7 +473,7 @@ export class InfractionService {
 	}
 
 	public async approveAppeal(
-		infractionId: string
+		infractionId: string,
 	): Promise<HttpResponse<{ _id: string; status: string; canceledAt: Date }>> {
 		const infraction = await this.infractionRepository.findById(infractionId);
 		if (!infraction) {
@@ -486,7 +483,7 @@ export class InfractionService {
 		if (infraction.status !== FineStatusEnum.EM_REVISAO) {
 			throw httpException(
 				"A infração não está em revisão",
-				httpStatus.BAD_REQUEST
+				httpStatus.BAD_REQUEST,
 			);
 		}
 
@@ -495,13 +492,13 @@ export class InfractionService {
 			{
 				status: FineStatusEnum.CANCELADA,
 				canceledAt: getDate(),
-			}
+			},
 		);
 
 		if (!updatedInfraction) {
 			throw httpException(
 				"Erro ao atualizar infração",
-				httpStatus.INTERNAL_SERVER_ERROR
+				httpStatus.INTERNAL_SERVER_ERROR,
 			);
 		}
 
@@ -517,7 +514,7 @@ export class InfractionService {
 	}
 
 	public async rejectAppeal(
-		infractionId: string
+		infractionId: string,
 	): Promise<HttpResponse<{ _id: string; status: string; confirmedAt: Date }>> {
 		const infraction = await this.infractionRepository.findById(infractionId);
 		if (!infraction) {
@@ -527,7 +524,7 @@ export class InfractionService {
 		if (infraction.status !== FineStatusEnum.EM_REVISAO) {
 			throw httpException(
 				"A infração não está em revisão",
-				httpStatus.BAD_REQUEST
+				httpStatus.BAD_REQUEST,
 			);
 		}
 
@@ -536,13 +533,13 @@ export class InfractionService {
 			{
 				status: FineStatusEnum.PENDENTE,
 				confirmedAt: getDate(),
-			}
+			},
 		);
 
 		if (!updatedInfraction) {
 			throw httpException(
 				"Erro ao atualizar infração",
-				httpStatus.INTERNAL_SERVER_ERROR
+				httpStatus.INTERNAL_SERVER_ERROR,
 			);
 		}
 

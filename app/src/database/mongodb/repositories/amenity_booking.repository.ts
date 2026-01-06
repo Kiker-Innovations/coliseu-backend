@@ -21,7 +21,11 @@ export interface AmenityBookingListFilters {
 
 export class AmenityBookingRepository
 	implements
-		IRepository<AmenityBookingEntity, CreateAmenityBookingEntity, UpdateAmenityBookingEntity>
+		IRepository<
+			AmenityBookingEntity,
+			CreateAmenityBookingEntity,
+			UpdateAmenityBookingEntity
+		>
 {
 	private collection: Collection<AmenityBookingEntity>;
 
@@ -32,7 +36,9 @@ export class AmenityBookingRepository
 		);
 	}
 
-	public async create(data: CreateAmenityBookingEntity): Promise<AmenityBookingEntity> {
+	public async create(
+		data: CreateAmenityBookingEntity,
+	): Promise<AmenityBookingEntity> {
 		const now = getDate();
 		const amenityBookingEntity: AmenityBookingEntity = {
 			_id: randomUUID(),
@@ -87,14 +93,14 @@ export class AmenityBookingRepository
 	): Promise<{ bookings: AmenityBookingEntity[]; total: number }> {
 		// Se filters já é um objeto de query MongoDB (com $in, $nin, etc), usar diretamente
 		let query: any;
-		
+
 		if (filters.amenityId?.$in || filters.status?.$nin || filters.$or) {
 			// É uma query MongoDB complexa, usar diretamente
 			query = filters;
 		} else {
 			// É um filtro simples, construir query
 			query = {};
-			
+
 			if (filters.amenityId) {
 				query.amenityId = filters.amenityId;
 			}
@@ -131,7 +137,7 @@ export class AmenityBookingRepository
 
 		// Aplicar paginação
 		let cursor = this.collection.find(query).sort({ startDate: 1 });
-		
+
 		if (page !== undefined && limit !== undefined) {
 			const skip = (page - 1) * limit;
 			cursor = cursor.skip(skip).limit(limit);
@@ -150,7 +156,12 @@ export class AmenityBookingRepository
 	): Promise<AmenityBookingEntity[]> {
 		const query: any = {
 			amenityId,
-			status: { $in: [AmenityBookingStatusEnum.PENDENTE, AmenityBookingStatusEnum.CONFIRMADO] },
+			status: {
+				$in: [
+					AmenityBookingStatusEnum.PENDENTE,
+					AmenityBookingStatusEnum.CONFIRMADO,
+				],
+			},
 			$or: [
 				// Booking starts during another booking
 				{
@@ -190,4 +201,3 @@ export class AmenityBookingRepository
 		return await this.collection.find(query).toArray();
 	}
 }
-

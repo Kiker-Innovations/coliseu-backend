@@ -30,9 +30,18 @@ export class AmenityService {
 			name: amenityCreateDto.name,
 			description: amenityCreateDto.description,
 			type: amenityCreateDto.type, // Sempre incluir o tipo se fornecido
-			value: amenityCreateDto.type === "AREA_COMUM" ? undefined : amenityCreateDto.value,
-			fineValue: amenityCreateDto.type === "AREA_COMUM" ? undefined : amenityCreateDto.fineValue,
-			nonComplianceFine: amenityCreateDto.type === "AREA_COMUM" ? undefined : amenityCreateDto.nonComplianceFine,
+			value:
+				amenityCreateDto.type === "AREA_COMUM"
+					? undefined
+					: amenityCreateDto.value,
+			fineValue:
+				amenityCreateDto.type === "AREA_COMUM"
+					? undefined
+					: amenityCreateDto.fineValue,
+			nonComplianceFine:
+				amenityCreateDto.type === "AREA_COMUM"
+					? undefined
+					: amenityCreateDto.nonComplianceFine,
 			maxResidents: amenityCreateDto.maxResidents,
 			usageRules: amenityCreateDto.usageRules,
 			bookingType: amenityCreateDto.bookingType,
@@ -53,9 +62,9 @@ export class AmenityService {
 		};
 	}
 
-	public async getAmenity(amenityId: string): Promise<
-		HttpResponse<AmenityEntity>
-	> {
+	public async getAmenity(
+		amenityId: string,
+	): Promise<HttpResponse<AmenityEntity>> {
 		const amenity = await this.amenityRepository.findById(amenityId);
 
 		if (!amenity) {
@@ -140,9 +149,7 @@ export class AmenityService {
 		};
 	}
 
-	public async deleteAmenity(
-		amenityId: string,
-	): Promise<HttpResponse<null>> {
+	public async deleteAmenity(amenityId: string): Promise<HttpResponse<null>> {
 		const amenity = await this.amenityRepository.findById(amenityId);
 
 		if (!amenity) {
@@ -184,4 +191,3 @@ export class AmenityService {
 		};
 	}
 }
-

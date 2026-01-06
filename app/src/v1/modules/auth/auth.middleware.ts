@@ -25,7 +25,7 @@ export class AuthMiddleware {
 	): Promise<void> => {
 		try {
 			const authHeader = request.headers.authorization;
-			
+
 			if (!authHeader) {
 				throw httpException(
 					"Token de autenticação não fornecido",
@@ -55,10 +55,7 @@ export class AuthMiddleware {
 		(allowedUserTypes: UserTypeEnumType[]) =>
 		async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
 			if (!request.user) {
-				throw httpException(
-					"Usuário não autenticado",
-					httpStatus.UNAUTHORIZED,
-				);
+				throw httpException("Usuário não autenticado", httpStatus.UNAUTHORIZED);
 			}
 
 			if (!allowedUserTypes.includes(request.user.userType)) {

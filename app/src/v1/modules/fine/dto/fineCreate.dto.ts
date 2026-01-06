@@ -22,8 +22,6 @@ export const fineCreateSchema = z.object({
 
 export type FineCreateDto = z.infer<typeof fineCreateSchema>;
 
-export const transformCreateFineDto = (
-	data: FineCreateDto
-): FineCreateDto => {
+export const transformCreateFineDto = (data: FineCreateDto): FineCreateDto => {
 	return fineCreateSchema.parse(data);
 };

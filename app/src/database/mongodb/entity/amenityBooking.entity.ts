@@ -7,9 +7,6 @@ export interface AmenityBookingEntity {
 	residentId?: string;
 	startDate: Date;
 	endDate: Date;
-	startTime?: string; // Formato HH:mm para reservas por horas
-	endTime?: string; // Formato HH:mm para reservas por horas
-	numberOfHours?: number; // Número de horas agendadas (para POR_HORAS)
 	numberOfDays?: number; // Número de dias agendados (para DIARIO)
 	status: AmenityBookingStatusEnumType;
 	totalValue: number;
@@ -28,4 +25,3 @@ export type CreateAmenityBookingEntity = Omit<
 export type UpdateAmenityBookingEntity = Partial<
 	Omit<AmenityBookingEntity, "_id" | "createdAt">
 >;
-

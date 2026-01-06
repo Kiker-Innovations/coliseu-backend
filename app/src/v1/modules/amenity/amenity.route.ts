@@ -115,7 +115,8 @@ export class AmenityRouteV1 {
 			schema: {
 				tags: ["Amenities"],
 				summary: "Get active commodities for resident",
-				description: "Lista todas as comodidades ativas do tipo COMODIDADE para residentes",
+				description:
+					"Lista todas as comodidades ativas do tipo COMODIDADE para residentes",
 				...this.amenitySchema.getActiveCommoditiesForResident,
 			},
 			handler: this.amenityController.getActiveCommoditiesForResident.bind(
@@ -136,4 +137,3 @@ export class AmenityRouteV1 {
 		];
 	};
 }
-

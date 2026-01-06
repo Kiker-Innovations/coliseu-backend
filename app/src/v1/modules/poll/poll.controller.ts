@@ -1,10 +1,7 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import httpStatus from "http-status";
 import type { MongoClient } from "mongodb";
-import {
-	transformCreatePollDto,
-	transformCancelPollDto,
-} from "./dto";
+import { transformCreatePollDto, transformCancelPollDto } from "./dto";
 import { PollService } from "./poll.service";
 import { PollStatusEnum } from "@/v1/enum/pollStatus.enum";
 import { httpException } from "@/config/error";
@@ -22,14 +19,14 @@ export class PollController {
 		reply: FastifyReply,
 	): Promise<void> {
 		if (request.user.userType !== UserTypeEnum.ADMIN) {
-            throw httpException(
-                "Apenas administradores podem criar enquetes",
-                httpStatus.FORBIDDEN,
-            );
-        }
+			throw httpException(
+				"Apenas administradores podem criar enquetes",
+				httpStatus.FORBIDDEN,
+			);
+		}
 
 		const buildingId = request.user.buildingId;
-		
+
 		return reply
 			.code(httpStatus.CREATED)
 			.send(
@@ -45,12 +42,12 @@ export class PollController {
 		reply: FastifyReply,
 	): Promise<void> {
 		if (request.user.userType === UserTypeEnum.CONCIERGE) {
-            throw httpException(
-                `${request.user.userType} não tem permissão para visualizar enquetes`,
-                httpStatus.FORBIDDEN,
-            );
-        }
-		
+			throw httpException(
+				`${request.user.userType} não tem permissão para visualizar enquetes`,
+				httpStatus.FORBIDDEN,
+			);
+		}
+
 		const buildingId = request.user.buildingId;
 		const { status } = request.query as {
 			status?: string | string[];
@@ -60,8 +57,8 @@ export class PollController {
 		if (Array.isArray(status)) {
 			statusArray = status;
 		} else if (status) {
-			statusArray = status.includes(",") 
-				? status.split(",").map(s => s.trim())
+			statusArray = status.includes(",")
+				? status.split(",").map((s) => s.trim())
 				: [status];
 		}
 
@@ -80,26 +77,23 @@ export class PollController {
 		return reply.status(httpStatus.OK).send(result);
 	}
 
-
 	public async getActivePollsStats(
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
 		if (request.user.userType === UserTypeEnum.CONCIERGE) {
-            throw httpException(
-                "Apenas administradores e residentes podem visualizar estatísticas de enquetes",
-                httpStatus.FORBIDDEN,
-            );
-        }
+			throw httpException(
+				"Apenas administradores e residentes podem visualizar estatísticas de enquetes",
+				httpStatus.FORBIDDEN,
+			);
+		}
 
 		try {
 			const buildingId = request.user.buildingId;
 
 			return reply
 				.status(httpStatus.OK)
-				.send(
-					await this.pollService.getActivePollsStats(buildingId),
-				);
+				.send(await this.pollService.getActivePollsStats(buildingId));
 		} catch (error: any) {
 			if (error.issues) {
 				// Zod validation error
@@ -121,11 +115,11 @@ export class PollController {
 		reply: FastifyReply,
 	): Promise<void> {
 		if (request.user.userType !== UserTypeEnum.ADMIN) {
-            throw httpException(
-                "Apenas administradores podem cancelar enquetes",
-                httpStatus.FORBIDDEN,
-            );
-        }
+			throw httpException(
+				"Apenas administradores podem cancelar enquetes",
+				httpStatus.FORBIDDEN,
+			);
+		}
 
 		const { id } = request.params as { id: string };
 		const buildingId = request.user.buildingId;
@@ -141,4 +135,3 @@ export class PollController {
 			);
 	}
 }
-

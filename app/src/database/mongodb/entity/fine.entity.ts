@@ -13,6 +13,4 @@ export type CreateFineEntity = Omit<
 	"_id" | "createdAt" | "updatedAt"
 >;
 
-export type UpdateFineEntity = Partial<
-	Omit<FineEntity, "_id" | "createdAt">
->;
+export type UpdateFineEntity = Partial<Omit<FineEntity, "_id" | "createdAt">>;

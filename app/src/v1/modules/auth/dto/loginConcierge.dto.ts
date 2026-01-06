@@ -13,4 +13,3 @@ export type LoginConciergeDto = z.infer<typeof loginConciergeSchema>;
 export function transformLoginConciergeDto(data: unknown): LoginConciergeDto {
 	return loginConciergeSchema.parse(data);
 }
-

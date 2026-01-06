@@ -59,7 +59,7 @@ export class AmenityRepository
 		const updateData: any = {
 			updatedAt: getDate(),
 		};
-		
+
 		const unsetFields: any = {};
 
 		Object.keys(data).forEach((key) => {
@@ -96,4 +96,3 @@ export class AmenityRepository
 		return await this.collection.countDocuments(filter || {});
 	}
 }
-

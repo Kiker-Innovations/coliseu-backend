@@ -13,7 +13,8 @@ export class VisitSchema {
 				apartmentId: {
 					type: "string",
 					format: "uuid",
-					description: "ID do apartamento (opcional - pode ser para piscina, salão de jogos, etc.)",
+					description:
+						"ID do apartamento (opcional - pode ser para piscina, salão de jogos, etc.)",
 					example: "b2ce3bcd-6309-42a5-861c-33bdefb7ab33",
 				},
 				note: {
@@ -267,4 +268,3 @@ export class VisitSchema {
 		},
 	};
 }
-

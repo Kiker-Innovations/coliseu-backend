@@ -38,7 +38,7 @@ export class NoticeService {
 		}>
 	> {
 		const building = await this.buildingRepository.findById(
-			noticeCreateDto.buildingId
+			noticeCreateDto.buildingId,
 		);
 
 		if (!building) {
@@ -55,7 +55,7 @@ export class NoticeService {
 			noticeCreateDto.buildingId,
 			noticeId,
 			fileExtension || "pdf",
-			noticeCreateDto.mimeType
+			noticeCreateDto.mimeType,
 		);
 
 		const noticeEntity: CreateNoticeEntity = {
@@ -77,7 +77,7 @@ export class NoticeService {
 			createdNotice.title,
 			createdNotice.content,
 			createdNotice.url,
-			createdNotice.fileName ? true : false
+			createdNotice.fileName ? true : false,
 		);
 
 		return {
@@ -99,7 +99,7 @@ export class NoticeService {
 		buildingId: string,
 		noticeId: string,
 		fileExtension: string,
-		mimeType: string
+		mimeType: string,
 	): Promise<{
 		presignedUrl: string;
 		s3Key: string;
@@ -110,7 +110,7 @@ export class NoticeService {
 		const presignedUrl = await this.s3Provider.getPresignedUrlForPut(
 			s3Key,
 			mimeType,
-			300 // 5 minutes
+			300, // 5 minutes
 		);
 		const publicUrl = this.s3Provider.getPublicUrl(s3Key);
 
@@ -125,7 +125,7 @@ export class NoticeService {
 		buildingId: string,
 		status?: NoticeStatusEnumType,
 		page?: number,
-		limit?: number
+		limit?: number,
 	): Promise<
 		HttpResponse<{
 			data: Array<{
@@ -156,7 +156,7 @@ export class NoticeService {
 				status,
 			},
 			pageNumber,
-			limitNumber
+			limitNumber,
 		);
 
 		return {
@@ -219,7 +219,7 @@ export class NoticeService {
 	public async deleteNotice(
 		noticeId: string,
 		deletedNote: string,
-		buildingId: string
+		buildingId: string,
 	): Promise<HttpResponse<null>> {
 		const notice = await this.noticeRepository.findById(noticeId);
 
@@ -230,14 +230,14 @@ export class NoticeService {
 		if (notice.buildingId !== buildingId) {
 			throw httpException(
 				"Aviso não pertence ao seu edifício",
-				httpStatus.FORBIDDEN
+				httpStatus.FORBIDDEN,
 			);
 		}
 
 		if (notice.status !== "ATIVO") {
 			throw httpException(
 				"Apenas avisos ativos podem ser deletados",
-				httpStatus.BAD_REQUEST
+				httpStatus.BAD_REQUEST,
 			);
 		}
 
@@ -246,7 +246,7 @@ export class NoticeService {
 		if (!deleted) {
 			throw httpException(
 				"Erro ao deletar aviso",
-				httpStatus.INTERNAL_SERVER_ERROR
+				httpStatus.INTERNAL_SERVER_ERROR,
 			);
 		}
 
@@ -262,7 +262,7 @@ export class NoticeService {
 		noticeTitle: string,
 		noticeContent: string,
 		noticeUrl: string,
-		hasAttachment: boolean
+		hasAttachment: boolean,
 	): Promise<void> {
 		try {
 			const building = await this.buildingRepository.findById(buildingId);
@@ -284,7 +284,8 @@ export class NoticeService {
 			const noticeEmail = new NoticeEmail();
 			// URL do aviso no frontend - aponta para a página de avisos do residente
 			// A URL pode ser ajustada conforme a configuração do frontend
-			const frontendBaseUrl = process.env.FRONTEND_URL || "http://localhost:8080";
+			const frontendBaseUrl =
+				process.env.FRONTEND_URL || "http://localhost:8080";
 			const frontendUrl = `${frontendBaseUrl}/notices`;
 
 			for (const resident of residents) {
@@ -295,16 +296,15 @@ export class NoticeService {
 					noticeTitle,
 					noticeContent,
 					frontendUrl,
-					hasAttachment
+					hasAttachment,
 				);
 			}
 
 			console.log(
-				`✅ Notice notification sent to ${residents.length} residents`
+				`✅ Notice notification sent to ${residents.length} residents`,
 			);
 		} catch (error) {
 			console.error(`❌ Error sending notice notifications: ${error}`);
 		}
 	}
 }
-

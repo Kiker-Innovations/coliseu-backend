@@ -13,4 +13,3 @@ export type LoginAdminDto = z.infer<typeof loginAdminSchema>;
 export function transformLoginAdminDto(data: unknown): LoginAdminDto {
 	return loginAdminSchema.parse(data);
 }
-

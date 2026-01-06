@@ -18,7 +18,7 @@ export class NoticeRepository
 	constructor(mongoClient: MongoClient) {
 		const database = mongoClient.db(env.databases.mongodb.database);
 		this.collection = database.collection<NoticeEntity>(
-			env.databases.mongodb.collections.notices
+			env.databases.mongodb.collections.notices,
 		);
 	}
 
@@ -39,7 +39,7 @@ export class NoticeRepository
 	}
 
 	public async findOne(
-		filter: Partial<NoticeEntity>
+		filter: Partial<NoticeEntity>,
 	): Promise<NoticeEntity | null> {
 		return await this.collection.findOne({
 			...filter,
@@ -48,7 +48,7 @@ export class NoticeRepository
 	}
 
 	public async findMany(
-		filter?: Partial<NoticeEntity>
+		filter?: Partial<NoticeEntity>,
 	): Promise<NoticeEntity[]> {
 		const query = {
 			...(filter || {}),
@@ -59,7 +59,7 @@ export class NoticeRepository
 
 	public async findManyByBuildingId(
 		buildingId: string,
-		status?: NoticeStatusEnumType
+		status?: NoticeStatusEnumType,
 	): Promise<NoticeEntity[]> {
 		const query: any = {
 			buildingId,
@@ -69,10 +69,7 @@ export class NoticeRepository
 			query.status = status;
 		}
 
-		return await this.collection
-			.find(query)
-			.sort({ createdAt: -1 })
-			.toArray();
+		return await this.collection.find(query).sort({ createdAt: -1 }).toArray();
 	}
 
 	public async listWithFilters(
@@ -81,7 +78,7 @@ export class NoticeRepository
 			status?: NoticeStatusEnumType;
 		},
 		page?: number,
-		limit?: number
+		limit?: number,
 	): Promise<{ notices: NoticeEntity[]; total: number }> {
 		const query: any = {
 			buildingId: filters.buildingId,
@@ -109,12 +106,12 @@ export class NoticeRepository
 
 	public async update(
 		_id: string,
-		data: UpdateNoticeEntity
+		data: UpdateNoticeEntity,
 	): Promise<NoticeEntity | null> {
 		const result = await this.collection.findOneAndUpdate(
 			{ _id, deletedAt: { $exists: false } },
 			{ $set: data },
-			{ returnDocument: "after" }
+			{ returnDocument: "after" },
 		);
 
 		return result || null;
@@ -130,10 +127,9 @@ export class NoticeRepository
 		const result = await this.collection.findOneAndUpdate(
 			{ _id },
 			{ $set: updateData },
-			{ returnDocument: "after" }
+			{ returnDocument: "after" },
 		);
 
 		return result !== null;
 	}
 }
-

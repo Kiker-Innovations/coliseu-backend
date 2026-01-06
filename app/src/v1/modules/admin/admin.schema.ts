@@ -25,11 +25,6 @@ export class AdminSchema {
 					description: "Email do administrador",
 					example: "admin@example.com",
 				},
-				phone: {
-					type: "string",
-					description: "Telefone do administrador (formato internacional: +5511999999999)",
-					example: "+5511999999999",
-				},
 				password: {
 					type: "string",
 					description:
@@ -106,9 +101,10 @@ export class AdminSchema {
 						properties: {
 							name: { type: "string" },
 							email: { type: "string" },
-							phone: { type: "string", nullable: true },
-							photoUrl: { type: "string", nullable: true },
-							status: { type: "string", description: "Status do administrador (INATIVO, ATIVO)" },
+							status: {
+								type: "string",
+								description: "Status do administrador (INATIVO, ATIVO)",
+							},
 						},
 					},
 				},
@@ -148,16 +144,6 @@ export class AdminSchema {
 					description: "Nome completo do administrador",
 					example: "João Silva",
 				},
-				phone: {
-					type: "string",
-					description: "Telefone do administrador (formato internacional: +5511999999999)",
-					example: "+5511999999999",
-				},
-				photoUrl: {
-					type: "string",
-					nullable: true,
-					description: "URL da foto do administrador",
-				},
 			},
 		},
 		response: {
@@ -172,9 +158,10 @@ export class AdminSchema {
 						properties: {
 							name: { type: "string" },
 							email: { type: "string" },
-							phone: { type: "string", nullable: true },
-							photoUrl: { type: "string", nullable: true },
-							status: { type: "string", description: "Status do administrador (INATIVO, ATIVO)" },
+							status: {
+								type: "string",
+								description: "Status do administrador (INATIVO, ATIVO)",
+							},
 						},
 					},
 				},
@@ -293,65 +280,6 @@ export class AdminSchema {
 		},
 	};
 
-	public generatePresignedUrl = protectedSchema({
-		params: {
-			type: "object",
-			required: ["id"],
-			properties: {
-				id: {
-					type: "string",
-					description: "ID do administrador",
-				},
-			},
-		},
-		body: {
-			type: "object",
-			properties: {
-				fileExtension: {
-					type: "string",
-					description: "Extensão do arquivo (jpg, png, etc)",
-					example: "jpg",
-					default: "jpg",
-				},
-			},
-		},
-		response: {
-			200: {
-				description: "URL pré-assinada gerada com sucesso",
-				type: "object",
-				properties: {
-					success: { type: "boolean" },
-					data: {
-						type: "object",
-						properties: {
-							presignedUrl: {
-								type: "string",
-								description: "URL para upload via PUT",
-							},
-							photoUrl: {
-								type: "string",
-								description: "URL pública da foto após upload",
-							},
-							s3Key: { type: "string", description: "Chave do objeto no S3" },
-							instructions: { type: "string" },
-							expiresIn: { type: "string", description: "Tempo de expiração" },
-						},
-					},
-				},
-			},
-			404: {
-				description: "Administrador não encontrado",
-				type: "object",
-				properties: {
-					success: { type: "boolean" },
-					message: { type: "string" },
-				},
-			},
-			...unauthorizedResponse,
-			...forbiddenResponse,
-		},
-	});
-
 	public changePassword = protectedSchema({
 		body: {
 			type: "object",
@@ -363,7 +291,8 @@ export class AdminSchema {
 				},
 				newPassword: {
 					type: "string",
-					description: "Nova senha (mínimo 8 caracteres, com maiúscula, minúscula e caractere especial)",
+					description:
+						"Nova senha (mínimo 8 caracteres, com maiúscula, minúscula e caractere especial)",
 					minLength: 8,
 				},
 				confirmPassword: {
@@ -460,17 +389,13 @@ export class AdminSchema {
 			type: "object",
 			properties: {
 				page: {
-					oneOf: [
-						{ type: "number", minimum: 1 },
-						{ type: "string", pattern: "^[0-9]+$" },
-					],
+					type: "string",
+					pattern: "^[0-9]+$",
 					description: "Número da página (padrão: 1)",
 				},
 				limit: {
-					oneOf: [
-						{ type: "number", minimum: 1, maximum: 100 },
-						{ type: "string", pattern: "^[0-9]+$" },
-					],
+					type: "string",
+					pattern: "^[0-9]+$",
 					description: "Itens por página (padrão: 10)",
 				},
 				search: {
@@ -484,7 +409,13 @@ export class AdminSchema {
 				},
 				status: {
 					type: "string",
-					enum: ["A_CONFIRMACAO_EMAIL", "A_VALIDACAO", "REJEITADO", "INATIVO", "ATIVO"],
+					enum: [
+						"A_CONFIRMACAO_EMAIL",
+						"A_VALIDACAO",
+						"REJEITADO",
+						"INATIVO",
+						"ATIVO",
+					],
 					description: "Filtrar por status",
 				},
 			},
@@ -883,4 +814,3 @@ export class AdminSchema {
 		},
 	};
 }
-

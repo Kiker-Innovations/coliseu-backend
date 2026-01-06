@@ -8,7 +8,7 @@ import { AdminRepository } from "../../../database/mongodb/repositories/admin.re
 import { ResidentRepository } from "../../../database/mongodb/repositories/resident.repository";
 import { ApartmentRepository } from "../../../database/mongodb/repositories/apartment.repository";
 import { BuildingRepository } from "../../../database/mongodb/repositories/building.repository";
-import { S3Provider } from "../../../providers/aws/s3.provider";
+import { RoleRepository } from "../../../database/mongodb/repositories/role.repository";
 import type {
 	AdminConfirmDto,
 	AdminCreateDto,
@@ -36,14 +36,14 @@ export class AdminService {
 	private residentRepository: ResidentRepository;
 	private apartmentRepository: ApartmentRepository;
 	private buildingRepository: BuildingRepository;
-	private s3Provider: S3Provider;
+	private roleRepository: RoleRepository;
 
 	constructor(mongoClient: MongoClient) {
 		this.adminRepository = new AdminRepository(mongoClient);
 		this.residentRepository = new ResidentRepository(mongoClient);
 		this.apartmentRepository = new ApartmentRepository(mongoClient);
 		this.buildingRepository = new BuildingRepository(mongoClient);
-		this.s3Provider = new S3Provider();
+		this.roleRepository = new RoleRepository(mongoClient);
 	}
 
 	public async createAdmin(adminCreateDto: AdminCreateDto): Promise<
@@ -66,11 +66,20 @@ export class AdminService {
 		const passwordHash = await hashPassword(adminCreateDto.password);
 		const adminCode = await generateCode();
 
+		// Buscar role "admin"
+		const adminRole = await this.roleRepository.findByName("admin");
+		if (!adminRole) {
+			throw httpException(
+				"Role 'admin' não encontrado no sistema.",
+				httpStatus.NOT_FOUND,
+			);
+		}
+
 		const adminEntity: CreateAdminEntity = {
 			buildingId: adminCreateDto.buildingId,
+			roleId: adminRole._id,
 			name: adminCreateDto.name,
 			email: adminCreateDto.email,
-			phone: adminCreateDto.phone,
 			passwordHash,
 			status: AdminStatusEnum.INATIVO,
 			adminCode,
@@ -115,8 +124,6 @@ export class AdminService {
 			data: {
 				name: admin.name,
 				email: admin.email,
-				phone: admin.phone,
-				photoUrl: admin.photoUrl || null,
 				status: admin.status,
 			},
 		};
@@ -127,8 +134,6 @@ export class AdminService {
 			id: string;
 			email: string;
 			name: string;
-			phone?: string;
-			photoUrl?: string | null;
 			buildingName?: string;
 			buildingId?: string;
 		}>
@@ -148,8 +153,6 @@ export class AdminService {
 				id: admin._id,
 				email: admin.email,
 				name: admin.name,
-				phone: admin.phone,
-				photoUrl: admin.photoUrl || null,
 				buildingName: building?.name,
 				buildingId: admin.buildingId,
 			},
@@ -186,22 +189,11 @@ export class AdminService {
 			updateData.email = adminUpdateDto.email;
 		}
 
-		if (adminUpdateDto.phone !== undefined) {
-			updateData.phone = adminUpdateDto.phone;
-		}
-
 		if (adminUpdateDto.buildingId) {
 			updateData.buildingId = adminUpdateDto.buildingId;
 		}
 
-		if (adminUpdateDto.photoUrl !== undefined) {
-			updateData.photoUrl = adminUpdateDto.photoUrl;
-		}
-
-		const updatedAdmin = await this.adminRepository.update(
-			adminId,
-			updateData,
-		);
+		const updatedAdmin = await this.adminRepository.update(adminId, updateData);
 
 		if (!updatedAdmin) {
 			throw httpException(
@@ -216,8 +208,6 @@ export class AdminService {
 			data: {
 				name: updatedAdmin.name,
 				email: updatedAdmin.email,
-				phone: updatedAdmin.phone,
-				photoUrl: updatedAdmin.photoUrl || null,
 				status: updatedAdmin.status,
 			},
 		};
@@ -370,21 +360,28 @@ export class AdminService {
 			limit?: number;
 			search?: string;
 			filterBy?: "name" | "phone" | "email" | "apartment";
-			status?: "A_CONFIRMACAO_EMAIL" | "A_VALIDACAO" | "REJEITADO" | "INATIVO" | "ATIVO";
+			status?:
+				| "A_CONFIRMACAO_EMAIL"
+				| "A_VALIDACAO"
+				| "REJEITADO"
+				| "INATIVO"
+				| "ATIVO";
 		},
-	): Promise<HttpResponse<{
-		data: Array<{
-			_id: string;
-			name: string;
-			email: string;
-			phone?: string;
-			apartmentId?: string;
-			apartmentNumber?: string;
-			status: string;
-		}>;
-		total: number;
-		totalPages: number;
-	}>> {
+	): Promise<
+		HttpResponse<{
+			data: Array<{
+				_id: string;
+				name: string;
+				email: string;
+				phone?: string;
+				apartmentId?: string;
+				apartmentNumber?: string;
+				status: string;
+			}>;
+			total: number;
+			totalPages: number;
+		}>
+	> {
 		const residents = await this.residentRepository.findManyWithApartments(
 			buildingId,
 			params,
@@ -429,32 +426,39 @@ export class AdminService {
 	public async getResidentById(
 		residentId: string,
 		buildingId: string,
-	): Promise<HttpResponse<{
-		_id: string;
-		name: string;
-		email: string;
-		phone: string;
-		buildingId: string;
-		apartmentId: string;
-		status: string;
-		photoUrl: string | null;
-		residentCode: string;
-		createdAt: string;
-		updatedAt: string;
-		apartment: {
+	): Promise<
+		HttpResponse<{
 			_id: string;
-			number: string;
-			block: string;
-			floor: number;
+			name: string;
+			email: string;
+			phone: string;
+			buildingId: string;
+			apartmentId: string;
 			status: string;
-		} | null;
-	}>> {
+			residentCode: string;
+			createdAt: string;
+			updatedAt: string;
+			apartment: {
+				_id: string;
+				number: string;
+				block: string;
+				floor: number;
+				status: string;
+			} | null;
+		}>
+	> {
 		if (!residentId) {
-			throw httpException("ID do residente é obrigatório", httpStatus.BAD_REQUEST);
+			throw httpException(
+				"ID do residente é obrigatório",
+				httpStatus.BAD_REQUEST,
+			);
 		}
 
 		if (!buildingId) {
-			throw httpException("ID do edifício é obrigatório", httpStatus.BAD_REQUEST);
+			throw httpException(
+				"ID do edifício é obrigatório",
+				httpStatus.BAD_REQUEST,
+			);
 		}
 
 		const resident = await this.residentRepository.findByIdWithApartment(
@@ -476,18 +480,26 @@ export class AdminService {
 	public async approveResident(
 		residentId: string,
 		buildingId: string,
-	): Promise<HttpResponse<{
-		_id: string;
-		name: string;
-		email: string;
-		status: string;
-	}>> {
+	): Promise<
+		HttpResponse<{
+			_id: string;
+			name: string;
+			email: string;
+			status: string;
+		}>
+	> {
 		if (!residentId) {
-			throw httpException("ID do residente é obrigatório", httpStatus.BAD_REQUEST);
+			throw httpException(
+				"ID do residente é obrigatório",
+				httpStatus.BAD_REQUEST,
+			);
 		}
 
 		if (!buildingId) {
-			throw httpException("ID do edifício é obrigatório", httpStatus.BAD_REQUEST);
+			throw httpException(
+				"ID do edifício é obrigatório",
+				httpStatus.BAD_REQUEST,
+			);
 		}
 
 		// Buscar residente
@@ -543,24 +555,35 @@ export class AdminService {
 		buildingId: string,
 		rejectType: string,
 		rejectNote?: string,
-	): Promise<HttpResponse<{
-		_id: string;
-		name: string;
-		email: string;
-		status: string;
-		rejectType: string;
-		rejectNote?: string;
-	}>> {
+	): Promise<
+		HttpResponse<{
+			_id: string;
+			name: string;
+			email: string;
+			status: string;
+			rejectType: string;
+			rejectNote?: string;
+		}>
+	> {
 		if (!residentId) {
-			throw httpException("ID do residente é obrigatório", httpStatus.BAD_REQUEST);
+			throw httpException(
+				"ID do residente é obrigatório",
+				httpStatus.BAD_REQUEST,
+			);
 		}
 
 		if (!buildingId) {
-			throw httpException("ID do edifício é obrigatório", httpStatus.BAD_REQUEST);
+			throw httpException(
+				"ID do edifício é obrigatório",
+				httpStatus.BAD_REQUEST,
+			);
 		}
 
 		if (!rejectType) {
-			throw httpException("Tipo de rejeição é obrigatório", httpStatus.BAD_REQUEST);
+			throw httpException(
+				"Tipo de rejeição é obrigatório",
+				httpStatus.BAD_REQUEST,
+			);
 		}
 
 		// Buscar residente
@@ -620,22 +643,33 @@ export class AdminService {
 		buildingId: string,
 		inactiveType: string,
 		inactiveNote?: string,
-	): Promise<HttpResponse<{
-		_id: string;
-		name: string;
-		email: string;
-		status: string;
-	}>> {
+	): Promise<
+		HttpResponse<{
+			_id: string;
+			name: string;
+			email: string;
+			status: string;
+		}>
+	> {
 		if (!residentId) {
-			throw httpException("ID do residente é obrigatório", httpStatus.BAD_REQUEST);
+			throw httpException(
+				"ID do residente é obrigatório",
+				httpStatus.BAD_REQUEST,
+			);
 		}
 
 		if (!buildingId) {
-			throw httpException("ID do edifício é obrigatório", httpStatus.BAD_REQUEST);
+			throw httpException(
+				"ID do edifício é obrigatório",
+				httpStatus.BAD_REQUEST,
+			);
 		}
 
 		if (!inactiveType) {
-			throw httpException("Tipo de inativação é obrigatório", httpStatus.BAD_REQUEST);
+			throw httpException(
+				"Tipo de inativação é obrigatório",
+				httpStatus.BAD_REQUEST,
+			);
 		}
 
 		const resident = await this.residentRepository.findById(residentId);
@@ -680,18 +714,26 @@ export class AdminService {
 	public async activateResident(
 		residentId: string,
 		buildingId: string,
-	): Promise<HttpResponse<{
-		_id: string;
-		name: string;
-		email: string;
-		status: string;
-	}>> {
+	): Promise<
+		HttpResponse<{
+			_id: string;
+			name: string;
+			email: string;
+			status: string;
+		}>
+	> {
 		if (!residentId) {
-			throw httpException("ID do residente é obrigatório", httpStatus.BAD_REQUEST);
+			throw httpException(
+				"ID do residente é obrigatório",
+				httpStatus.BAD_REQUEST,
+			);
 		}
 
 		if (!buildingId) {
-			throw httpException("ID do edifício é obrigatório", httpStatus.BAD_REQUEST);
+			throw httpException(
+				"ID do edifício é obrigatório",
+				httpStatus.BAD_REQUEST,
+			);
 		}
 
 		const resident = await this.residentRepository.findById(residentId);
@@ -780,73 +822,4 @@ export class AdminService {
 		const bcrypt = await import("bcrypt");
 		return await bcrypt.compare(password, hash);
 	}
-
-	public async generatePresignedUrlForPhoto(
-		adminId: string,
-		fileExtension: string,
-	): Promise<HttpResponse<{
-		presignedUrl: string;
-		photoUrl: string;
-		s3Key: string;
-		instructions: string;
-		expiresIn: string;
-	}>> {
-		const result = await this.generatePresignedUrl(adminId, fileExtension);
-
-		return {
-			success: true,
-			message: "URL pré-assinada gerada com sucesso",
-			data: {
-				presignedUrl: result.presignedUrl,
-				photoUrl: result.publicUrl,
-				s3Key: result.s3Key,
-				instructions:
-					"Use a presignedUrl para fazer upload da foto via PUT request. O photoUrl é a URL pública final da foto.",
-				expiresIn: result.expiresIn,
-			},
-		};
-	}
-
-	private async generatePresignedUrl(
-		adminId: string,
-		fileExtension: string,
-	): Promise<{
-		presignedUrl: string;
-		s3Key: string;
-		expiresIn: string;
-		publicUrl: string;
-	}> {
-		const admin = await this.adminRepository.findById(adminId);
-
-		if (!admin) {
-			throw httpException("Administrador não encontrado", httpStatus.NOT_FOUND);
-		}
-
-		const fileName = `${admin._id}-photo.${fileExtension}`;
-		const s3Key = `admins/${adminId}/${fileName}`;
-
-		const contentTypeMap: Record<string, string> = {
-			jpg: "image/jpeg",
-			jpeg: "image/jpeg",
-			png: "image/png",
-		};
-
-		const contentType =
-			contentTypeMap[fileExtension.toLowerCase()] || "application/octet-stream";
-
-		const presignedUrl = await this.s3Provider.getPresignedUrlForPut(
-			s3Key,
-			contentType,
-			60,
-		);
-		const publicUrl = this.s3Provider.getPublicUrl(s3Key);
-
-		return {
-			presignedUrl,
-			publicUrl,
-			s3Key,
-			expiresIn: `${env.providers.aws.s3.presignedUrlExpiration} segundos`,
-		};
-	}
 }
-

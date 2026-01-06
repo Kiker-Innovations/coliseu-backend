@@ -1,10 +1,7 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import httpStatus from "http-status";
 import type { MongoClient } from "mongodb";
-import {
-	transformCreateBuildingDto,
-	transformUpdateBuildingDto,
-} from "./dto";
+import { transformCreateBuildingDto, transformUpdateBuildingDto } from "./dto";
 import { BuildingService } from "./building.service";
 
 export class BuildingController {
@@ -71,4 +68,3 @@ export class BuildingController {
 			.send(await this.buildingService.deleteBuilding(id));
 	}
 }
-

@@ -6,4 +6,3 @@ export const FromEmailEnum = {
 
 export type FromEmailEnumType =
 	(typeof FromEmailEnum)[keyof typeof FromEmailEnum];
-

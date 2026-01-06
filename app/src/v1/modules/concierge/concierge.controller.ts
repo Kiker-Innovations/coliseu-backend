@@ -11,147 +11,147 @@ import { transformForgetPasswordConciergeDto } from "./dto/conciergeForgetPasswo
 import { transformResetPasswordConciergeDto } from "./dto/conciergeResetPassword.dto";
 
 export class ConciergeController {
-    private conciergeService: ConciergeService;
+	private conciergeService: ConciergeService;
 
-    constructor(mongoClient: MongoClient) {
-        this.conciergeService = new ConciergeService(mongoClient);
-    }
+	constructor(mongoClient: MongoClient) {
+		this.conciergeService = new ConciergeService(mongoClient);
+	}
 
-    public async createConcierge(
-        request: FastifyRequest,
-        reply: FastifyReply,
-    ): Promise<void> {
-        if (request.user.userType !== UserTypeEnum.ADMIN) {
-            throw httpException(
-                "Apenas administradores podem criar porteiros",
-                httpStatus.FORBIDDEN,
-            );
-        }
+	public async createConcierge(
+		request: FastifyRequest,
+		reply: FastifyReply,
+	): Promise<void> {
+		if (request.user.userType !== UserTypeEnum.ADMIN) {
+			throw httpException(
+				"Apenas administradores podem criar porteiros",
+				httpStatus.FORBIDDEN,
+			);
+		}
 
-        const buildingId = request.user.buildingId;
+		const buildingId = request.user.buildingId;
 
-        return reply
-            .code(httpStatus.CREATED)
-            .send(
-                await this.conciergeService.createConcierge(
-                    transformCreateConciergeDto(request.body),
-                    buildingId,
-                ),
-            );
-    }
+		return reply
+			.code(httpStatus.CREATED)
+			.send(
+				await this.conciergeService.createConcierge(
+					transformCreateConciergeDto(request.body),
+					buildingId,
+				),
+			);
+	}
 
-    public async getConcierge(
-        request: FastifyRequest,
-        reply: FastifyReply,
-    ): Promise<void> {
-        if (request.user.userType !== UserTypeEnum.ADMIN) {
-            throw httpException(
-                "Apenas administradores podem visualizar os porteiros",
-                httpStatus.FORBIDDEN,
-            );
-        }
+	public async getConcierge(
+		request: FastifyRequest,
+		reply: FastifyReply,
+	): Promise<void> {
+		if (request.user.userType !== UserTypeEnum.ADMIN) {
+			throw httpException(
+				"Apenas administradores podem visualizar os porteiros",
+				httpStatus.FORBIDDEN,
+			);
+		}
 
-        const { id } = request.params as { id: string };
-        return reply
-            .status(httpStatus.OK)
-            .send(await this.conciergeService.getConcierge(id));
-    }
+		const { id } = request.params as { id: string };
+		return reply
+			.status(httpStatus.OK)
+			.send(await this.conciergeService.getConcierge(id));
+	}
 
-    public async updateConcierge(
-        request: FastifyRequest,
-        reply: FastifyReply,
-    ): Promise<void> {
-        if (request.user.userType !== UserTypeEnum.ADMIN) {
-            throw httpException(
-                "Apenas administradores podem atualizar os porteiros",
-                httpStatus.FORBIDDEN,
-            );
-        }
+	public async updateConcierge(
+		request: FastifyRequest,
+		reply: FastifyReply,
+	): Promise<void> {
+		if (request.user.userType !== UserTypeEnum.ADMIN) {
+			throw httpException(
+				"Apenas administradores podem atualizar os porteiros",
+				httpStatus.FORBIDDEN,
+			);
+		}
 
-        const { id } = request.params as { id: string };
-        return reply
-            .status(httpStatus.OK)
-            .send(
-                await this.conciergeService.updateConcierge(
-                    id,
-                    transformUpdateConciergeDto(request.body),
-                ),
-            );
-    }
+		const { id } = request.params as { id: string };
+		return reply
+			.status(httpStatus.OK)
+			.send(
+				await this.conciergeService.updateConcierge(
+					id,
+					transformUpdateConciergeDto(request.body),
+				),
+			);
+	}
 
-    public async deleteConcierge(
-        request: FastifyRequest,
-        reply: FastifyReply,
-    ): Promise<void> {
-        if (request.user.userType !== UserTypeEnum.ADMIN) {
-            throw httpException(
-                "Apenas administradores podem deletar os porteiros",
-                httpStatus.FORBIDDEN,
-            );
-        }
+	public async deleteConcierge(
+		request: FastifyRequest,
+		reply: FastifyReply,
+	): Promise<void> {
+		if (request.user.userType !== UserTypeEnum.ADMIN) {
+			throw httpException(
+				"Apenas administradores podem deletar os porteiros",
+				httpStatus.FORBIDDEN,
+			);
+		}
 
-        const { id } = request.params as { id: string };
-        return reply
-            .status(httpStatus.OK)
-            .send(await this.conciergeService.deleteConcierge(id));
-    }
+		const { id } = request.params as { id: string };
+		return reply
+			.status(httpStatus.OK)
+			.send(await this.conciergeService.deleteConcierge(id));
+	}
 
-    public async getAllConciergesByBuilding(
-        request: FastifyRequest,
-        reply: FastifyReply,
-    ): Promise<void> {
-        if (request.user.userType !== UserTypeEnum.ADMIN) {
-            throw httpException(
-                "Apenas administradores podem visualizar os porteiros",
-                httpStatus.FORBIDDEN,
-            );
-        }
+	public async getAllConciergesByBuilding(
+		request: FastifyRequest,
+		reply: FastifyReply,
+	): Promise<void> {
+		if (request.user.userType !== UserTypeEnum.ADMIN) {
+			throw httpException(
+				"Apenas administradores podem visualizar os porteiros",
+				httpStatus.FORBIDDEN,
+			);
+		}
 
-        return reply
-            .status(httpStatus.OK)
-            .send(
-                await this.conciergeService.getAllConciergesByBuilding(
-                    request.user.buildingId,
-                ),
-            );
-    }
+		return reply
+			.status(httpStatus.OK)
+			.send(
+				await this.conciergeService.getAllConciergesByBuilding(
+					request.user.buildingId,
+				),
+			);
+	}
 
-    public async confirmConcierge(
-        request: FastifyRequest,
-        reply: FastifyReply,
-    ): Promise<void> {
-        return reply
-            .status(httpStatus.OK)
-            .send(
-                await this.conciergeService.confirmConciergeCode(
-                    transformConfirmConciergeDto(request.body),
-                ),
-            );
-    }
+	public async confirmConcierge(
+		request: FastifyRequest,
+		reply: FastifyReply,
+	): Promise<void> {
+		return reply
+			.status(httpStatus.OK)
+			.send(
+				await this.conciergeService.confirmConciergeCode(
+					transformConfirmConciergeDto(request.body),
+				),
+			);
+	}
 
-    public async forgetPassword(
-        request: FastifyRequest,
-        reply: FastifyReply,
-    ): Promise<void> {
-        return reply
-            .status(httpStatus.OK)
-            .send(
-                await this.conciergeService.forgetPassword(
-                    transformForgetPasswordConciergeDto(request.body),
-                ),
-            );
-    }
+	public async forgetPassword(
+		request: FastifyRequest,
+		reply: FastifyReply,
+	): Promise<void> {
+		return reply
+			.status(httpStatus.OK)
+			.send(
+				await this.conciergeService.forgetPassword(
+					transformForgetPasswordConciergeDto(request.body),
+				),
+			);
+	}
 
-    public async resetPassword(
-        request: FastifyRequest,
-        reply: FastifyReply,
-    ): Promise<void> {
-        return reply
-            .status(httpStatus.OK)
-            .send(
-                await this.conciergeService.resetPassword(
-                    transformResetPasswordConciergeDto(request.body),
-                ),
-            );
-    }
+	public async resetPassword(
+		request: FastifyRequest,
+		reply: FastifyReply,
+	): Promise<void> {
+		return reply
+			.status(httpStatus.OK)
+			.send(
+				await this.conciergeService.resetPassword(
+					transformResetPasswordConciergeDto(request.body),
+				),
+			);
+	}
 }

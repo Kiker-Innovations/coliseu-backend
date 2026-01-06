@@ -13,4 +13,3 @@ export const transformCreateSeasonDto = (
 ): SeasonCreateDto => {
 	return seasonCreateSchema.parse(data);
 };
-

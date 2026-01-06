@@ -1,4 +1,7 @@
-import { ApartmentStatusEnumType, ApartmentStatusEnumValues } from "@/v1/enum/apartmentStatus.enum";
+import {
+	ApartmentStatusEnumType,
+	ApartmentStatusEnumValues,
+} from "@/v1/enum/apartmentStatus.enum";
 import { z } from "zod";
 
 export const apartmentCreateSchema = z.object({
@@ -19,7 +22,9 @@ export const apartmentCreateSchema = z.object({
 		.number({ required_error: "Andar é obrigatório" })
 		.int("Andar deve ser um valor inteiro")
 		.min(0, "Andar deve ser maior ou igual a 0"),
-	status: z.enum(ApartmentStatusEnumValues as [string, ...string[]]).optional() as unknown as z.ZodType<ApartmentStatusEnumType | undefined>,
+	status: z
+		.enum(ApartmentStatusEnumValues as [string, ...string[]])
+		.optional() as unknown as z.ZodType<ApartmentStatusEnumType | undefined>,
 });
 
 export type ApartmentCreateDto = z.infer<typeof apartmentCreateSchema>;
@@ -29,4 +34,3 @@ export const transformCreateApartmentDto = (
 ): ApartmentCreateDto => {
 	return apartmentCreateSchema.parse(data);
 };
-

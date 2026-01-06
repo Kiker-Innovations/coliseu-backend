@@ -35,4 +35,3 @@ export const transformCreatePackageDto = (
 ): PackageCreateDto => {
 	return packageCreateSchema.parse(data);
 };
-

@@ -9,4 +9,3 @@ export {
 	transformUpdateResidentSuggestionDto,
 	type ResidentSuggestionUpdateDto,
 } from "./residentSuggestionUpdate.dto";
-

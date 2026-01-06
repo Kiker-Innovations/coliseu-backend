@@ -22,12 +22,12 @@ export class InfractionAppealRepository
 	constructor(mongoClient: MongoClient) {
 		const database = mongoClient.db(env.databases.mongodb.database);
 		this.collection = database.collection<InfractionAppealEntity>(
-			env.databases.mongodb.collections.infractionAppeals
+			env.databases.mongodb.collections.infractionAppeals,
 		);
 	}
 
 	public async create(
-		data: CreateInfractionAppealEntity
+		data: CreateInfractionAppealEntity,
 	): Promise<InfractionAppealEntity> {
 		const now = getDate();
 		const appealEntity: InfractionAppealEntity = {
@@ -45,20 +45,20 @@ export class InfractionAppealRepository
 	}
 
 	public async findOne(
-		filter: Partial<InfractionAppealEntity>
+		filter: Partial<InfractionAppealEntity>,
 	): Promise<InfractionAppealEntity | null> {
 		return await this.collection.findOne(filter);
 	}
 
 	public async findMany(
-		filter?: Partial<InfractionAppealEntity>
+		filter?: Partial<InfractionAppealEntity>,
 	): Promise<InfractionAppealEntity[]> {
 		return await this.collection.find(filter || {}).toArray();
 	}
 
 	public async update(
 		_id: string,
-		data: UpdateInfractionAppealEntity
+		data: UpdateInfractionAppealEntity,
 	): Promise<InfractionAppealEntity | null> {
 		const updateData = {
 			...data,
@@ -67,7 +67,7 @@ export class InfractionAppealRepository
 		const result = await this.collection.findOneAndUpdate(
 			{ _id },
 			{ $set: updateData },
-			{ returnDocument: "after" }
+			{ returnDocument: "after" },
 		);
 
 		return result || null;
@@ -78,4 +78,3 @@ export class InfractionAppealRepository
 		return result.deletedCount > 0;
 	}
 }
-

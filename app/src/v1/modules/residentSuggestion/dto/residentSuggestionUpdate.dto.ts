@@ -15,11 +15,12 @@ export const residentSuggestionUpdateSchema = z.object({
 		.optional(),
 });
 
-export type ResidentSuggestionUpdateDto = z.infer<typeof residentSuggestionUpdateSchema>;
+export type ResidentSuggestionUpdateDto = z.infer<
+	typeof residentSuggestionUpdateSchema
+>;
 
 export const transformUpdateResidentSuggestionDto = (
 	data: ResidentSuggestionUpdateDto,
 ): ResidentSuggestionUpdateDto => {
 	return residentSuggestionUpdateSchema.parse(data);
 };
-

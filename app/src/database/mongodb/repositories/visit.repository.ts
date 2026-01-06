@@ -90,7 +90,10 @@ export class VisitRepository
 	}
 
 	public async findById(_id: string): Promise<VisitEntity | null> {
-		return await this.collection.findOne({ _id, deletedAt: { $exists: false } });
+		return await this.collection.findOne({
+			_id,
+			deletedAt: { $exists: false },
+		});
 	}
 
 	public async findOne(
@@ -102,9 +105,7 @@ export class VisitRepository
 		});
 	}
 
-	public async findMany(
-		filter?: Partial<VisitEntity>,
-	): Promise<VisitEntity[]> {
+	public async findMany(filter?: Partial<VisitEntity>): Promise<VisitEntity[]> {
 		const query = {
 			...(filter || {}),
 			deletedAt: { $exists: false },
@@ -304,4 +305,3 @@ export class VisitRepository
 			.toArray()) as RecentVisitItem[];
 	}
 }
-

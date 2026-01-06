@@ -13,11 +13,12 @@ export const residentSuggestionCreateSchema = z.object({
 		.trim(),
 });
 
-export type ResidentSuggestionCreateDto = z.infer<typeof residentSuggestionCreateSchema>;
+export type ResidentSuggestionCreateDto = z.infer<
+	typeof residentSuggestionCreateSchema
+>;
 
 export const transformCreateResidentSuggestionDto = (
 	data: ResidentSuggestionCreateDto,
 ): ResidentSuggestionCreateDto => {
 	return residentSuggestionCreateSchema.parse(data);
 };
-

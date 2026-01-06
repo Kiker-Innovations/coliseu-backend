@@ -18,7 +18,8 @@ export class NoticeSchema {
 				content: {
 					type: "string",
 					description: "Conteúdo do aviso",
-					example: "Informamos que será realizada uma reunião de condomínio no próximo sábado às 10h.",
+					example:
+						"Informamos que será realizada uma reunião de condomínio no próximo sábado às 10h.",
 				},
 				fileName: {
 					type: "string",
@@ -234,4 +235,3 @@ export class NoticeSchema {
 		},
 	});
 }
-

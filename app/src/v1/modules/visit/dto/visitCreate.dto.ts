@@ -21,4 +21,3 @@ export type VisitCreateDto = z.infer<typeof visitCreateSchema>;
 export const transformCreateVisitDto = (data: any): VisitCreateDto => {
 	return visitCreateSchema.parse(data);
 };
-

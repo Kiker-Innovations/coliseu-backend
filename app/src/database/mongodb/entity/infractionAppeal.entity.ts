@@ -20,4 +20,3 @@ export type CreateInfractionAppealEntity = Omit<
 export type UpdateInfractionAppealEntity = Partial<
 	Omit<InfractionAppealEntity, "_id" | "createdAt">
 >;
-

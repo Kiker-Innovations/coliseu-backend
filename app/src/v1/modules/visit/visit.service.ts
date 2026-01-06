@@ -59,10 +59,7 @@ export class VisitService {
 				visitCreateDto.apartmentId,
 			);
 			if (!apartment) {
-				throw httpException(
-					"Apartamento não encontrado",
-					httpStatus.NOT_FOUND,
-				);
+				throw httpException("Apartamento não encontrado", httpStatus.NOT_FOUND);
 			}
 			if (apartment.buildingId !== buildingId) {
 				throw httpException(
@@ -144,4 +141,3 @@ export class VisitService {
 		};
 	}
 }
-

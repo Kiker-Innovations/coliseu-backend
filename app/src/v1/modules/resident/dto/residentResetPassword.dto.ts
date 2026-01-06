@@ -33,4 +33,3 @@ export const transformResetPasswordResidentDto = (
 ): ResidentResetPasswordDto => {
 	return residentResetPasswordSchema.parse(data);
 };
-

@@ -2,10 +2,7 @@ export class PackageSchema {
 	public create = {
 		body: {
 			type: "object",
-			required: [
-				"apartmentId",
-				"receiverDate",
-			],
+			required: ["apartmentId", "receiverDate"],
 			properties: {
 				ownerName: {
 					type: "string",
@@ -95,7 +92,8 @@ export class PackageSchema {
 				},
 				days: {
 					type: "number",
-					description: "Número de dias para buscar cancelados (apenas quando status=CANCELADO, padrão: 7)",
+					description:
+						"Número de dias para buscar cancelados (apenas quando status=CANCELADO, padrão: 7)",
 					example: 7,
 					default: 7,
 				},
@@ -381,7 +379,6 @@ export class PackageSchema {
 		},
 	};
 
-
 	public getMyPackages = {
 		query: {
 			type: "object",
@@ -470,7 +467,8 @@ export class PackageSchema {
 	public getMyPackageStats = {
 		response: {
 			200: {
-				description: "Estatísticas de encomendas do morador obtidas com sucesso",
+				description:
+					"Estatísticas de encomendas do morador obtidas com sucesso",
 				type: "object",
 				properties: {
 					success: { type: "boolean" },
@@ -480,7 +478,8 @@ export class PackageSchema {
 						properties: {
 							totalAguardandoRetiradaMes: {
 								type: "number",
-								description: "Total de encomendas aguardando retirada no mês atual",
+								description:
+									"Total de encomendas aguardando retirada no mês atual",
 							},
 							totalEntregues: {
 								type: "number",
@@ -524,4 +523,3 @@ export class PackageSchema {
 		},
 	};
 }
-

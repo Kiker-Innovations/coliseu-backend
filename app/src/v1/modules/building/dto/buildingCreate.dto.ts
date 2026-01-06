@@ -8,7 +8,10 @@ export const buildingCreateSchema = z.object({
 		.trim(),
 	cnpj: z
 		.string({ required_error: "CNPJ é obrigatório" })
-		.regex(/^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/, "CNPJ deve estar no formato 00.000.000/0000-00"),
+		.regex(
+			/^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/,
+			"CNPJ deve estar no formato 00.000.000/0000-00",
+		),
 	state: z
 		.string({ required_error: "Estado é obrigatório" })
 		.length(2, "Estado deve ter 2 caracteres (UF)")
@@ -37,7 +40,10 @@ export const buildingCreateSchema = z.object({
 		.default(""),
 	phone: z
 		.string({ required_error: "Telefone é obrigatório" })
-		.regex(/^\(\d{2}\) \d{4,5}-\d{4}$/, "Telefone deve estar no formato (00) 00000-0000"),
+		.regex(
+			/^\(\d{2}\) \d{4,5}-\d{4}$/,
+			"Telefone deve estar no formato (00) 00000-0000",
+		),
 	floorCount: z
 		.number({ required_error: "Número de andares é obrigatório" })
 		.int("Número de andares deve ser um valor inteiro")
@@ -51,4 +57,3 @@ export const transformCreateBuildingDto = (
 ): BuildingCreateDto => {
 	return buildingCreateSchema.parse(data);
 };
-

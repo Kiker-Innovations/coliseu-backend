@@ -12,4 +12,3 @@ export interface TokenPayload {
 	buildingName?: string;
 	shift?: string;
 }
-

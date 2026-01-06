@@ -5,7 +5,10 @@ import type {
 	AmenityBookingCreateDto,
 	AmenityBookingListQueryDto,
 } from "./dto";
-import { transformCreateAmenityBookingDto, transformAmenityBookingListQueryDto } from "./dto";
+import {
+	transformCreateAmenityBookingDto,
+	transformAmenityBookingListQueryDto,
+} from "./dto";
 import httpStatus from "http-status";
 
 export class AmenityBookingController {
@@ -54,64 +57,14 @@ export class AmenityBookingController {
 		}
 	}
 
-	public async getAvailableTimeSlots(
-		request: FastifyRequest,
-		reply: FastifyReply,
-	): Promise<void> {
-		try {
-			const params = request.params as { id?: string };
-			const query = request.query as { date?: string };
-			const amenityId = params?.id;
-
-			if (!amenityId) {
-				return reply.status(httpStatus.BAD_REQUEST).send({
-					success: false,
-					message: "ID da comodidade não fornecido",
-				});
-			}
-
-			if (!query.date) {
-				return reply.status(httpStatus.BAD_REQUEST).send({
-					success: false,
-					message: "Data não fornecida",
-				});
-			}
-
-			const date = new Date(query.date);
-			if (isNaN(date.getTime())) {
-				return reply.status(httpStatus.BAD_REQUEST).send({
-					success: false,
-					message: "Data inválida",
-				});
-			}
-
-			const result = await this.amenityBookingService.getAvailableTimeSlots(
-				amenityId,
-				date,
-			);
-
-			return reply.status(httpStatus.OK).send(result);
-		} catch (error: any) {
-			if (error.statusCode) {
-				return reply.status(error.statusCode).send({
-					success: false,
-					message: error.message,
-				});
-			}
-			return reply.status(httpStatus.INTERNAL_SERVER_ERROR).send({
-				success: false,
-				message: "Erro interno do servidor ao buscar horários disponíveis",
-			});
-		}
-	}
-
 	public async getAmenityBookings(
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
 		try {
 			const query = request.query as any;
-			const amenityBookingListQueryDto = transformAmenityBookingListQueryDto(query);
+			const amenityBookingListQueryDto =
+				transformAmenityBookingListQueryDto(query);
 
 			// apartmentId é obrigatório - vem do token JWT
 			const apartmentId = request.user?.apartmentId;
@@ -158,7 +111,8 @@ export class AmenityBookingController {
 				});
 			}
 
-			const result = await this.amenityBookingService.cancelAmenityBooking(bookingId);
+			const result =
+				await this.amenityBookingService.cancelAmenityBooking(bookingId);
 
 			return reply.status(httpStatus.OK).send(result);
 		} catch (error: any) {
@@ -189,9 +143,10 @@ export class AmenityBookingController {
 				});
 			}
 
-			const result = await this.amenityBookingService.getAmenityBookingsByBuilding(
-				buildingId,
-			);
+			const result =
+				await this.amenityBookingService.getAmenityBookingsByBuilding(
+					buildingId,
+				);
 
 			return reply.status(httpStatus.OK).send(result);
 		} catch (error: any) {
@@ -209,4 +164,3 @@ export class AmenityBookingController {
 		}
 	}
 }
-

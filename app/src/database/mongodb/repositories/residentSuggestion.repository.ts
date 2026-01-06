@@ -26,7 +26,9 @@ export class ResidentSuggestionRepository
 		);
 	}
 
-	public async create(data: CreateResidentSuggestionEntity): Promise<ResidentSuggestionEntity> {
+	public async create(
+		data: CreateResidentSuggestionEntity,
+	): Promise<ResidentSuggestionEntity> {
 		const now = getDate();
 		const residentSuggestionEntity: ResidentSuggestionEntity = {
 			_id: randomUUID(),
@@ -59,7 +61,9 @@ export class ResidentSuggestionRepository
 		apartmentId: string,
 		actualSeasonId: string,
 	): Promise<ResidentSuggestionEntity[]> {
-		return await this.collection.find({ apartmentId, actualSeasonId}).toArray();
+		return await this.collection
+			.find({ apartmentId, actualSeasonId })
+			.toArray();
 	}
 
 	public async countByApartmentId(apartmentId: string): Promise<number> {

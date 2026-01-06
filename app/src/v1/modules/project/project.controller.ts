@@ -57,10 +57,7 @@ export class ProjectController {
 		return reply
 			.status(httpStatus.OK)
 			.send(
-				await this.projectService.getProjectById(
-					id,
-					request.user.buildingId,
-				),
+				await this.projectService.getProjectById(id, request.user.buildingId),
 			);
 	}
 
@@ -122,11 +119,7 @@ export class ProjectController {
 		return reply
 			.status(httpStatus.OK)
 			.send(
-				await this.projectService.deleteProject(
-					id,
-					request.user.buildingId,
-				),
+				await this.projectService.deleteProject(id, request.user.buildingId),
 			);
 	}
 }
-

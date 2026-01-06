@@ -16,11 +16,12 @@ export const infractionCreateFineSchema = z.object({
 	}),
 });
 
-export type InfractionCreateFineDto = z.infer<typeof infractionCreateFineSchema>;
+export type InfractionCreateFineDto = z.infer<
+	typeof infractionCreateFineSchema
+>;
 
 export const transformCreateInfractionFineDto = (
-	data: InfractionCreateFineDto
+	data: InfractionCreateFineDto,
 ): InfractionCreateFineDto => {
 	return infractionCreateFineSchema.parse(data);
 };
-

@@ -19,4 +19,3 @@ export type CreateApartmentEntity = Omit<
 export type UpdateApartmentEntity = Partial<
 	Omit<ApartmentEntity, "_id" | "createdAt">
 >;
-

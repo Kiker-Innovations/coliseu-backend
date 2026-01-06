@@ -47,7 +47,8 @@ export class BuildingService {
 			floorCount: buildingCreateDto.floorCount,
 		};
 
-		const createdBuilding = await this.buildingRepository.create(buildingEntity);
+		const createdBuilding =
+			await this.buildingRepository.create(buildingEntity);
 
 		return {
 			success: true,
@@ -60,9 +61,9 @@ export class BuildingService {
 		};
 	}
 
-	public async getBuilding(buildingId: string): Promise<
-		HttpResponse<BuildingEntity>
-	> {
+	public async getBuilding(
+		buildingId: string,
+	): Promise<HttpResponse<BuildingEntity>> {
 		const building = await this.buildingRepository.findById(buildingId);
 
 		if (!building) {
@@ -128,9 +129,7 @@ export class BuildingService {
 		};
 	}
 
-	public async deleteBuilding(
-		buildingId: string,
-	): Promise<HttpResponse<null>> {
+	public async deleteBuilding(buildingId: string): Promise<HttpResponse<null>> {
 		const building = await this.buildingRepository.findById(buildingId);
 
 		if (!building) {
@@ -153,4 +152,3 @@ export class BuildingService {
 		};
 	}
 }
-

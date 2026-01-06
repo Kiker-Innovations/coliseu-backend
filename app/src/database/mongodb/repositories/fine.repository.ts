@@ -10,15 +10,14 @@ import type { IRepository } from "../interfaces/IRepository";
 import { getDate } from "@/v1/utils/utils";
 
 export class FineRepository
-	implements
-		IRepository<FineEntity, CreateFineEntity, UpdateFineEntity>
+	implements IRepository<FineEntity, CreateFineEntity, UpdateFineEntity>
 {
 	private collection: Collection<FineEntity>;
 
 	constructor(mongoClient: MongoClient) {
 		const database = mongoClient.db(env.databases.mongodb.database);
 		this.collection = database.collection<FineEntity>(
-			env.databases.mongodb.collections.fines
+			env.databases.mongodb.collections.fines,
 		);
 	}
 
@@ -40,20 +39,18 @@ export class FineRepository
 	}
 
 	public async findOne(
-		filter: Partial<FineEntity>
+		filter: Partial<FineEntity>,
 	): Promise<FineEntity | null> {
 		return await this.collection.findOne(filter);
 	}
 
-	public async findMany(
-		filter?: Partial<FineEntity>
-	): Promise<FineEntity[]> {
+	public async findMany(filter?: Partial<FineEntity>): Promise<FineEntity[]> {
 		return await this.collection.find(filter || {}).toArray();
 	}
 
 	public async update(
 		_id: string,
-		data: UpdateFineEntity
+		data: UpdateFineEntity,
 	): Promise<FineEntity | null> {
 		const updateData = {
 			...data,
@@ -63,7 +60,7 @@ export class FineRepository
 		const result = await this.collection.findOneAndUpdate(
 			{ _id },
 			{ $set: updateData },
-			{ returnDocument: "after" }
+			{ returnDocument: "after" },
 		);
 
 		return result || null;

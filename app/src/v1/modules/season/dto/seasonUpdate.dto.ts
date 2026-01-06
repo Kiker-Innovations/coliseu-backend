@@ -11,4 +11,3 @@ export const transformUpdateSeasonDto = (
 ): SeasonUpdateDto => {
 	return seasonUpdateSchema.parse(data);
 };
-

@@ -13,4 +13,3 @@ export type LoginResidentDto = z.infer<typeof loginResidentSchema>;
 export function transformLoginResidentDto(data: unknown): LoginResidentDto {
 	return loginResidentSchema.parse(data);
 }
-

@@ -55,7 +55,10 @@ export class PackageController {
 		}
 
 		const buildingId = request.user.buildingId;
-		const { status, days } = request.query as { status?: string; days?: string };
+		const { status, days } = request.query as {
+			status?: string;
+			days?: string;
+		};
 		const daysNumber = days ? parseInt(days, 10) : undefined;
 
 		return reply
@@ -210,7 +213,8 @@ export class PackageController {
 
 		return reply
 			.status(httpStatus.OK)
-			.send(await this.packageService.getMyPackageStats(request.user.apartmentId));
+			.send(
+				await this.packageService.getMyPackageStats(request.user.apartmentId),
+			);
 	}
 }
-

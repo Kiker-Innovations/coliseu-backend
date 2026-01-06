@@ -150,7 +150,8 @@ export class ResidentRouteV1 {
 			schema: {
 				tags: ["Residents"],
 				summary: "Get resident status by email",
-				description: "Busca o status e dados básicos do morador por email (público)",
+				description:
+					"Busca o status e dados básicos do morador por email (público)",
 				...this.residentSchema.getStatus,
 			},
 			handler: this.residentController.getResidentStatus.bind(
@@ -166,7 +167,8 @@ export class ResidentRouteV1 {
 			schema: {
 				tags: ["Residents"],
 				summary: "Resend confirmation email",
-				description: "Reenvia o email de confirmação para moradores com status A_CONFIRMACAO_EMAIL (público)",
+				description:
+					"Reenvia o email de confirmação para moradores com status A_CONFIRMACAO_EMAIL (público)",
 				...this.residentSchema.resendConfirmationEmail,
 			},
 			handler: this.residentController.resendConfirmationEmail.bind(
@@ -182,7 +184,8 @@ export class ResidentRouteV1 {
 			schema: {
 				tags: ["Residents"],
 				summary: "Update rejected resident",
-				description: "Atualiza dados de um residente rejeitado e muda status para A_VALIDACAO (público)",
+				description:
+					"Atualiza dados de um residente rejeitado e muda status para A_VALIDACAO (público)",
 				...this.residentSchema.updateRejectedResident,
 			},
 			handler: this.residentController.updateRejectedResident.bind(

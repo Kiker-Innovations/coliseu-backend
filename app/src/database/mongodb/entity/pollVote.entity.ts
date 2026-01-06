@@ -1,4 +1,3 @@
-
 export interface PollVoteEntity {
 	_id: string;
 	pollId: string;
@@ -17,4 +16,3 @@ export type CreatePollVoteEntity = {
 export type UpdatePollVoteEntity = Partial<
 	Pick<PollVoteEntity, "optionId" | "updatedAt">
 >;
-

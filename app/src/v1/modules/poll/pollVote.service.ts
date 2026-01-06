@@ -34,19 +34,13 @@ export class PollVoteService {
 		// Verify resident exists
 		const resident = await this.residentRepository.findById(residentId);
 		if (!resident) {
-			throw httpException(
-				"Morador não encontrado",
-				httpStatus.NOT_FOUND,
-			);
+			throw httpException("Morador não encontrado", httpStatus.NOT_FOUND);
 		}
 
 		// Verify poll exists
 		const poll = await this.pollRepository.findById(pollVoteDto.pollId);
 		if (!poll) {
-			throw httpException(
-				"Enquete não encontrada",
-				httpStatus.NOT_FOUND,
-			);
+			throw httpException("Enquete não encontrada", httpStatus.NOT_FOUND);
 		}
 
 		// Verify poll is active
@@ -67,9 +61,7 @@ export class PollVoteService {
 		}
 
 		// Verify option exists
-		const option = poll.options.find(
-			(opt) => opt.id === pollVoteDto.optionId,
-		);
+		const option = poll.options.find((opt) => opt.id === pollVoteDto.optionId);
 		if (!option) {
 			throw httpException(
 				"Opção não encontrada nesta enquete",
@@ -166,19 +158,13 @@ export class PollVoteService {
 		// Verify resident exists
 		const resident = await this.residentRepository.findById(residentId);
 		if (!resident) {
-			throw httpException(
-				"Morador não encontrado",
-				httpStatus.NOT_FOUND,
-			);
+			throw httpException("Morador não encontrado", httpStatus.NOT_FOUND);
 		}
 
 		// Verify poll exists
 		const poll = await this.pollRepository.findById(pollId);
 		if (!poll) {
-			throw httpException(
-				"Enquete não encontrada",
-				httpStatus.NOT_FOUND,
-			);
+			throw httpException("Enquete não encontrada", httpStatus.NOT_FOUND);
 		}
 
 		// Verify poll is active
@@ -250,19 +236,13 @@ export class PollVoteService {
 		// Verify resident exists
 		const resident = await this.residentRepository.findById(residentId);
 		if (!resident) {
-			throw httpException(
-				"Morador não encontrado",
-				httpStatus.NOT_FOUND,
-			);
+			throw httpException("Morador não encontrado", httpStatus.NOT_FOUND);
 		}
 
 		// Verify poll exists
 		const poll = await this.pollRepository.findById(pollId);
 		if (!poll) {
-			throw httpException(
-				"Enquete não encontrada",
-				httpStatus.NOT_FOUND,
-			);
+			throw httpException("Enquete não encontrada", httpStatus.NOT_FOUND);
 		}
 
 		// Get vote if exists
@@ -292,4 +272,3 @@ export class PollVoteService {
 		};
 	}
 }
-

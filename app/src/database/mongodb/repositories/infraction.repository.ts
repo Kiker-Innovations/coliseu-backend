@@ -11,14 +11,18 @@ import { getDate } from "@/v1/utils/utils";
 
 export class InfractionRepository
 	implements
-		IRepository<InfractionEntity, CreateInfractionEntity, UpdateInfractionEntity>
+		IRepository<
+			InfractionEntity,
+			CreateInfractionEntity,
+			UpdateInfractionEntity
+		>
 {
 	private collection: Collection<InfractionEntity>;
 
 	constructor(mongoClient: MongoClient) {
 		const database = mongoClient.db(env.databases.mongodb.database);
 		this.collection = database.collection<InfractionEntity>(
-			env.databases.mongodb.collections.infractions
+			env.databases.mongodb.collections.infractions,
 		);
 	}
 
@@ -40,20 +44,20 @@ export class InfractionRepository
 	}
 
 	public async findOne(
-		filter: Partial<InfractionEntity>
+		filter: Partial<InfractionEntity>,
 	): Promise<InfractionEntity | null> {
 		return await this.collection.findOne(filter);
 	}
 
 	public async findMany(
-		filter?: Partial<InfractionEntity>
+		filter?: Partial<InfractionEntity>,
 	): Promise<InfractionEntity[]> {
 		return await this.collection.find(filter || {}).toArray();
 	}
 
 	public async findManySortedByDate(
 		filter?: Partial<InfractionEntity>,
-		sortOrder: 1 | -1 = -1
+		sortOrder: 1 | -1 = -1,
 	): Promise<InfractionEntity[]> {
 		return await this.collection
 			.find(filter || {})
@@ -63,11 +67,15 @@ export class InfractionRepository
 
 	public async findManySortedByDateWithFine(
 		filter?: Partial<InfractionEntity>,
-		sortOrder: 1 | -1 = -1
-	): Promise<Array<InfractionEntity & {
-		fineName?: string;
-		fineDescription?: string;
-	}>> {
+		sortOrder: 1 | -1 = -1,
+	): Promise<
+		Array<
+			InfractionEntity & {
+				fineName?: string;
+				fineDescription?: string;
+			}
+		>
+	> {
 		const matchFilter = filter || {};
 
 		const pipeline: any[] = [
@@ -115,33 +123,62 @@ export class InfractionRepository
 			type: String(r.type),
 			description: String(r.description || ""),
 			value: Number(r.value || 0),
-			occurrenceDate: r.occurrenceDate instanceof Date ? r.occurrenceDate : new Date(r.occurrenceDate),
+			occurrenceDate:
+				r.occurrenceDate instanceof Date
+					? r.occurrenceDate
+					: new Date(r.occurrenceDate),
 			canceledNote: r.canceledNote ? String(r.canceledNote) : undefined,
 			status: String(r.status),
-			createdAt: r.createdAt instanceof Date ? r.createdAt : new Date(r.createdAt),
-			contextedAt: r.contextedAt ? (r.contextedAt instanceof Date ? r.contextedAt : new Date(r.contextedAt)) : undefined,
-			confirmedAt: r.confirmedAt ? (r.confirmedAt instanceof Date ? r.confirmedAt : new Date(r.confirmedAt)) : undefined,
-			paidAt: r.paidAt ? (r.paidAt instanceof Date ? r.paidAt : new Date(r.paidAt)) : undefined,
-			canceledAt: r.canceledAt ? (r.canceledAt instanceof Date ? r.canceledAt : new Date(r.canceledAt)) : undefined,
-			updatedAt: r.updatedAt instanceof Date ? r.updatedAt : new Date(r.updatedAt),
+			createdAt:
+				r.createdAt instanceof Date ? r.createdAt : new Date(r.createdAt),
+			contextedAt: r.contextedAt
+				? r.contextedAt instanceof Date
+					? r.contextedAt
+					: new Date(r.contextedAt)
+				: undefined,
+			confirmedAt: r.confirmedAt
+				? r.confirmedAt instanceof Date
+					? r.confirmedAt
+					: new Date(r.confirmedAt)
+				: undefined,
+			paidAt: r.paidAt
+				? r.paidAt instanceof Date
+					? r.paidAt
+					: new Date(r.paidAt)
+				: undefined,
+			canceledAt: r.canceledAt
+				? r.canceledAt instanceof Date
+					? r.canceledAt
+					: new Date(r.canceledAt)
+				: undefined,
+			updatedAt:
+				r.updatedAt instanceof Date ? r.updatedAt : new Date(r.updatedAt),
 			fineName: r.fineName ? String(r.fineName) : undefined,
-			fineDescription: r.fineDescription ? String(r.fineDescription) : undefined,
-		})) as Array<InfractionEntity & {
-			fineName?: string;
-			fineDescription?: string;
-		}>;
+			fineDescription: r.fineDescription
+				? String(r.fineDescription)
+				: undefined,
+		})) as Array<
+			InfractionEntity & {
+				fineName?: string;
+				fineDescription?: string;
+			}
+		>;
 	}
 
 	public async findManyWithResidents(
-		filter?: Partial<InfractionEntity>
-	): Promise<Array<InfractionEntity & {
-		residents: Array<{
-			_id: string;
-			name: string;
-			email: string;
-			phone?: string;
-		}>;
-	}>> {
+		filter?: Partial<InfractionEntity>,
+	): Promise<
+		Array<
+			InfractionEntity & {
+				residents: Array<{
+					_id: string;
+					name: string;
+					email: string;
+					phone?: string;
+				}>;
+			}
+		>
+	> {
 		const matchFilter = filter || {};
 
 		const pipeline: any[] = [
@@ -195,14 +232,31 @@ export class InfractionRepository
 			type: String(r.type),
 			description: String(r.description || ""),
 			value: Number(r.value || 0),
-			occurrenceDate: r.occurrenceDate instanceof Date ? r.occurrenceDate : new Date(r.occurrenceDate),
+			occurrenceDate:
+				r.occurrenceDate instanceof Date
+					? r.occurrenceDate
+					: new Date(r.occurrenceDate),
 			canceledNote: r.canceledNote ? String(r.canceledNote) : undefined,
 			status: String(r.status),
-			createdAt: r.createdAt instanceof Date ? r.createdAt : new Date(r.createdAt),
-			confirmedAt: r.confirmedAt ? (r.confirmedAt instanceof Date ? r.confirmedAt : new Date(r.confirmedAt)) : undefined,
-			paidAt: r.paidAt ? (r.paidAt instanceof Date ? r.paidAt : new Date(r.paidAt)) : undefined,
-			canceledAt: r.canceledAt ? (r.canceledAt instanceof Date ? r.canceledAt : new Date(r.canceledAt)) : undefined,
-			updatedAt: r.updatedAt instanceof Date ? r.updatedAt : new Date(r.updatedAt),
+			createdAt:
+				r.createdAt instanceof Date ? r.createdAt : new Date(r.createdAt),
+			confirmedAt: r.confirmedAt
+				? r.confirmedAt instanceof Date
+					? r.confirmedAt
+					: new Date(r.confirmedAt)
+				: undefined,
+			paidAt: r.paidAt
+				? r.paidAt instanceof Date
+					? r.paidAt
+					: new Date(r.paidAt)
+				: undefined,
+			canceledAt: r.canceledAt
+				? r.canceledAt instanceof Date
+					? r.canceledAt
+					: new Date(r.canceledAt)
+				: undefined,
+			updatedAt:
+				r.updatedAt instanceof Date ? r.updatedAt : new Date(r.updatedAt),
 			residents: (r.residents || []).map((resident: any) => ({
 				_id: String(resident._id),
 				name: String(resident.name || ""),
@@ -214,7 +268,7 @@ export class InfractionRepository
 
 	public async update(
 		_id: string,
-		data: UpdateInfractionEntity
+		data: UpdateInfractionEntity,
 	): Promise<InfractionEntity | null> {
 		const updateData = {
 			...data,
@@ -224,7 +278,7 @@ export class InfractionRepository
 		const result = await this.collection.findOneAndUpdate(
 			{ _id },
 			{ $set: updateData },
-			{ returnDocument: "after" }
+			{ returnDocument: "after" },
 		);
 
 		return result || null;

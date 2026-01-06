@@ -42,14 +42,14 @@ jobs:
         if: steps.check-develop.outputs.exists == 'true'
         id: check-pr
         run: |
-          EXISTING_PR=$(gh pr list --head "${{ steps.branch.outputs.name }}" --base develop --json number --jq '.[0].number // empty')
+          EXISTING_PR=$(gh pr list --head "${{ steps.branch.outputs.name }}" --base develop --state open --json number --jq '.[0].number // empty')
           if [ -n "$EXISTING_PR" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
             echo "pr_number=$EXISTING_PR" >> $GITHUB_OUTPUT
-            echo "ℹ️ PR #$EXISTING_PR already exists"
+            echo "ℹ️ PR #$EXISTING_PR já está aberta. Ignorando criação de nova PR."
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "📝 No existing PR found"
+            echo "📝 No existing open PR found"
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -94,5 +94,5 @@ jobs:
             echo "| Status | ✅ Created |" >> $GITHUB_STEP_SUMMARY
           elif [ "${{ steps.check-pr.outputs.exists }}" == "true" ]; then
             echo "| PR Number | #${{ steps.check-pr.outputs.pr_number }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| Status | ℹ️ Already exists |" >> $GITHUB_STEP_SUMMARY
+            echo "| Status | ℹ️ PR já existe e está aberta |" >> $GITHUB_STEP_SUMMARY
           fi

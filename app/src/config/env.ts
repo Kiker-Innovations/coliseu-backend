@@ -57,6 +57,11 @@ const envSchema = z.object({
 				fines: z.string().min(1),
 				infractionAppeals: z.string().min(1),
 				roles: z.string().min(1),
+				pages: z.string().min(1),
+				buildingPages: z.string().min(1),
+				plans: z.string().min(1),
+				rolePlanModules: z.string().min(1),
+				modules: z.string().min(1),
 			}),
 		}),
 	}),
@@ -155,6 +160,14 @@ export const env = envSchema.parse({
 					process.env.MONGODB_COLLECTION_INFRACTION_APPEALS ||
 					"infraction_appeals",
 				roles: process.env.MONGODB_COLLECTION_ROLES || "roles",
+				pages: process.env.MONGODB_COLLECTION_PAGES || "pages",
+				buildingPages:
+					process.env.MONGODB_COLLECTION_BUILDING_PAGES || "building_pages",
+				plans: process.env.MONGODB_COLLECTION_PLANS || "plans",
+				rolePlanModules:
+					process.env.MONGODB_COLLECTION_ROLE_PLAN_MODULES ||
+					"role_plan_modules",
+				modules: process.env.MONGODB_COLLECTION_MODULES || "modules",
 			},
 		},
 	},

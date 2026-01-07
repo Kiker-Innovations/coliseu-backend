@@ -65,4 +65,38 @@ export class AuthMiddleware {
 				);
 			}
 		};
+
+	public checkPermission =
+		(tag: string, action: "read" | "create" | "update" | "delete") =>
+		async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+			if (!request.user) {
+				return reply.status(httpStatus.UNAUTHORIZED).send({
+					success: false,
+					message: "Usuário não autenticado",
+				});
+			}
+
+			if (!request.user.permissions) {
+				return reply.status(httpStatus.FORBIDDEN).send({
+					success: false,
+					message: "Permissões não encontradas no token",
+				});
+			}
+
+			const pagePermissions = request.user.permissions[tag];
+
+			if (!pagePermissions) {
+				return reply.status(httpStatus.FORBIDDEN).send({
+					success: false,
+					message: "Você não tem permissão para acessar esta página",
+				});
+			}
+
+			if (!pagePermissions[action]) {
+				return reply.status(httpStatus.FORBIDDEN).send({
+					success: false,
+					message: `Você não tem permissão para ${action} nesta página`,
+				});
+			}
+		};
 }

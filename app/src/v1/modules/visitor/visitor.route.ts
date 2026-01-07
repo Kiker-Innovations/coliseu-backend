@@ -4,6 +4,8 @@ import { VisitorController } from "./visitor.controller";
 import { VisitorSchema } from "./visitor.schema";
 import { AuthMiddleware } from "../auth/auth.middleware";
 
+const MODULE_TAG = "visitor";
+
 export class VisitorRouteV1 {
 	private visitorController: VisitorController;
 	private visitorSchema: VisitorSchema;
@@ -26,7 +28,10 @@ export class VisitorRouteV1 {
 					"Cria um novo visitante no sistema. O ID do porteiro e do edifício são obtidos automaticamente do token de autenticação.",
 				...this.visitorSchema.create,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
+			],
 			handler: this.visitorController.createVisitor.bind(
 				this.visitorController,
 			) as RouteHandlerMethod,
@@ -44,7 +49,10 @@ export class VisitorRouteV1 {
 					"Lista visitantes com paginação e filtros do edifício do porteiro autenticado",
 				...this.visitorSchema.list,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.visitorController.listVisitors.bind(
 				this.visitorController,
 			) as RouteHandlerMethod,
@@ -62,7 +70,10 @@ export class VisitorRouteV1 {
 					"Busca um visitante específico por ID do edifício do porteiro autenticado",
 				...this.visitorSchema.getById,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.visitorController.getVisitorById.bind(
 				this.visitorController,
 			) as RouteHandlerMethod,
@@ -80,7 +91,10 @@ export class VisitorRouteV1 {
 					"Atualiza um visitante existente. O ID do porteiro é obtido automaticamente do token de autenticação para registrar quem fez a atualização.",
 				...this.visitorSchema.update,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "update"),
+			],
 			handler: this.visitorController.updateVisitor.bind(
 				this.visitorController,
 			) as RouteHandlerMethod,
@@ -98,7 +112,10 @@ export class VisitorRouteV1 {
 					"Lista os últimos visitantes cadastrados do edifício do porteiro autenticado (sem paginação)",
 				...this.visitorSchema.listRecent,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.visitorController.listRecentVisitors.bind(
 				this.visitorController,
 			) as RouteHandlerMethod,

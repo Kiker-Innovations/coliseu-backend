@@ -2,14 +2,19 @@ import type { RouteHandlerMethod, RouteOptions } from "fastify";
 import type { MongoClient } from "mongodb";
 import { NoticeController } from "./notice.controller";
 import { NoticeSchema } from "./notice.schema";
+import { AuthMiddleware } from "../auth/auth.middleware";
+
+const MODULE_TAG = "notice";
 
 export class NoticeRouteV1 {
 	private noticeController: NoticeController;
 	private noticeSchema: NoticeSchema;
+	private authMiddleware: AuthMiddleware;
 
 	constructor(mongoClient: MongoClient) {
 		this.noticeController = new NoticeController(mongoClient);
 		this.noticeSchema = new NoticeSchema();
+		this.authMiddleware = new AuthMiddleware(mongoClient);
 	}
 
 	private create = (): RouteOptions => {
@@ -23,6 +28,10 @@ export class NoticeRouteV1 {
 					"Cria um novo aviso e retorna uma URL pré-assinada para upload do arquivo (apenas admin)",
 				...this.noticeSchema.create,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
+			],
 			handler: this.noticeController.createNotice.bind(
 				this.noticeController,
 			) as RouteHandlerMethod,
@@ -40,6 +49,10 @@ export class NoticeRouteV1 {
 					"Lista todos os avisos do edifício do usuário, com filtro opcional por status (apenas admin e resident)",
 				...this.noticeSchema.getAll,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.noticeController.getNotices.bind(
 				this.noticeController,
 			) as RouteHandlerMethod,
@@ -57,6 +70,10 @@ export class NoticeRouteV1 {
 					"Busca um aviso específico por ID (apenas admin e resident)",
 				...this.noticeSchema.getById,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.noticeController.getNoticeById.bind(
 				this.noticeController,
 			) as RouteHandlerMethod,
@@ -73,6 +90,10 @@ export class NoticeRouteV1 {
 				description: "Remove um aviso do sistema (apenas admin)",
 				...this.noticeSchema.remove,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "delete"),
+			],
 			handler: this.noticeController.deleteNotice.bind(
 				this.noticeController,
 			) as RouteHandlerMethod,

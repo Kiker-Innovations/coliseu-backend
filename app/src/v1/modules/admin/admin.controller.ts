@@ -3,7 +3,6 @@ import httpStatus from "http-status";
 import type { MongoClient } from "mongodb";
 import {
 	transformConfirmAdminDto,
-	transformCreateAdminDto,
 	transformUpdateAdminDto,
 	transformForgetPasswordAdminDto,
 	transformResetPasswordAdminDto,
@@ -18,19 +17,6 @@ export class AdminController {
 
 	constructor(mongoClient: MongoClient) {
 		this.adminService = new AdminService(mongoClient);
-	}
-
-	public async createAdmin(
-		request: FastifyRequest,
-		reply: FastifyReply,
-	): Promise<void> {
-		return reply
-			.code(httpStatus.CREATED)
-			.send(
-				await this.adminService.createAdmin(
-					transformCreateAdminDto(request.body),
-				),
-			);
 	}
 
 	public async getAdmin(

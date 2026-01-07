@@ -2,14 +2,19 @@ import type { RouteHandlerMethod, RouteOptions } from "fastify";
 import type { MongoClient } from "mongodb";
 import { FinancialController } from "./financial.controller";
 import { FinancialSchema } from "./financial.schema";
+import { AuthMiddleware } from "../auth/auth.middleware";
+
+const MODULE_TAG = "financial";
 
 export class FinancialRouteV1 {
 	private financialController: FinancialController;
 	private financialSchema: FinancialSchema;
+	private authMiddleware: AuthMiddleware;
 
 	constructor(mongoClient: MongoClient) {
 		this.financialController = new FinancialController(mongoClient);
 		this.financialSchema = new FinancialSchema();
+		this.authMiddleware = new AuthMiddleware(mongoClient);
 	}
 
 	private checkMonth = (): RouteOptions => {
@@ -23,6 +28,10 @@ export class FinancialRouteV1 {
 					"Verifica se o mês virou e atualiza as parcelas dos projetos. Deve ser chamado ao entrar nas telas financeiras.",
 				...this.financialSchema.checkMonth,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.financialController.checkMonth.bind(
 				this.financialController,
 			) as RouteHandlerMethod,
@@ -40,6 +49,10 @@ export class FinancialRouteV1 {
 					"Obtém o resumo financeiro do mês atual, incluindo despesas e saldo",
 				...this.financialSchema.getSummary,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.financialController.getSummary.bind(
 				this.financialController,
 			) as RouteHandlerMethod,
@@ -57,6 +70,10 @@ export class FinancialRouteV1 {
 					"Adiciona uma entrada de caixa do condomínio para o mês atual",
 				...this.financialSchema.addFundEntry,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
+			],
 			handler: this.financialController.addFundEntry.bind(
 				this.financialController,
 			) as RouteHandlerMethod,
@@ -73,6 +90,10 @@ export class FinancialRouteV1 {
 				description: "Adiciona uma nova despesa recorrente ao mês atual",
 				...this.financialSchema.addRecurringExpense,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
+			],
 			handler: this.financialController.addRecurringExpense.bind(
 				this.financialController,
 			) as RouteHandlerMethod,
@@ -89,6 +110,10 @@ export class FinancialRouteV1 {
 				description: "Atualiza uma despesa recorrente existente",
 				...this.financialSchema.updateRecurringExpense,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "update"),
+			],
 			handler: this.financialController.updateRecurringExpense.bind(
 				this.financialController,
 			) as RouteHandlerMethod,
@@ -105,6 +130,10 @@ export class FinancialRouteV1 {
 				description: "Remove uma despesa recorrente",
 				...this.financialSchema.removeRecurringExpense,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "delete"),
+			],
 			handler: this.financialController.removeRecurringExpense.bind(
 				this.financialController,
 			) as RouteHandlerMethod,
@@ -121,6 +150,10 @@ export class FinancialRouteV1 {
 				description: "Adiciona uma nova despesa avulsa ao mês atual",
 				...this.financialSchema.addOneTimeExpense,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
+			],
 			handler: this.financialController.addOneTimeExpense.bind(
 				this.financialController,
 			) as RouteHandlerMethod,
@@ -137,6 +170,10 @@ export class FinancialRouteV1 {
 				description: "Atualiza uma despesa avulsa existente",
 				...this.financialSchema.updateOneTimeExpense,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "update"),
+			],
 			handler: this.financialController.updateOneTimeExpense.bind(
 				this.financialController,
 			) as RouteHandlerMethod,
@@ -153,6 +190,10 @@ export class FinancialRouteV1 {
 				description: "Remove uma despesa avulsa",
 				...this.financialSchema.removeOneTimeExpense,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "delete"),
+			],
 			handler: this.financialController.removeOneTimeExpense.bind(
 				this.financialController,
 			) as RouteHandlerMethod,
@@ -170,6 +211,10 @@ export class FinancialRouteV1 {
 					"Obtém o histórico financeiro (snapshots de meses anteriores)",
 				...this.financialSchema.getSnapshots,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.financialController.getSnapshots.bind(
 				this.financialController,
 			) as RouteHandlerMethod,
@@ -186,6 +231,10 @@ export class FinancialRouteV1 {
 				description: "Obtém o snapshot de um mês específico",
 				...this.financialSchema.getSnapshotByMonth,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.financialController.getSnapshotByMonth.bind(
 				this.financialController,
 			) as RouteHandlerMethod,
@@ -203,6 +252,10 @@ export class FinancialRouteV1 {
 					"Obtém o progresso dos projetos em andamento (parcelas pagas/pendentes)",
 				...this.financialSchema.getProjectsProgress,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.financialController.getProjectsProgress.bind(
 				this.financialController,
 			) as RouteHandlerMethod,

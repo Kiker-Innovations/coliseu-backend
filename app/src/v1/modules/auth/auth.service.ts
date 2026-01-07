@@ -17,6 +17,14 @@ import type { LoginAdminDto, LoginConciergeDto, LoginResidentDto } from "./dto";
 import { ConciergeStatusEnum } from "@/v1/enum/conciergeStatus.enum";
 import { AdminStatusEnum } from "@/v1/enum/adminStatus.enum";
 import { SeasonRepository } from "@/database/mongodb/repositories/season.repository";
+import { BuildingPageRepository } from "@/database/mongodb/repositories/buildingPage.repository";
+import { PageRepository } from "@/database/mongodb/repositories/page.repository";
+import { ModuleRepository } from "@/database/mongodb/repositories/module.repository";
+import { RolePlanModuleRepository } from "@/database/mongodb/repositories/rolePlanModule.repository";
+import type {
+	AccessiblePage,
+	PagePermissions,
+} from "../../../interface/jwtPayload.interface";
 
 export class AuthService {
 	private residentRepository: ResidentRepository;
@@ -25,6 +33,10 @@ export class AuthService {
 	private buildingRepository: BuildingRepository;
 	private apartmentRepository: ApartmentRepository;
 	private seasonRepository: SeasonRepository;
+	private buildingPageRepository: BuildingPageRepository;
+	private pageRepository: PageRepository;
+	private moduleRepository: ModuleRepository;
+	private rolePlanModuleRepository: RolePlanModuleRepository;
 
 	constructor(mongoClient: MongoClient) {
 		this.residentRepository = new ResidentRepository(mongoClient);
@@ -33,6 +45,10 @@ export class AuthService {
 		this.buildingRepository = new BuildingRepository(mongoClient);
 		this.apartmentRepository = new ApartmentRepository(mongoClient);
 		this.seasonRepository = new SeasonRepository(mongoClient);
+		this.buildingPageRepository = new BuildingPageRepository(mongoClient);
+		this.pageRepository = new PageRepository(mongoClient);
+		this.moduleRepository = new ModuleRepository(mongoClient);
+		this.rolePlanModuleRepository = new RolePlanModuleRepository(mongoClient);
 	}
 
 	public async loginResident(
@@ -96,10 +112,23 @@ export class AuthService {
 			resident.buildingId,
 		);
 
+		const accessiblePages = await this.getAccessiblePages(
+			resident.buildingId,
+			resident.roleId,
+		);
+
+		// Buscar permissões se o building tiver planId
+		let permissions: Record<string, PagePermissions> | undefined;
+		if (building.planId) {
+			permissions = await this.getPermissions(resident.roleId, building.planId);
+		}
+
 		const token = await this.generateToken({
 			userId: resident._id,
 			userType: UserTypeEnum.RESIDENT,
 			buildingId: resident.buildingId,
+			roleId: resident.roleId,
+			planId: building.planId,
 			email: resident.email,
 			name: resident.name,
 			phone: resident.phone,
@@ -109,6 +138,8 @@ export class AuthService {
 			blockName: apartment?.block,
 			buildingName: building.name,
 			actualSeasonId: seasons[0]?._id ?? null,
+			accessiblePages,
+			permissions,
 		});
 
 		const refreshToken = await this.generateRefreshToken({
@@ -165,17 +196,34 @@ export class AuthService {
 			throw httpException("Credenciais inválidas", httpStatus.UNAUTHORIZED);
 		}
 
+		const accessiblePages = await this.getAccessiblePages(
+			concierge.buildingId,
+			concierge.roleId,
+		);
+
+		// Buscar permissões se o building tiver planId
+		let permissions: Record<string, PagePermissions> | undefined;
+		if (building.planId) {
+			permissions = await this.getPermissions(
+				concierge.roleId,
+				building.planId,
+			);
+		}
+
 		const token = await this.generateToken({
 			userId: concierge._id,
 			userType: UserTypeEnum.CONCIERGE,
 			buildingId: concierge.buildingId,
+			roleId: concierge.roleId,
+			planId: building.planId,
 			email: concierge.email,
 			name: concierge.name,
 			phone: concierge.phone,
-			photoUrl: concierge.photoUrl || null,
 			shift: concierge.shift,
 			buildingName: building.name,
 			actualSeasonId: null,
+			accessiblePages,
+			permissions,
 		});
 
 		const refreshToken = await this.generateRefreshToken({
@@ -237,15 +285,29 @@ export class AuthService {
 			admin.buildingId,
 		);
 
+		const accessiblePages = await this.getAccessiblePages(
+			admin.buildingId,
+			admin.roleId,
+		);
+
+		// Buscar permissões se o building tiver planId
+		let permissions: Record<string, PagePermissions> | undefined;
+		if (building.planId) {
+			permissions = await this.getPermissions(admin.roleId, building.planId);
+		}
+
 		const token = await this.generateToken({
 			userId: admin._id,
 			userType: UserTypeEnum.ADMIN,
 			buildingId: admin.buildingId,
+			roleId: admin.roleId,
+			planId: building.planId,
 			email: admin.email,
 			name: admin.name,
-			phone: admin.phone,
 			buildingName: building.name,
 			actualSeasonId: seasons[0]?._id ?? null,
+			accessiblePages,
+			permissions,
 		});
 
 		const refreshToken = await this.generateRefreshToken({
@@ -447,6 +509,7 @@ export class AuthService {
 				userType: decoded.userType,
 				buildingId: decoded.buildingId,
 			};
+			let roleId: string | undefined;
 			let isValid = false;
 
 			if (decoded.userType === UserTypeEnum.RESIDENT) {
@@ -462,6 +525,7 @@ export class AuthService {
 						resident.buildingId,
 					);
 					if (building) {
+						roleId = resident.roleId;
 						tokenPayload.email = resident.email;
 						tokenPayload.name = resident.name;
 						tokenPayload.phone = resident.phone;
@@ -471,6 +535,7 @@ export class AuthService {
 						tokenPayload.blockName = apartment?.block;
 						tokenPayload.buildingName = building.name;
 						tokenPayload.actualSeasonId = seasons[0]?._id ?? null;
+						tokenPayload.planId = building.planId;
 						isValid = true;
 					}
 				}
@@ -483,12 +548,13 @@ export class AuthService {
 						concierge.buildingId,
 					);
 					if (building) {
+						roleId = concierge.roleId;
 						tokenPayload.email = concierge.email;
 						tokenPayload.name = concierge.name;
 						tokenPayload.phone = concierge.phone;
-						tokenPayload.photoUrl = concierge.photoUrl || null;
 						tokenPayload.shift = concierge.shift;
 						tokenPayload.buildingName = building.name;
+						tokenPayload.planId = building.planId;
 						isValid = true;
 					}
 				}
@@ -502,10 +568,12 @@ export class AuthService {
 						admin.buildingId,
 					);
 					if (building) {
+						roleId = admin.roleId;
 						tokenPayload.email = admin.email;
 						tokenPayload.name = admin.name;
 						tokenPayload.buildingName = building.name;
 						tokenPayload.actualSeasonId = seasons[0]?._id ?? null;
+						tokenPayload.planId = building.planId;
 						isValid = true;
 					}
 				}
@@ -516,6 +584,28 @@ export class AuthService {
 					"Usuário não encontrado ou inativo",
 					httpStatus.UNAUTHORIZED,
 				);
+			}
+
+			if (!roleId) {
+				throw httpException("RoleId não encontrado", httpStatus.UNAUTHORIZED);
+			}
+
+			tokenPayload.roleId = roleId;
+
+			// Buscar páginas acessíveis
+			const accessiblePages = await this.getAccessiblePages(
+				decoded.buildingId,
+				roleId,
+			);
+			tokenPayload.accessiblePages = accessiblePages;
+
+			// Buscar permissões se o building tiver planId
+			if (tokenPayload.planId && roleId) {
+				const permissions = await this.getPermissions(
+					roleId,
+					tokenPayload.planId,
+				);
+				tokenPayload.permissions = permissions;
 			}
 
 			const newToken = await this.generateToken(tokenPayload as JwtPayload);
@@ -554,6 +644,89 @@ export class AuthService {
 				httpStatus.UNAUTHORIZED,
 			);
 		}
+	}
+
+	private async getAccessiblePages(
+		buildingId: string,
+		roleId: string,
+	): Promise<AccessiblePage[]> {
+		// Buscar todas as buildingPages ativas para o buildingId
+		const buildingPages =
+			await this.buildingPageRepository.findManyByBuildingId(buildingId);
+
+		// Extrair os pageIds
+		const pageIds = buildingPages.map((bp) => bp.pageId);
+
+		if (pageIds.length === 0) {
+			return [];
+		}
+
+		// Buscar todas as páginas correspondentes
+		const pages = await this.pageRepository.findManyByIds(pageIds);
+
+		// Filtrar apenas as páginas que:
+		// 1. Estão ativas
+		// 2. Têm o roleId correspondente ao roleId do usuário
+		const accessiblePages = pages
+			.filter((page) => page.isActive && page.roleId === roleId)
+			.map((page) => ({
+				title: page.title,
+				url: page.url,
+				icon: page.icon,
+				order: page.order,
+			}))
+			.sort((a, b) => a.order - b.order);
+
+		return accessiblePages;
+	}
+
+	private async getPermissions(
+		roleId: string,
+		planId: string,
+	): Promise<Record<string, PagePermissions>> {
+		// Buscar todas as permissões para o roleId e planId
+		const rolePlanModules =
+			await this.rolePlanModuleRepository.findManyByRoleIdAndPlanId(
+				roleId,
+				planId,
+			);
+
+		// Extrair os moduleIds
+		const moduleIds = rolePlanModules.map((rpm) => rpm.moduleId);
+
+		if (moduleIds.length === 0) {
+			return {};
+		}
+
+		// Buscar os módulos correspondentes para obter as tags
+		const modules = await this.moduleRepository.findManyByIds(moduleIds);
+
+		// Criar um mapa de moduleId -> tag
+		const moduleIdToTag = new Map<string, string>();
+		for (const module of modules) {
+			moduleIdToTag.set(module._id, module.tag);
+		}
+
+		// Criar um objeto mapeando tag -> permissões
+		const permissions: Record<string, PagePermissions> = {};
+
+		for (const rolePlanModule of rolePlanModules) {
+			const tag = moduleIdToTag.get(rolePlanModule.moduleId);
+			if (tag) {
+				permissions[tag] = {
+					read: rolePlanModule.read,
+					create: rolePlanModule.create,
+					update: rolePlanModule.update,
+					delete: rolePlanModule.delete,
+				};
+			} else {
+				console.warn(
+					`Tag não encontrada para moduleId: ${rolePlanModule.moduleId}`,
+				);
+			}
+		}
+
+		return permissions;
 	}
 
 	private async generateToken(payload: JwtPayload): Promise<string> {

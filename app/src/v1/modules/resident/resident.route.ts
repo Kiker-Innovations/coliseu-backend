@@ -2,14 +2,19 @@ import type { RouteHandlerMethod, RouteOptions } from "fastify";
 import type { MongoClient } from "mongodb";
 import { ResidentController } from "./resident.controller";
 import { ResidentSchema } from "./resident.schema";
+import { AuthMiddleware } from "../auth/auth.middleware";
+
+const MODULE_TAG = "resident";
 
 export class ResidentRouteV1 {
 	private residentController: ResidentController;
 	private residentSchema: ResidentSchema;
+	private authMiddleware: AuthMiddleware;
 
 	constructor(mongoClient: MongoClient) {
 		this.residentController = new ResidentController(mongoClient);
 		this.residentSchema = new ResidentSchema();
+		this.authMiddleware = new AuthMiddleware(mongoClient);
 	}
 
 	private create = (): RouteOptions => {
@@ -23,6 +28,10 @@ export class ResidentRouteV1 {
 					"Cria um novo morador no sistema e envia email de confirmação",
 				...this.residentSchema.create,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
+			],
 			handler: this.residentController.createResident.bind(
 				this.residentController,
 			) as RouteHandlerMethod,
@@ -39,6 +48,10 @@ export class ResidentRouteV1 {
 				description: "Busca um morador específico por ID",
 				...this.residentSchema.getById,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.residentController.getResident.bind(
 				this.residentController,
 			) as RouteHandlerMethod,
@@ -55,6 +68,10 @@ export class ResidentRouteV1 {
 				description: "Busca o perfil do morador autenticado",
 				...this.residentSchema.getMe, // Schema específico sem params
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.residentController.getCurrentResident.bind(
 				this.residentController,
 			) as RouteHandlerMethod,
@@ -71,6 +88,10 @@ export class ResidentRouteV1 {
 				description: "Atualiza dados de um morador (phone, photoUrl)",
 				...this.residentSchema.update,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "update"),
+			],
 			handler: this.residentController.updateResident.bind(
 				this.residentController,
 			) as RouteHandlerMethod,
@@ -87,6 +108,10 @@ export class ResidentRouteV1 {
 				description: "Remove um morador do sistema",
 				...this.residentSchema.remove,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "delete"),
+			],
 			handler: this.residentController.deleteResident.bind(
 				this.residentController,
 			) as RouteHandlerMethod,
@@ -103,6 +128,10 @@ export class ResidentRouteV1 {
 				description: "Confirma o código de verificação enviado por email",
 				...this.residentSchema.confirm,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
+			],
 			handler: this.residentController.confirmResident.bind(
 				this.residentController,
 			) as RouteHandlerMethod,
@@ -120,6 +149,10 @@ export class ResidentRouteV1 {
 					"Solicita recuperação de senha. Um código de 6 dígitos será enviado por email (válido por 15 minutos)",
 				...this.residentSchema.forgetPassword,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
+			],
 			handler: this.residentController.forgetPassword.bind(
 				this.residentController,
 			) as RouteHandlerMethod,
@@ -137,6 +170,10 @@ export class ResidentRouteV1 {
 					"Redefine a senha usando o código de recuperação recebido por email",
 				...this.residentSchema.resetPassword,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
+			],
 			handler: this.residentController.resetPassword.bind(
 				this.residentController,
 			) as RouteHandlerMethod,
@@ -154,6 +191,10 @@ export class ResidentRouteV1 {
 					"Busca o status e dados básicos do morador por email (público)",
 				...this.residentSchema.getStatus,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.residentController.getResidentStatus.bind(
 				this.residentController,
 			) as RouteHandlerMethod,
@@ -171,6 +212,10 @@ export class ResidentRouteV1 {
 					"Reenvia o email de confirmação para moradores com status A_CONFIRMACAO_EMAIL (público)",
 				...this.residentSchema.resendConfirmationEmail,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
+			],
 			handler: this.residentController.resendConfirmationEmail.bind(
 				this.residentController,
 			) as RouteHandlerMethod,
@@ -188,6 +233,10 @@ export class ResidentRouteV1 {
 					"Atualiza dados de um residente rejeitado e muda status para A_VALIDACAO (público)",
 				...this.residentSchema.updateRejectedResident,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "update"),
+			],
 			handler: this.residentController.updateRejectedResident.bind(
 				this.residentController,
 			) as RouteHandlerMethod,
@@ -204,6 +253,10 @@ export class ResidentRouteV1 {
 				description: "Gera uma URL pré-assinada para upload de foto do morador",
 				...this.residentSchema.generatePresignedUrl,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
+			],
 			handler: this.residentController.generatePresignedUrlForPhoto.bind(
 				this.residentController,
 			) as RouteHandlerMethod,
@@ -220,6 +273,10 @@ export class ResidentRouteV1 {
 				description: "Altera a senha do morador autenticado",
 				...this.residentSchema.changePassword,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "update"),
+			],
 			handler: this.residentController.changePassword.bind(
 				this.residentController,
 			) as RouteHandlerMethod,

@@ -4,6 +4,8 @@ import { AmenityBookingController } from "./amenity_booking.controller";
 import { AmenityBookingSchema } from "./amenity_booking.schema";
 import { AuthMiddleware } from "../auth/auth.middleware";
 
+const MODULE_TAG = "amenity-booking";
+
 export class AmenityBookingRouteV1 {
 	private amenityBookingController: AmenityBookingController;
 	private amenityBookingSchema: AmenityBookingSchema;
@@ -25,7 +27,10 @@ export class AmenityBookingRouteV1 {
 				description: "Cria uma nova reserva de comodidade",
 				...this.amenityBookingSchema.create,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
+			],
 			handler: this.amenityBookingController.createAmenityBooking.bind(
 				this.amenityBookingController,
 			) as RouteHandlerMethod,
@@ -42,7 +47,10 @@ export class AmenityBookingRouteV1 {
 				description: "Lista reservas de comodidades com filtros opcionais",
 				...this.amenityBookingSchema.list,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.amenityBookingController.getAmenityBookings.bind(
 				this.amenityBookingController,
 			) as RouteHandlerMethod,
@@ -59,7 +67,10 @@ export class AmenityBookingRouteV1 {
 				description: "Cancela uma reserva de comodidade",
 				...this.amenityBookingSchema.cancel,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "update"),
+			],
 			handler: this.amenityBookingController.cancelAmenityBooking.bind(
 				this.amenityBookingController,
 			) as RouteHandlerMethod,
@@ -77,7 +88,10 @@ export class AmenityBookingRouteV1 {
 					"Lista todas as reservas de comodidades do edifício (exclui FINALIZADO e CANCELADO)",
 				...this.amenityBookingSchema.listByBuilding,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.amenityBookingController.getAmenityBookingsByBuilding.bind(
 				this.amenityBookingController,
 			) as RouteHandlerMethod,

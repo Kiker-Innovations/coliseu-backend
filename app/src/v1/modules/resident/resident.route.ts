@@ -149,10 +149,6 @@ export class ResidentRouteV1 {
 					"Solicita recuperação de senha. Um código de 6 dígitos será enviado por email (válido por 15 minutos)",
 				...this.residentSchema.forgetPassword,
 			},
-			preHandler: [
-				this.authMiddleware.authenticate,
-				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
-			],
 			handler: this.residentController.forgetPassword.bind(
 				this.residentController,
 			) as RouteHandlerMethod,
@@ -170,11 +166,7 @@ export class ResidentRouteV1 {
 					"Redefine a senha usando o código de recuperação recebido por email",
 				...this.residentSchema.resetPassword,
 			},
-			preHandler: [
-				this.authMiddleware.authenticate,
-				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
-			],
-			handler: this.residentController.resetPassword.bind(
+				handler: this.residentController.resetPassword.bind(
 				this.residentController,
 			) as RouteHandlerMethod,
 		};

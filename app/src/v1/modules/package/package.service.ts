@@ -24,6 +24,8 @@ import { ResidentStatusEnum } from "@/v1/enum/residentStatus.enum";
 import { getDate, formatDate } from "@/v1/utils/utils";
 import { sendPackageArrivalEmail } from "@/v1/utils/emailHelper";
 import { generateCode } from "@/v1/utils/cryptoHelper";
+import { env } from "@/config/env";
+import https from "node:https";
 
 interface PackageListItem {
 	_id: string;
@@ -124,6 +126,17 @@ export class PackageService {
 			createdPackage.pickupCode,
 		);
 
+		// Send SMS notifications to residents
+		this.sendPackageArrivalSmsNotificationsAsync(
+			packageCreateDto.apartmentId,
+			createdPackage.receiverDate,
+			createdPackage.description,
+			createdPackage.ownerName,
+			createdPackage.courierName,
+			createdPackage.receiverBy,
+			createdPackage.pickupCode,
+		);
+
 		return {
 			success: true,
 			message: "Encomenda cadastrada com sucesso!",
@@ -208,6 +221,191 @@ export class PackageService {
 				error,
 			);
 		}
+	}
+
+	private async sendPackageArrivalSmsNotificationsAsync(
+		apartmentId: string,
+		receiverDate: Date,
+		description?: string,
+		ownerName?: string,
+		courierName?: string,
+		receiverBy?: string,
+		pickupCode?: string,
+	): Promise<void> {
+		try {
+			// Get apartment by apartmentId
+			const apartment = await this.apartmentRepository.findById(apartmentId);
+			if (!apartment) {
+				console.error(
+					`❌ Apartment não encontrado para apartmentId: ${apartmentId}`,
+				);
+				return;
+			}
+
+			// Get building information using buildingId from apartment
+			const building = await this.buildingRepository.findById(
+				apartment.buildingId,
+			);
+			if (!building) {
+				console.error(
+					`❌ Building não encontrado para buildingId: ${apartment.buildingId}`,
+				);
+				return;
+			}
+
+			// Find all residents for this apartment using apartmentId
+			const residents = await this.residentRepository.findMany({
+				apartmentId: apartmentId,
+			});
+
+			if (residents.length === 0) {
+				console.log(
+					`ℹ️ Nenhum residente encontrado para enviar SMS no apartamento ${apartment.number} (bloco ${apartment.block})`,
+				);
+				return;
+			}
+
+			// Format date in Brazilian format
+			const formattedDate = formatDate(receiverDate, "DD/MM/YYYY [às] HH:mm");
+
+			// Format apartment number with block if available
+			const apartmentDisplay = apartment.block
+				? `${apartment.block} - ${apartment.number}`
+				: apartment.number;
+
+			// Build SMS message with formatting
+			const smsMessage = this.formatSmsMessage(
+				building.name,
+				apartmentDisplay,
+				formattedDate,
+				description,
+				ownerName,
+				courierName,
+				receiverBy,
+				pickupCode,
+			);
+
+			// Send SMS to each active resident with phone number
+			const smsPromises = residents
+				.filter((resident) => {
+					// Only send to active residents with phone number
+					return (
+						resident.status === ResidentStatusEnum.ATIVO &&
+						resident.phone &&
+						resident.phone.trim() !== ""
+					);
+				})
+				.map((resident) => {
+					return this.sendSms(
+						resident.phone.replace(/\D/g, ""), // Remove non-numeric characters
+						smsMessage,
+					);
+				});
+
+			await Promise.all(smsPromises);
+		} catch (error) {
+			console.error(
+				"❌ Erro ao enviar notificações de entrega por SMS:",
+				error,
+			);
+		}
+	}
+
+	private formatSmsMessage(
+		buildingName: string,
+		apartmentDisplay: string,
+		formattedDate: string,
+		description?: string,
+		ownerName?: string,
+		courierName?: string,
+		receiverBy?: string,
+		pickupCode?: string,
+	): string {
+		let message = "📦 *ENCOMENDA ENTREGUE NA PORTARIA*\n\n";
+		
+		message += `*${buildingName}*\n`;
+		message += ` Apartamento: ${apartmentDisplay}\n`;
+		message += ` Recebida em: ${formattedDate}\n\n`;
+		
+		if (ownerName) {
+			message += `Destinatário: ${ownerName}\n`;
+		}
+
+		if (description) {
+			message += `Descrição: ${description}\n`;
+		}
+
+		if (courierName) {
+			message += `Entregue por: ${courierName}\n`;
+		}
+
+		if (receiverBy) {
+			message += `Porteiro: ${receiverBy}\n`;
+		}
+
+		if (pickupCode) {
+			message += `🔑 CÓDIGO DE RETIRADA: \n*${pickupCode}*\n`;
+		}
+
+		message += `\n⚠️ A retirada da encomenda só é permitida mediante apresentação do código.`;
+
+		return message;
+	}
+
+	private async sendSms(phoneNumber: string, message: string): Promise<void> {
+		return new Promise((resolve, reject) => {
+			const apiUrl = new URL(env.providers.uazapi.serverUrl);
+			
+			const options = {
+				method: "POST",
+				hostname: apiUrl.hostname,
+				port: apiUrl.port || null,
+				path: "/send/text",
+				headers: {
+					Accept: "application/json",
+					token: env.providers.uazapi.instanceToken,
+					"Content-Type": "application/json",
+				},
+			};
+
+			const req = https.request(options, (res) => {
+				const chunks: Buffer[] = [];
+				
+				res.on("data", (chunk) => {
+					chunks.push(chunk);
+				});
+				
+				res.on("end", () => {
+					const body = Buffer.concat(chunks);
+					const responseText = body.toString();
+					
+					if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+						console.log(`✅ SMS enviado para ${phoneNumber}:`, responseText);
+						resolve();
+					} else {
+						console.error(
+							`❌ Erro ao enviar SMS para ${phoneNumber}:`,
+							responseText,
+						);
+						reject(new Error(`SMS API retornou status ${res.statusCode}`));
+					}
+				});
+			});
+
+			req.on("error", (error) => {
+				console.error(`❌ Erro na requisição SMS para ${phoneNumber}:`, error);
+				reject(error);
+			});
+
+			req.write(
+				JSON.stringify({
+					number: phoneNumber,
+					text: message,
+				}),
+			);
+			
+			req.end();
+		});
 	}
 
 	public async getPackages(

@@ -129,10 +129,6 @@ export class AdminRouteV1 {
 					"Solicita recuperação de senha. Um código de 6 dígitos será enviado por email (válido por 15 minutos)",
 				...this.adminSchema.forgetPassword,
 			},
-			preHandler: [
-				this.authMiddleware.authenticate,
-				this.authMiddleware.checkPermission(MODULE_TAG, "update"),
-			],
 			handler: this.adminController.forgetPassword.bind(
 				this.adminController,
 			) as RouteHandlerMethod,
@@ -150,10 +146,6 @@ export class AdminRouteV1 {
 					"Redefine a senha usando o código de recuperação recebido por email",
 				...this.adminSchema.resetPassword,
 			},
-			preHandler: [
-				this.authMiddleware.authenticate,
-				this.authMiddleware.checkPermission(MODULE_TAG, "update"),
-			],
 			handler: this.adminController.resetPassword.bind(
 				this.adminController,
 			) as RouteHandlerMethod,

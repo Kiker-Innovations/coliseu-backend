@@ -200,7 +200,6 @@ export class AuthService {
 			concierge.buildingId,
 			concierge.roleId,
 		);
-
 		// Buscar permissões se o building tiver planId
 		let permissions: Record<string, PagePermissions> | undefined;
 		if (building.planId) {

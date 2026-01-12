@@ -45,6 +45,11 @@ export class VisitorSchema {
 					description: "Tipos de visitante (mín. 1 item)",
 					example: ["CONVIDADO"],
 				},
+				companyName: {
+					type: "string",
+					description: "Nome da empresa (opcional, apenas para prestadores)",
+					example: "Empresa ABC Ltda",
+				},
 				note: {
 					type: "string",
 					description: "Observações sobre o visitante",
@@ -331,6 +336,11 @@ export class VisitorSchema {
 					},
 					description: "Tipos de visitante (mín. 1 item)",
 					example: ["CONVIDADO"],
+				},
+				companyName: {
+					type: "string",
+					description: "Nome da empresa (opcional, apenas para prestadores)",
+					example: "Empresa ABC Ltda",
 				},
 				note: {
 					type: "string",

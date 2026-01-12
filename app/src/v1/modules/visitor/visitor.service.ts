@@ -74,6 +74,7 @@ export class VisitorService {
 			vehicleType: visitorCreateDto.vehicleType,
 			vehiclePlate: visitorCreateDto.vehiclePlate,
 			types: visitorCreateDto.types,
+			companyName: visitorCreateDto.companyName,
 			photoUrl: "",
 			note: visitorCreateDto.note,
 			registeredBy: concierge.name,

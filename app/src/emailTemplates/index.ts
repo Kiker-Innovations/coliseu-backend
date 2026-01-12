@@ -42,6 +42,7 @@ export interface PackageArrivalTemplateData {
 	apartmentNumber: string;
 	arrivalDate: string;
 	description?: string;
+	pickupCode?: string;
 }
 
 export interface DocumentNotificationTemplateData {

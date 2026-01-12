@@ -222,11 +222,20 @@ export class PackageSchema {
 		},
 		body: {
 			type: "object",
+			required: ["pickupCode"],
 			properties: {
 				recipientName: {
 					type: "string",
 					description: "Nome de quem recebeu a encomenda",
 					example: "Maria Silva",
+				},
+				pickupCode: {
+					type: "string",
+					minLength: 6,
+					maxLength: 6,
+					pattern: "^[A-Z0-9]{6}$",
+					description: "Código de retirada da encomenda (6 caracteres alfanuméricos)",
+					example: "ABC123",
 				},
 			},
 		},

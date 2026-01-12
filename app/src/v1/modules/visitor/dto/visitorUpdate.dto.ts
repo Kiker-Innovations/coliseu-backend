@@ -38,6 +38,11 @@ export const visitorUpdateSchema = z.object({
 		.array(z.enum(["CONVIDADO", "PRESTADOR"]))
 		.min(1, "Deve ter pelo menos um tipo de visitante")
 		.optional(),
+	companyName: z
+		.string()
+		.max(100, "Nome da empresa deve ter no máximo 100 caracteres")
+		.optional()
+		.transform((val) => (val === "" ? undefined : val)),
 	note: z
 		.string()
 		.optional()

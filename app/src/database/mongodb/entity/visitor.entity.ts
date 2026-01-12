@@ -9,6 +9,7 @@ export interface VisitorEntity {
 	vehicleType?: VehicleTypeEnumType;
 	vehiclePlate?: string;
 	types: string[]; // "CONVIDADO" | "PRESTADOR"
+	companyName?: string; // Nome da empresa (para prestadores)
 	photoUrl: string;
 	note?: string;
 	registeredBy: string; // Nome do concierge

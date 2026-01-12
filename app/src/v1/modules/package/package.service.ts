@@ -23,6 +23,7 @@ import {
 import { ResidentStatusEnum } from "@/v1/enum/residentStatus.enum";
 import { getDate, formatDate } from "@/v1/utils/utils";
 import { sendPackageArrivalEmail } from "@/v1/utils/emailHelper";
+import { generateCode } from "@/v1/utils/cryptoHelper";
 
 interface PackageListItem {
 	_id: string;
@@ -98,6 +99,9 @@ export class PackageService {
 			);
 		}
 
+		// Generate pickup code
+		const pickupCode = await generateCode();
+
 		const packageEntity: CreatePackageEntity = {
 			apartmentId: packageCreateDto.apartmentId,
 			buildingId: buildingId,
@@ -107,6 +111,7 @@ export class PackageService {
 			courierName: packageCreateDto.courierName,
 			receiverDate: packageCreateDto.receiverDate,
 			status: PackageStatusEnum.PENDENTE,
+			pickupCode,
 		};
 
 		const createdPackage = await this.packageRepository.create(packageEntity);
@@ -116,6 +121,7 @@ export class PackageService {
 			packageCreateDto.apartmentId,
 			createdPackage.receiverDate,
 			createdPackage.description,
+			createdPackage.pickupCode,
 		);
 
 		return {
@@ -134,6 +140,7 @@ export class PackageService {
 		apartmentId: string,
 		receiverDate: Date,
 		description?: string,
+		pickupCode?: string,
 	): Promise<void> {
 		try {
 			// Get apartment by apartmentId
@@ -190,6 +197,7 @@ export class PackageService {
 					apartmentDisplay,
 					formattedDate,
 					description,
+					pickupCode,
 				);
 			});
 
@@ -239,6 +247,7 @@ export class PackageService {
 					apartmentFloor: apartment?.floor,
 					apartmentBlock: apartment?.block,
 					receiverDate: pkg.receiverDate,
+					// pickupCode is not included here - concierge should not see it
 				};
 
 				if (pkg.receiverBy) {
@@ -294,7 +303,7 @@ export class PackageService {
 		buildingId: string,
 	): Promise<
 		HttpResponse<
-			PackageEntity & {
+			Omit<PackageEntity, "pickupCode"> & {
 				apartmentNumber?: string;
 				apartmentFloor?: number;
 				apartmentBlock?: string;
@@ -319,11 +328,14 @@ export class PackageService {
 			packageEntity.apartmentId,
 		);
 
+		// Remove pickupCode for concierge - they should not see it
+		const { pickupCode, ...packageWithoutCode } = packageEntity;
+
 		return {
 			success: true,
 			message: "Encomenda encontrada com sucesso",
 			data: {
-				...packageEntity,
+				...packageWithoutCode,
 				apartmentNumber: apartment?.number,
 				apartmentFloor: apartment?.floor,
 				apartmentBlock: apartment?.block,
@@ -353,6 +365,24 @@ export class PackageService {
 
 		if (packageEntity.status === PackageStatusEnum.ENTREGUE) {
 			throw httpException("Encomenda já foi entregue", httpStatus.BAD_REQUEST);
+		}
+
+		// Validate pickup code
+		if (!confirmDeliveryDto.pickupCode || !confirmDeliveryDto.pickupCode.trim()) {
+			throw httpException(
+				"O código de retirada é obrigatório para confirmar a entrega. Solicite o código ao residente.",
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
+		if (
+			packageEntity.pickupCode.toUpperCase() !==
+			confirmDeliveryDto.pickupCode.toUpperCase()
+		) {
+			throw httpException(
+				"O código de retirada informado está incorreto. Por favor, verifique o código fornecido pelo residente e tente novamente.",
+				httpStatus.BAD_REQUEST,
+			);
 		}
 
 		// Verify concierge exists and belongs to the same building
@@ -519,6 +549,7 @@ export class PackageService {
 			apartmentNumber: apartment?.number,
 			apartmentFloor: apartment?.floor,
 			apartmentBlock: apartment?.block,
+			// pickupCode is included for residents
 		}));
 
 		const statusMessage = status

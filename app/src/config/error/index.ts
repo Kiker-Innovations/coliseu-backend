@@ -54,9 +54,30 @@ export const errorHandler = (
 				}))
 			: [];
 
+		// Melhorar mensagem quando há erros específicos
+		let errorMessage = `Invalid request ${validationContext}input`;
+		if (validationErrors.length > 0) {
+			// Verificar se é erro relacionado ao código de retirada
+			const pickupCodeError = validationErrors.find(
+				(err: any) =>
+					err.field?.includes("pickupCode") ||
+					err.message?.toLowerCase().includes("pickupcode") ||
+					err.message?.toLowerCase().includes("código"),
+			);
+			if (pickupCodeError) {
+				errorMessage = pickupCodeError.message || "Código de retirada fornecido inválido";
+			} else {
+				// Usar a primeira mensagem de erro específica se disponível
+				const firstError = validationErrors[0];
+				if (firstError?.message) {
+					errorMessage = firstError.message;
+				}
+			}
+		}
+
 		return reply.status(400).send({
 			statusCode: error.statusCode,
-			message: `Invalid request ${validationContext}input`,
+			message: errorMessage,
 			...(validationErrors.length > 0 && { errors: validationErrors }),
 			timestamp: getDate(),
 		});

@@ -13,6 +13,7 @@ export interface PackageEntity {
 	receiverDate: Date;
 	deliveryDate?: Date;
 	status: PackageStatusEnumType;
+	pickupCode: string;
 	cancelReason?: string;
 	canceledBy?: string;
 	cancelledAt?: Date;
@@ -23,7 +24,9 @@ export interface PackageEntity {
 export type CreatePackageEntity = Omit<
 	PackageEntity,
 	"_id" | "createdAt" | "updatedAt"
->;
+> & {
+	pickupCode: string; // Required when creating
+};
 
 export type UpdatePackageEntity = Partial<
 	Pick<

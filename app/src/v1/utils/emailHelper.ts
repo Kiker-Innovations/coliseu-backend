@@ -50,6 +50,7 @@ export async function sendPackageArrivalEmail(
 	apartmentNumber: string,
 	arrivalDate: string,
 	description?: string,
+	pickupCode?: string,
 ): Promise<void> {
 	try {
 		const htmlContent = TemplateEngine.render(EmailTemplates.PACKAGE_ARRIVAL, {
@@ -58,15 +59,17 @@ export async function sendPackageArrivalEmail(
 			apartmentNumber,
 			arrivalDate,
 			description,
+			pickupCode,
 		});
 
 		const descriptionText = description ? ` Descrição: ${description}.` : "";
+		const pickupCodeText = pickupCode ? ` Código de retirada: ${pickupCode}.` : "";
 		const result = await emailProvider.sendEmail({
 			from: FromEmailEnum.NOREPLY,
 			to: email,
 			subject: "Nova Entrega Chegou - Coliseu",
 			html: htmlContent,
-			text: `Olá ${residentName}! Chegou uma nova entrega para o apartamento ${apartmentNumber} do condomínio ${buildingName} em ${arrivalDate}.${descriptionText} Por favor, dirija-se à portaria para retirar sua encomenda.`,
+			text: `Olá ${residentName}! Chegou uma nova entrega para o apartamento ${apartmentNumber} do condomínio ${buildingName} em ${arrivalDate}.${descriptionText}${pickupCodeText} Por favor, dirija-se à portaria para retirar sua encomenda.`,
 		});
 
 		if (result.success) {

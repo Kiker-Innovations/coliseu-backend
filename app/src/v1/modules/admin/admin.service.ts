@@ -1,17 +1,12 @@
 import type { MongoClient } from "mongodb";
 import { env } from "../../../config/env";
-import type {
-	CreateAdminEntity,
-	AdminEntity,
-} from "../../../database/mongodb/entity/admin.entity";
+import type { AdminEntity } from "../../../database/mongodb/entity/admin.entity";
 import { AdminRepository } from "../../../database/mongodb/repositories/admin.repository";
 import { ResidentRepository } from "../../../database/mongodb/repositories/resident.repository";
 import { ApartmentRepository } from "../../../database/mongodb/repositories/apartment.repository";
 import { BuildingRepository } from "../../../database/mongodb/repositories/building.repository";
-import { RoleRepository } from "../../../database/mongodb/repositories/role.repository";
 import type {
 	AdminConfirmDto,
-	AdminCreateDto,
 	AdminUpdateDto,
 	AdminForgetPasswordDto,
 	AdminResetPasswordDto,
@@ -20,12 +15,7 @@ import type {
 import { httpException } from "../../../config/error";
 import httpStatus from "http-status";
 import type { HttpResponse } from "../../../interface/httpResponse.interface";
-import {
-	hashPassword,
-	generateCode,
-	generateResetCode,
-} from "../../utils/cryptoHelper";
-import { AdminEmail } from "./admin.emails";
+import { hashPassword, generateResetCode } from "../../utils/cryptoHelper";
 import { sendPasswordResetEmail } from "@/v1/utils/emailHelper";
 import { getDate } from "@/v1/utils/utils";
 import { AdminStatusEnum } from "../../enum/adminStatus.enum";
@@ -36,73 +26,12 @@ export class AdminService {
 	private residentRepository: ResidentRepository;
 	private apartmentRepository: ApartmentRepository;
 	private buildingRepository: BuildingRepository;
-	private roleRepository: RoleRepository;
 
 	constructor(mongoClient: MongoClient) {
 		this.adminRepository = new AdminRepository(mongoClient);
 		this.residentRepository = new ResidentRepository(mongoClient);
 		this.apartmentRepository = new ApartmentRepository(mongoClient);
 		this.buildingRepository = new BuildingRepository(mongoClient);
-		this.roleRepository = new RoleRepository(mongoClient);
-	}
-
-	public async createAdmin(adminCreateDto: AdminCreateDto): Promise<
-		HttpResponse<{
-			name: string;
-			email: string;
-		}>
-	> {
-		const existingAdmin = await this.adminRepository.findByEmail(
-			adminCreateDto.email,
-		);
-
-		if (existingAdmin) {
-			throw httpException(
-				"Email já cadastrado no sistema.",
-				httpStatus.CONFLICT,
-			);
-		}
-
-		const passwordHash = await hashPassword(adminCreateDto.password);
-		const adminCode = await generateCode();
-
-		// Buscar role "admin"
-		const adminRole = await this.roleRepository.findByName("admin");
-		if (!adminRole) {
-			throw httpException(
-				"Role 'admin' não encontrado no sistema.",
-				httpStatus.NOT_FOUND,
-			);
-		}
-
-		const adminEntity: CreateAdminEntity = {
-			buildingId: adminCreateDto.buildingId,
-			roleId: adminRole._id,
-			name: adminCreateDto.name,
-			email: adminCreateDto.email,
-			passwordHash,
-			status: AdminStatusEnum.INATIVO,
-			adminCode,
-		};
-
-		const createdAdmin = await this.adminRepository.create(adminEntity);
-
-		const adminEmail = new AdminEmail();
-		adminEmail.sendConfirmationEmailAsync(
-			createdAdmin.email,
-			createdAdmin.name,
-			adminCode,
-		);
-
-		return {
-			success: true,
-			message:
-				"Administrador cadastrado com sucesso! Verifique seu email para confirmar o cadastro.",
-			data: {
-				name: createdAdmin.name,
-				email: createdAdmin.email,
-			},
-		};
 	}
 
 	public async getAdmin(adminId: string): Promise<

@@ -2,16 +2,21 @@ import type { RouteHandlerMethod, RouteOptions } from "fastify";
 import type { MongoClient } from "mongodb";
 import { ResidentSuggestionController } from "./residentSuggestion.controller";
 import { ResidentSuggestionSchema } from "./residentSuggestion.schema";
+import { AuthMiddleware } from "../auth/auth.middleware";
+
+const MODULE_TAG = "resident-suggestion";
 
 export class ResidentSuggestionRouteV1 {
 	private residentSuggestionController: ResidentSuggestionController;
 	private residentSuggestionSchema: ResidentSuggestionSchema;
+	private authMiddleware: AuthMiddleware;
 
 	constructor(mongoClient: MongoClient) {
 		this.residentSuggestionController = new ResidentSuggestionController(
 			mongoClient,
 		);
 		this.residentSuggestionSchema = new ResidentSuggestionSchema();
+		this.authMiddleware = new AuthMiddleware(mongoClient);
 	}
 
 	private create = (): RouteOptions => {
@@ -24,6 +29,10 @@ export class ResidentSuggestionRouteV1 {
 				description: "Cria uma nova sugestão para o apartamento do morador",
 				...this.residentSuggestionSchema.create,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
+			],
 			handler: this.residentSuggestionController.createSuggestion.bind(
 				this.residentSuggestionController,
 			) as RouteHandlerMethod,
@@ -40,6 +49,10 @@ export class ResidentSuggestionRouteV1 {
 				description: "Lista todas as sugestões do apartamento do morador",
 				...this.residentSuggestionSchema.getAll,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler:
 				this.residentSuggestionController.getAllSuggestionsByApartmentAndSeason.bind(
 					this.residentSuggestionController,
@@ -57,6 +70,10 @@ export class ResidentSuggestionRouteV1 {
 				description: "Busca uma sugestão específica por ID",
 				...this.residentSuggestionSchema.getById,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.residentSuggestionController.getSuggestionById.bind(
 				this.residentSuggestionController,
 			) as RouteHandlerMethod,
@@ -73,6 +90,10 @@ export class ResidentSuggestionRouteV1 {
 				description: "Atualiza uma sugestão existente",
 				...this.residentSuggestionSchema.update,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "update"),
+			],
 			handler: this.residentSuggestionController.updateSuggestion.bind(
 				this.residentSuggestionController,
 			) as RouteHandlerMethod,
@@ -89,6 +110,10 @@ export class ResidentSuggestionRouteV1 {
 				description: "Deleta uma sugestão existente",
 				...this.residentSuggestionSchema.delete,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "delete"),
+			],
 			handler: this.residentSuggestionController.deleteSuggestion.bind(
 				this.residentSuggestionController,
 			) as RouteHandlerMethod,

@@ -8,7 +8,6 @@ import { IRepository } from "../interfaces/IRepository";
 import { env } from "@/config/env";
 import { randomUUID } from "node:crypto";
 import { getDate } from "@/v1/utils/utils";
-import { ConciergeStatusEnum } from "@/v1/enum/conciergeStatus.enum";
 
 export class ConciergeRepository
 	implements
@@ -94,18 +93,8 @@ export class ConciergeRepository
 	}
 
 	public async delete(_id: string): Promise<boolean> {
-		const now = getDate();
-		const result = await this.collection.findOneAndUpdate(
-			{ _id, deletedAt: { $exists: false } },
-			{
-				$set: {
-					deletedAt: now,
-					updatedAt: now,
-					status: ConciergeStatusEnum.DELETADO,
-				},
-			},
-		);
-		return result !== null;
+		const result = await this.collection.deleteOne({ _id });
+		return result.deletedCount > 0;
 	}
 
 	public async updateByEmail(

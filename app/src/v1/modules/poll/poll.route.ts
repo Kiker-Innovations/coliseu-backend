@@ -5,6 +5,8 @@ import { PollVoteController } from "./pollVote.controller";
 import { PollSchema } from "./poll.schema";
 import { AuthMiddleware } from "../auth/auth.middleware";
 
+const MODULE_TAG = "poll";
+
 export class PollRouteV1 {
 	private pollController: PollController;
 	private pollVoteController: PollVoteController;
@@ -29,7 +31,10 @@ export class PollRouteV1 {
 					"Cria uma nova enquete no sistema. O ID do edifício é obtido automaticamente do token de autenticação do administrador.",
 				...this.pollSchema.create,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
+			],
 			handler: this.pollController.createPoll.bind(
 				this.pollController,
 			) as RouteHandlerMethod,
@@ -47,7 +52,10 @@ export class PollRouteV1 {
 					"Lista enquetes filtradas por status(es) do prédio do administrador. O ID do edifício é obtido automaticamente do token de autenticação. Pode passar um ou mais status: ATIVO, PROGRAMADO, FINALIZADO, CANCELADO",
 				...this.pollSchema.getPollsByStatus,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.pollController.getPollsByStatus.bind(
 				this.pollController,
 			) as RouteHandlerMethod,
@@ -66,7 +74,10 @@ export class PollRouteV1 {
 				querystring: this.pollSchema.getActiveStats.querystring,
 				response: this.pollSchema.getActiveStats.response,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.pollController.getActivePollsStats.bind(
 				this.pollController,
 			) as RouteHandlerMethod,
@@ -84,7 +95,10 @@ export class PollRouteV1 {
 					"Cancela uma enquete do prédio do administrador (safe delete). O ID do edifício é obtido automaticamente do token de autenticação. A enquete não é deletada, apenas muda o status para CANCELADO e registra o motivo do cancelamento",
 				...this.pollSchema.cancel,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "update"),
+			],
 			handler: this.pollController.cancelPoll.bind(
 				this.pollController,
 			) as RouteHandlerMethod,
@@ -102,7 +116,10 @@ export class PollRouteV1 {
 					"Registra ou atualiza o voto de um residente em uma enquete. Se o residente já votou, atualiza o voto para a nova opção escolhida. O ID do residente é obtido automaticamente do token de autenticação.",
 				...this.pollSchema.vote,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
+			],
 			handler: this.pollVoteController.vote.bind(
 				this.pollVoteController,
 			) as RouteHandlerMethod,
@@ -120,7 +137,10 @@ export class PollRouteV1 {
 					"Deleta o voto de um residente em uma enquete. O ID do residente é obtido automaticamente do token de autenticação.",
 				...this.pollSchema.deleteVote,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "delete"),
+			],
 			handler: this.pollVoteController.deleteVote.bind(
 				this.pollVoteController,
 			) as RouteHandlerMethod,
@@ -138,7 +158,10 @@ export class PollRouteV1 {
 					"Retorna o voto do residente autenticado em uma enquete específica. O ID do residente é obtido automaticamente do token de autenticação. Retorna null se o residente ainda não votou.",
 				...this.pollSchema.getMyVote,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.pollVoteController.getMyVote.bind(
 				this.pollVoteController,
 			) as RouteHandlerMethod,

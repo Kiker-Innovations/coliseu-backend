@@ -5,8 +5,8 @@ import { ResidentRouteV1 } from "./v1/modules/resident/resident.route";
 import { ConciergeRouteV1 } from "./v1/modules/concierge/concierge.route";
 import { AdminRouteV1 } from "./v1/modules/admin/admin.route";
 import { BuildingRouteV1 } from "./v1/modules/building/building.route";
-import { PackageRouteV1 } from "./v1/modules/package/package.route";
 import { ApartmentRouteV1 } from "./v1/modules/apartment/apartment.route";
+import { PackageRouteV1 } from "./v1/modules/package/package.route";
 import { PollRouteV1 } from "./v1/modules/poll/poll.route";
 import { ResidentSuggestionRouteV1 } from "./v1/modules/residentSuggestion/residentSuggestion.route";
 import { SeasonRouteV1 } from "./v1/modules/season/season.route";
@@ -22,6 +22,7 @@ import { AmenityBookingRouteV1 } from "./v1/modules/amenity_booking/amenity_book
 import { NoticeRouteV1 } from "./v1/modules/notice/notice.route";
 import { FineRouteV1 } from "./v1/modules/fine/fine.route";
 import { InfractionRouteV1 } from "./v1/modules/infraction/infraction.route";
+import { UsefulContactRouteV1 } from "./v1/modules/usefulContact/usefulContact.route";
 
 export class Route {
 	public registerRoutes = async (server: FastifyInstance): Promise<void> => {
@@ -33,8 +34,8 @@ export class Route {
 			...new ConciergeRouteV1(mongoClient).routes(),
 			...new AdminRouteV1(mongoClient).routes(),
 			...new BuildingRouteV1(mongoClient).routes(),
-			...new PackageRouteV1(mongoClient).routes(),
 			...new ApartmentRouteV1(mongoClient).routes(),
+			...new PackageRouteV1(mongoClient).routes(),
 			...new PollRouteV1(mongoClient).routes(),
 			...new ResidentSuggestionRouteV1(mongoClient).routes(),
 			...new SeasonRouteV1(mongoClient).routes(),
@@ -50,6 +51,7 @@ export class Route {
 			...new NoticeRouteV1(mongoClient).routes(),
 			...new FineRouteV1(mongoClient).routes(),
 			...new InfractionRouteV1(mongoClient).routes(),
+			...new UsefulContactRouteV1(mongoClient).routes(),
 		]) {
 			server.route(route);
 		}

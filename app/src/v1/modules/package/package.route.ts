@@ -4,6 +4,8 @@ import { PackageController } from "./package.controller";
 import { PackageSchema } from "./package.schema";
 import { AuthMiddleware } from "../auth/auth.middleware";
 
+const MODULE_TAG = "package";
+
 export class PackageRouteV1 {
 	private packageController: PackageController;
 	private packageSchema: PackageSchema;
@@ -26,7 +28,10 @@ export class PackageRouteV1 {
 					"Cria uma nova encomenda no sistema. O ID do porteiro e do edifício são obtidos automaticamente do token de autenticação.",
 				...this.packageSchema.create,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
+			],
 			handler: this.packageController.createPackage.bind(
 				this.packageController,
 			) as RouteHandlerMethod,
@@ -44,7 +49,10 @@ export class PackageRouteV1 {
 					"Lista as encomendas do edifício do porteiro autenticado. Opcionalmente filtra por status (PENDENTE, ENTREGUE, CANCELADO). Para CANCELADO, pode-se passar o parâmetro 'days' para filtrar por dias (padrão: 7).",
 				...this.packageSchema.getPackages,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.packageController.getPackages.bind(
 				this.packageController,
 			) as RouteHandlerMethod,
@@ -62,7 +70,10 @@ export class PackageRouteV1 {
 					"Busca uma encomenda específica por ID do edifício do porteiro autenticado",
 				...this.packageSchema.getById,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.packageController.getPackageById.bind(
 				this.packageController,
 			) as RouteHandlerMethod,
@@ -80,7 +91,10 @@ export class PackageRouteV1 {
 					"Confirma a entrega de uma encomenda. O ID do porteiro é obtido automaticamente do token de autenticação.",
 				...this.packageSchema.confirmDelivery,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "update"),
+			],
 			handler: this.packageController.confirmDelivery.bind(
 				this.packageController,
 			) as RouteHandlerMethod,
@@ -98,7 +112,10 @@ export class PackageRouteV1 {
 					"Lista as quantidades total de packages pendentes, entregues hoje e entregues na semana do edifício do porteiro autenticado",
 				...this.packageSchema.getStats,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.packageController.getPackageStats.bind(
 				this.packageController,
 			) as RouteHandlerMethod,
@@ -116,7 +133,10 @@ export class PackageRouteV1 {
 					"Cancela uma encomenda. O ID do porteiro é obtido automaticamente do token de autenticação.",
 				...this.packageSchema.cancel,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "update"),
+			],
 			handler: this.packageController.cancelPackage.bind(
 				this.packageController,
 			) as RouteHandlerMethod,
@@ -134,7 +154,10 @@ export class PackageRouteV1 {
 					"Lista as encomendas do apartamento do morador autenticado. Opcionalmente filtra por status (PENDENTE, ENTREGUE, CANCELADO).",
 				...this.packageSchema.getMyPackages,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.packageController.getMyPackages.bind(
 				this.packageController,
 			) as RouteHandlerMethod,
@@ -152,7 +175,10 @@ export class PackageRouteV1 {
 					"Lista as estatísticas de encomendas do apartamento do morador autenticado",
 				...this.packageSchema.getMyPackageStats,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.packageController.getMyPackageStats.bind(
 				this.packageController,
 			) as RouteHandlerMethod,

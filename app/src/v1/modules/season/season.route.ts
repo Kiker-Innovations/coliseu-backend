@@ -2,14 +2,19 @@ import type { RouteHandlerMethod, RouteOptions } from "fastify";
 import type { MongoClient } from "mongodb";
 import { SeasonController } from "./season.controller";
 import { SeasonSchema } from "./season.schema";
+import { AuthMiddleware } from "../auth/auth.middleware";
+
+const MODULE_TAG = "season";
 
 export class SeasonRouteV1 {
 	private seasonController: SeasonController;
 	private seasonSchema: SeasonSchema;
+	private authMiddleware: AuthMiddleware;
 
 	constructor(mongoClient: MongoClient) {
 		this.seasonController = new SeasonController(mongoClient);
 		this.seasonSchema = new SeasonSchema();
+		this.authMiddleware = new AuthMiddleware(mongoClient);
 	}
 
 	private create = (): RouteOptions => {
@@ -22,6 +27,10 @@ export class SeasonRouteV1 {
 				description: "Cria uma nova season para o prédio do administrador",
 				...this.seasonSchema.create,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
+			],
 			handler: this.seasonController.createSeason.bind(
 				this.seasonController,
 			) as RouteHandlerMethod,
@@ -38,6 +47,10 @@ export class SeasonRouteV1 {
 				description: "Lista todas as seasons do prédio do administrador",
 				...this.seasonSchema.getAllByBuilding,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.seasonController.getAllSeasonsByBuilding.bind(
 				this.seasonController,
 			) as RouteHandlerMethod,
@@ -54,6 +67,10 @@ export class SeasonRouteV1 {
 				description: "Busca uma season específica por ID",
 				...this.seasonSchema.getById,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.seasonController.getSeasonById.bind(
 				this.seasonController,
 			) as RouteHandlerMethod,
@@ -70,6 +87,10 @@ export class SeasonRouteV1 {
 				description: "Atualiza uma season existente",
 				...this.seasonSchema.update,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "update"),
+			],
 			handler: this.seasonController.updateSeason.bind(
 				this.seasonController,
 			) as RouteHandlerMethod,
@@ -86,6 +107,10 @@ export class SeasonRouteV1 {
 				description: "Finaliza uma season, definindo o endDate",
 				...this.seasonSchema.finish,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "update"),
+			],
 			handler: this.seasonController.finishSeason.bind(
 				this.seasonController,
 			) as RouteHandlerMethod,
@@ -102,6 +127,10 @@ export class SeasonRouteV1 {
 				description: "Deleta uma season existente",
 				...this.seasonSchema.delete,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "delete"),
+			],
 			handler: this.seasonController.deleteSeason.bind(
 				this.seasonController,
 			) as RouteHandlerMethod,

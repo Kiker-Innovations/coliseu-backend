@@ -2,14 +2,19 @@ import type { RouteHandlerMethod, RouteOptions } from "fastify";
 import type { MongoClient } from "mongodb";
 import { ProjectController } from "./project.controller";
 import { ProjectSchema } from "./project.schema";
+import { AuthMiddleware } from "../auth/auth.middleware";
+
+const MODULE_TAG = "project";
 
 export class ProjectRouteV1 {
 	private projectController: ProjectController;
 	private projectSchema: ProjectSchema;
+	private authMiddleware: AuthMiddleware;
 
 	constructor(mongoClient: MongoClient) {
 		this.projectController = new ProjectController(mongoClient);
 		this.projectSchema = new ProjectSchema();
+		this.authMiddleware = new AuthMiddleware(mongoClient);
 	}
 
 	private create = (): RouteOptions => {
@@ -23,6 +28,10 @@ export class ProjectRouteV1 {
 					"Cria um novo projeto para o prédio do administrador na temporada atual",
 				...this.projectSchema.create,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
+			],
 			handler: this.projectController.createProject.bind(
 				this.projectController,
 			) as RouteHandlerMethod,
@@ -39,6 +48,10 @@ export class ProjectRouteV1 {
 				description: "Lista todos os projetos do prédio na temporada atual",
 				...this.projectSchema.getAllByBuildingAndSeason,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.projectController.getAllProjectsByBuildingAndSeason.bind(
 				this.projectController,
 			) as RouteHandlerMethod,
@@ -55,6 +68,10 @@ export class ProjectRouteV1 {
 				description: "Busca um projeto específico por ID",
 				...this.projectSchema.getById,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.projectController.getProjectById.bind(
 				this.projectController,
 			) as RouteHandlerMethod,
@@ -72,6 +89,10 @@ export class ProjectRouteV1 {
 					"Lista todos os projetos com ofertas escolhidas que ainda possuem parcelas pendentes",
 				...this.projectSchema.getPendingPayments,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.projectController.getProjectsWithPendingPayments.bind(
 				this.projectController,
 			) as RouteHandlerMethod,
@@ -88,6 +109,10 @@ export class ProjectRouteV1 {
 				description: "Atualiza um projeto existente",
 				...this.projectSchema.update,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "update"),
+			],
 			handler: this.projectController.updateProject.bind(
 				this.projectController,
 			) as RouteHandlerMethod,
@@ -104,6 +129,10 @@ export class ProjectRouteV1 {
 				description: "Deleta um projeto existente e todas as suas ofertas",
 				...this.projectSchema.delete,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "delete"),
+			],
 			handler: this.projectController.deleteProject.bind(
 				this.projectController,
 			) as RouteHandlerMethod,

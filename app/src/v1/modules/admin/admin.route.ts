@@ -5,6 +5,8 @@ import { AdminSchema } from "./admin.schema";
 import { AuthMiddleware } from "../auth/auth.middleware";
 import { UserTypeEnum } from "../../enum/userType.enum";
 
+const MODULE_TAG = "admin";
+
 export class AdminRouteV1 {
 	private adminController: AdminController;
 	private adminSchema: AdminSchema;
@@ -16,23 +18,6 @@ export class AdminRouteV1 {
 		this.authMiddleware = new AuthMiddleware(mongoClient);
 	}
 
-	private create = (): RouteOptions => {
-		return {
-			method: "POST",
-			url: "/v1/admins",
-			schema: {
-				tags: ["Admins"],
-				summary: "Create a new admin",
-				description:
-					"Cria um novo administrador no sistema e envia email de confirmação",
-				...this.adminSchema.create,
-			},
-			handler: this.adminController.createAdmin.bind(
-				this.adminController,
-			) as RouteHandlerMethod,
-		};
-	};
-
 	private getById = (): RouteOptions => {
 		return {
 			method: "GET",
@@ -43,6 +28,10 @@ export class AdminRouteV1 {
 				description: "Busca um administrador específico por ID",
 				...this.adminSchema.getById,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.adminController.getAdmin.bind(
 				this.adminController,
 			) as RouteHandlerMethod,
@@ -61,7 +50,7 @@ export class AdminRouteV1 {
 			},
 			preHandler: [
 				this.authMiddleware.authenticate,
-				this.authMiddleware.authorize([UserTypeEnum.ADMIN]),
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
 			],
 			handler: this.adminController.getCurrentAdmin.bind(
 				this.adminController,
@@ -79,6 +68,10 @@ export class AdminRouteV1 {
 				description: "Atualiza dados de um administrador (nome)",
 				...this.adminSchema.update,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "update"),
+			],
 			handler: this.adminController.updateAdmin.bind(
 				this.adminController,
 			) as RouteHandlerMethod,
@@ -95,6 +88,10 @@ export class AdminRouteV1 {
 				description: "Remove um administrador do sistema",
 				...this.adminSchema.remove,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "delete"),
+			],
 			handler: this.adminController.deleteAdmin.bind(
 				this.adminController,
 			) as RouteHandlerMethod,
@@ -111,6 +108,10 @@ export class AdminRouteV1 {
 				description: "Confirma o código de verificação enviado por email",
 				...this.adminSchema.confirm,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "update"),
+			],
 			handler: this.adminController.confirmAdmin.bind(
 				this.adminController,
 			) as RouteHandlerMethod,
@@ -163,7 +164,7 @@ export class AdminRouteV1 {
 			},
 			preHandler: [
 				this.authMiddleware.authenticate,
-				this.authMiddleware.authorize([UserTypeEnum.ADMIN]),
+				this.authMiddleware.checkPermission(MODULE_TAG, "update"),
 			],
 			handler: this.adminController.changePassword.bind(
 				this.adminController,
@@ -183,7 +184,7 @@ export class AdminRouteV1 {
 			},
 			preHandler: [
 				this.authMiddleware.authenticate,
-				this.authMiddleware.authorize([UserTypeEnum.ADMIN]),
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
 			],
 			handler: this.adminController.getResidents.bind(
 				this.adminController,
@@ -203,7 +204,7 @@ export class AdminRouteV1 {
 			},
 			preHandler: [
 				this.authMiddleware.authenticate,
-				this.authMiddleware.authorize([UserTypeEnum.ADMIN]),
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
 			],
 			handler: this.adminController.countResidents.bind(
 				this.adminController,
@@ -224,7 +225,7 @@ export class AdminRouteV1 {
 			},
 			preHandler: [
 				this.authMiddleware.authenticate,
-				this.authMiddleware.authorize([UserTypeEnum.ADMIN]),
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
 			],
 			handler: this.adminController.getResidentById.bind(
 				this.adminController,
@@ -318,7 +319,6 @@ export class AdminRouteV1 {
 
 	public routes = (): RouteOptions[] => {
 		return [
-			this.create(),
 			this.getById(),
 			this.getMe(),
 			this.update(),

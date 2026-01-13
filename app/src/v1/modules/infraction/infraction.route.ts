@@ -2,14 +2,19 @@ import type { RouteHandlerMethod, RouteOptions } from "fastify";
 import type { MongoClient } from "mongodb";
 import { InfractionController } from "./infraction.controller";
 import { InfractionSchema } from "./infraction.schema";
+import { AuthMiddleware } from "../auth/auth.middleware";
+
+const MODULE_TAG = "infraction";
 
 export class InfractionRouteV1 {
 	private infractionController: InfractionController;
 	private infractionSchema: InfractionSchema;
+	private authMiddleware: AuthMiddleware;
 
 	constructor(mongoClient: MongoClient) {
 		this.infractionController = new InfractionController(mongoClient);
 		this.infractionSchema = new InfractionSchema();
+		this.authMiddleware = new AuthMiddleware(mongoClient);
 	}
 
 	private createFine = (): RouteOptions => {
@@ -22,6 +27,10 @@ export class InfractionRouteV1 {
 				description: "Aplica uma multa a um apartamento (apenas admin)",
 				...this.infractionSchema.createFine,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
+			],
 			handler: this.infractionController.createFineInfraction.bind(
 				this.infractionController,
 			) as RouteHandlerMethod,
@@ -38,6 +47,10 @@ export class InfractionRouteV1 {
 				description: "Aplica uma notificação a um apartamento (apenas admin)",
 				...this.infractionSchema.createNotification,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
+			],
 			handler: this.infractionController.createNotificationInfraction.bind(
 				this.infractionController,
 			) as RouteHandlerMethod,
@@ -54,6 +67,10 @@ export class InfractionRouteV1 {
 				description: "Lista todas as infrações com filtros opcionais",
 				...this.infractionSchema.getAll,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.infractionController.getInfractions.bind(
 				this.infractionController,
 			) as RouteHandlerMethod,
@@ -71,6 +88,10 @@ export class InfractionRouteV1 {
 					"Lista as multas do morador autenticado, ordenadas por data (apenas resident)",
 				...this.infractionSchema.getMyFines,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.infractionController.getMyFines.bind(
 				this.infractionController,
 			) as RouteHandlerMethod,
@@ -88,6 +109,10 @@ export class InfractionRouteV1 {
 					"Contesta uma infração com texto e arquivo de evidência (apenas resident)",
 				...this.infractionSchema.contestInfraction,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
+			],
 			handler: this.infractionController.contestInfraction.bind(
 				this.infractionController,
 			) as RouteHandlerMethod,
@@ -104,6 +129,10 @@ export class InfractionRouteV1 {
 				description: "Busca a contestação de uma infração (apenas resident)",
 				...this.infractionSchema.getInfractionAppeal,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.infractionController.getInfractionAppeal.bind(
 				this.infractionController,
 			) as RouteHandlerMethod,
@@ -121,6 +150,10 @@ export class InfractionRouteV1 {
 					"Aprova a contestação de uma infração, cancelando a multa (apenas admin)",
 				...this.infractionSchema.approveAppeal,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "update"),
+			],
 			handler: this.infractionController.approveAppeal.bind(
 				this.infractionController,
 			) as RouteHandlerMethod,
@@ -138,6 +171,10 @@ export class InfractionRouteV1 {
 					"Reprova a contestação de uma infração, voltando a multa para pendente (apenas admin)",
 				...this.infractionSchema.rejectAppeal,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "update"),
+			],
 			handler: this.infractionController.rejectAppeal.bind(
 				this.infractionController,
 			) as RouteHandlerMethod,
@@ -154,6 +191,10 @@ export class InfractionRouteV1 {
 				description: "Busca a contestação de uma infração (apenas admin)",
 				...this.infractionSchema.getInfractionAppealForAdmin,
 			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.infractionController.getInfractionAppealForAdmin.bind(
 				this.infractionController,
 			) as RouteHandlerMethod,

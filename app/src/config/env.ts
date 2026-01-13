@@ -57,12 +57,24 @@ const envSchema = z.object({
 				fines: z.string().min(1),
 				infractionAppeals: z.string().min(1),
 				roles: z.string().min(1),
+				pages: z.string().min(1),
+				buildingPages: z.string().min(1),
+				plans: z.string().min(1),
+				rolePlanModules: z.string().min(1),
+				modules: z.string().min(1),
+				usefulContacts: z.string().min(1),
 			}),
 		}),
 	}),
 	providers: z.object({
 		resend: z.object({
 			apiKey: z.string().min(1),
+		}),
+		uazapi: z.object({
+			serverUrl: z.string().url().min(1),
+			adminToken: z.string().min(1).optional(),
+			instanceToken: z.string().min(1),
+			phoneNumber: z.string().min(1).optional(),
 		}),
 		aws: z.object({
 			config: z.object({
@@ -155,12 +167,28 @@ export const env = envSchema.parse({
 					process.env.MONGODB_COLLECTION_INFRACTION_APPEALS ||
 					"infraction_appeals",
 				roles: process.env.MONGODB_COLLECTION_ROLES || "roles",
+				pages: process.env.MONGODB_COLLECTION_PAGES || "pages",
+				buildingPages:
+					process.env.MONGODB_COLLECTION_BUILDING_PAGES || "building_pages",
+				plans: process.env.MONGODB_COLLECTION_PLANS || "plans",
+				rolePlanModules:
+					process.env.MONGODB_COLLECTION_ROLE_PLAN_MODULES ||
+					"role_plan_modules",
+				modules: process.env.MONGODB_COLLECTION_MODULES || "modules",
+				usefulContacts:
+					process.env.MONGODB_COLLECTION_USEFUL_CONTACTS || "useful_contacts",
 			},
 		},
 	},
 	providers: {
 		resend: {
 			apiKey: process.env.RESEND_API_KEY,
+		},
+		uazapi: {
+			serverUrl: process.env.UAZAPI_SERVER_URL || "https://free.uazapi.com",
+			adminToken: process.env.UAZAPI_ADMIN_TOKEN || "",
+			instanceToken: process.env.UAZAPI_INSTANCE_TOKEN || "",
+			phoneNumber: process.env.UAZAPI_PHONE_NUMBER || "",
 		},
 		aws: {
 			config: {

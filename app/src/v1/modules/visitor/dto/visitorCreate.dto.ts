@@ -40,6 +40,11 @@ export const visitorCreateSchema = z.object({
 			(types) => types.length > 0,
 			"Deve ter pelo menos um tipo de visitante",
 		),
+	companyName: z
+		.string()
+		.max(100, "Nome da empresa deve ter no máximo 100 caracteres")
+		.optional()
+		.transform((val) => (val === "" ? undefined : val)),
 	note: z
 		.string()
 		.optional()

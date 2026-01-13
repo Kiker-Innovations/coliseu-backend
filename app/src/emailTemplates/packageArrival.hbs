@@ -162,10 +162,21 @@
 					<span class="info-item-label">📝 Descrição:</span> {{description}}
 				</div>
 				{{/if}}
+				{{#if pickupCode}}
+				<div class="info-item" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eeeeee;">
+					<span class="info-item-label" style="font-size: 18px; color: #C17A54;">🔑 Código de Retirada:</span>
+					<span style="font-size: 24px; font-weight: bold; color: #C17A54; letter-spacing: 3px; font-family: monospace;">{{pickupCode}}</span>
+				</div>
+				{{/if}}
 			</div>
 			
 			<div class="cta-box">
 				<p><strong>Por favor, dirija-se à portaria para retirar sua encomenda.</strong></p>
+				{{#if pickupCode}}
+				<p style="margin-top: 15px; font-size: 14px; color: #666666;">
+					⚠️ <strong>Importante:</strong> Apresente o código de retirada na portaria para receber sua encomenda.
+				</p>
+				{{/if}}
 			</div>
 			
 			<p class="message" style="font-size: 14px; color: #666666;">

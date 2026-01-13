@@ -4,6 +4,8 @@ import { ProjectSuggestionController } from "./projectSuggestion.controller";
 import { ProjectSuggestionSchema } from "./projectSuggestion.schema";
 import { AuthMiddleware } from "../auth/auth.middleware";
 
+const MODULE_TAG = "project-suggestion";
+
 export class ProjectSuggestionRouteV1 {
 	private projectSuggestionController: ProjectSuggestionController;
 	private projectSuggestionSchema: ProjectSuggestionSchema;
@@ -28,7 +30,10 @@ export class ProjectSuggestionRouteV1 {
 					"Processa e rankeia as sugestões dos moradores de uma season. Remove duplicatas e organiza por relevância. Deve ser chamado pelo administrador após o período de captação de sugestões",
 				...this.projectSuggestionSchema.rankSuggestions,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
+			],
 			handler: this.projectSuggestionController.rankSuggestions.bind(
 				this.projectSuggestionController,
 			) as RouteHandlerMethod,
@@ -45,7 +50,10 @@ export class ProjectSuggestionRouteV1 {
 				description: "Lista todas as sugestões rankeadas de uma season",
 				...this.projectSuggestionSchema.getBySeasonId,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.projectSuggestionController.getBySeasonId.bind(
 				this.projectSuggestionController,
 			) as RouteHandlerMethod,
@@ -63,7 +71,10 @@ export class ProjectSuggestionRouteV1 {
 					"Inicia o período de votação para as sugestões rankeadas de uma season. Define as datas de início e fim da votação",
 				...this.projectSuggestionSchema.startVoting,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "update"),
+			],
 			handler: this.projectSuggestionController.startVoting.bind(
 				this.projectSuggestionController,
 			) as RouteHandlerMethod,
@@ -81,7 +92,10 @@ export class ProjectSuggestionRouteV1 {
 					"Encerra o período de votação e recalcula o ranking baseado nos votos recebidos",
 				...this.projectSuggestionSchema.endVoting,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "update"),
+			],
 			handler: this.projectSuggestionController.endVoting.bind(
 				this.projectSuggestionController,
 			) as RouteHandlerMethod,
@@ -99,7 +113,10 @@ export class ProjectSuggestionRouteV1 {
 					"Registra ou atualiza os votos de um morador em uma sugestão. Cada morador possui 3 votos por season que podem ser distribuídos livremente entre as sugestões",
 				...this.projectSuggestionSchema.vote,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
+			],
 			handler: this.projectSuggestionController.vote.bind(
 				this.projectSuggestionController,
 			) as RouteHandlerMethod,
@@ -116,7 +133,10 @@ export class ProjectSuggestionRouteV1 {
 				description: "Remove os votos de um morador em uma sugestão específica",
 				...this.projectSuggestionSchema.deleteVote,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "delete"),
+			],
 			handler: this.projectSuggestionController.deleteVote.bind(
 				this.projectSuggestionController,
 			) as RouteHandlerMethod,
@@ -134,7 +154,10 @@ export class ProjectSuggestionRouteV1 {
 					"Retorna os votos do morador autenticado em todas as sugestões de uma season",
 				...this.projectSuggestionSchema.getMyVotes,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
 			handler: this.projectSuggestionController.getMyVotes.bind(
 				this.projectSuggestionController,
 			) as RouteHandlerMethod,
@@ -152,7 +175,10 @@ export class ProjectSuggestionRouteV1 {
 					"Cria projetos a partir das sugestões mais votadas de uma season. O administrador define quantos projetos serão criados (default: 3)",
 				...this.projectSuggestionSchema.createProjectsFromTopSuggestions,
 			},
-			preHandler: this.authMiddleware.authenticate,
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
+			],
 			handler:
 				this.projectSuggestionController.createProjectsFromTopSuggestions.bind(
 					this.projectSuggestionController,

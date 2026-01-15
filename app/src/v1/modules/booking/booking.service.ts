@@ -1,78 +1,92 @@
 import type { MongoClient } from "mongodb";
 import type {
-	CreateAmenityBookingEntity,
-	AmenityBookingEntity,
-} from "../../../database/mongodb/entity/amenityBooking.entity";
-import { AmenityBookingRepository } from "../../../database/mongodb/repositories/amenity_booking.repository";
+	CreateBookingEntity,
+	BookingEntity,
+} from "../../../database/mongodb/entity/booking.entity";
+import { BookingRepository } from "../../../database/mongodb/repositories/booking.repository";
 import { AmenityRepository } from "../../../database/mongodb/repositories/amenity.repository";
 import { ApartmentRepository } from "../../../database/mongodb/repositories/apartment.repository";
 import { ResidentRepository } from "../../../database/mongodb/repositories/resident.repository";
 import type {
-	AmenityBookingCreateDto,
-	AmenityBookingListQueryDto,
+	BookingCreateDto,
+	BookingListQueryDto,
 } from "./dto";
 import { httpException } from "../../../config/error";
 import httpStatus from "http-status";
 import type { HttpResponse } from "../../../interface/httpResponse.interface";
-import { AmenityBookingStatusEnum } from "../../enum/amenityBookingStatus.enum";
-import { getDate } from "../../utils/utils";
-import { randomUUID } from "node:crypto";
+import { BookingStatusEnum, type BookingStatusEnumType } from "../../enum/bookingStatus.enum";
+import { PaymentService } from "../payment/payment.service";
+import { PaymentRepository } from "@/database/mongodb/repositories/payment.repository";
 
-export class AmenityBookingService {
-	private amenityBookingRepository: AmenityBookingRepository;
+export class BookingService {
+	private bookingRepository: BookingRepository;
 	private amenityRepository: AmenityRepository;
 	private apartmentRepository: ApartmentRepository;
 	private residentRepository: ResidentRepository;
+	private paymentRepository: PaymentRepository;
+	private mongoClient: MongoClient;
+	private _paymentService: PaymentService | null = null;
 
 	constructor(mongoClient: MongoClient) {
-		this.amenityBookingRepository = new AmenityBookingRepository(mongoClient);
+		this.bookingRepository = new BookingRepository(mongoClient);
 		this.amenityRepository = new AmenityRepository(mongoClient);
 		this.apartmentRepository = new ApartmentRepository(mongoClient);
 		this.residentRepository = new ResidentRepository(mongoClient);
+		this.paymentRepository = new PaymentRepository(mongoClient);
+		this.mongoClient = mongoClient;
 	}
 
 	/**
-	 * Calcula o valor total da reserva baseado no tipo de reserva (DIARIO)
+	 * Lazy initialization para evitar dependência circular
+	 */
+	private get paymentService(): PaymentService {
+		if (!this._paymentService) {
+			this._paymentService = new PaymentService(this.mongoClient);
+		}
+		return this._paymentService;
+	}
+
+	/**
+	 * Calcula o valor total da reserva baseado no tipo de reserva (DIARIO ou POR_HORAS)
 	 */
 	private calculateTotalValue(
 		amenity: any,
 		startDate: Date,
-		endDate?: Date,
+		endDate: Date,
 	): number {
 		if (!amenity.value || amenity.value === 0) {
 			return 0;
 		}
 
-		// Calcular dias (DIARIO)
-		if (!endDate) {
-			return amenity.value; // 1 dia
+		// Se for DIARIO, sempre retorna o valor de 1 dia (não multiplica)
+		if (amenity.bookingType === "DIARIO") {
+			return amenity.value;
 		}
-		const diffTime = endDate.getTime() - startDate.getTime();
-		const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-		return amenity.value * Math.max(1, diffDays);
+
+		// Se for POR_HORAS, calcula baseado nas horas
+		if (amenity.bookingType === "POR_HORAS") {
+			const diffTime = endDate.getTime() - startDate.getTime();
+			const diffHours = diffTime / (1000 * 60 * 60); // Diferença em horas
+			
+			// Arredondar para cima para cobrar horas completas
+			const hours = Math.ceil(diffHours);
+			
+			// Verificar se não excede o máximo de horas permitido
+			if (amenity.maxHours && hours > amenity.maxHours) {
+				throw httpException(
+					`O período selecionado excede o limite máximo de ${amenity.maxHours} horas`,
+					httpStatus.BAD_REQUEST,
+				);
+			}
+			
+			// Valor por hora multiplicado pelo número de horas
+			return amenity.value * hours;
+		}
+
+		// Fallback: retorna o valor padrão
+		return amenity.value;
 	}
 
-	/**
-	 * Gera um QR code mockado para pagamento PIX
-	 */
-	private generateQRCode(bookingId: string, totalValue: number): string {
-		// Mock QR code PIX - em produção, usar biblioteca como qrcode ou API de pagamento
-		const qrData = {
-			bookingId,
-			value: totalValue,
-			currency: "BRL",
-			description: `Pagamento reserva ${bookingId}`,
-			timestamp: new Date().toISOString(),
-			type: "PIX",
-		};
-		// Retornar uma string base64 mockada simulando um QR code PIX
-		// Em produção, isso seria gerado por uma biblioteca de QR code ou API de pagamento
-		return `PIX_MOCK_${Buffer.from(JSON.stringify(qrData)).toString("base64")}`;
-	}
-
-	/**
-	 * Verifica conflitos de reserva (DIARIO)
-	 */
 	private async checkConflicts(
 		amenityId: string,
 		startDate: Date,
@@ -82,7 +96,7 @@ export class AmenityBookingService {
 		// Para reserva diária, verificar conflitos de data
 		if (endDate) {
 			const conflictingBookings =
-				await this.amenityBookingRepository.findConflictingBookings(
+				await this.bookingRepository.findConflictingBookings(
 					amenityId,
 					startDate,
 					endDate,
@@ -93,7 +107,7 @@ export class AmenityBookingService {
 
 		// Reserva de 1 dia
 		const conflictingBookings =
-			await this.amenityBookingRepository.findConflictingBookings(
+			await this.bookingRepository.findConflictingBookings(
 				amenityId,
 				startDate,
 				startDate,
@@ -102,21 +116,20 @@ export class AmenityBookingService {
 		return conflictingBookings.length > 0;
 	}
 
-	public async createAmenityBooking(
-		amenityBookingCreateDto: AmenityBookingCreateDto,
+	public async createBooking(
+		bookingCreateDto: BookingCreateDto,
 		apartmentId: string,
-		residentId?: string,
-	): Promise<HttpResponse<AmenityBookingEntity>> {
-		// Verificar se a comodidade existe
+		residentId: string | undefined,
+		buildingId: string,
+	): Promise<HttpResponse<BookingEntity>> {
 		const amenity = await this.amenityRepository.findById(
-			amenityBookingCreateDto.amenityId,
+			bookingCreateDto.amenityId,
 		);
 
 		if (!amenity) {
 			throw httpException("Comodidade não encontrada", httpStatus.NOT_FOUND);
 		}
 
-		// Verificar se a comodidade está ativa
 		if (amenity.status !== "ATIVO") {
 			throw httpException(
 				"Comodidade não está disponível para reserva",
@@ -124,19 +137,32 @@ export class AmenityBookingService {
 			);
 		}
 
-		// DIARIO - endDate é obrigatório
-		if (!amenityBookingCreateDto.endDate) {
+		if (!bookingCreateDto.endDate) {
 			throw httpException(
-				"Data de término é obrigatória para reserva diária",
+				"Data de término é obrigatória",
 				httpStatus.BAD_REQUEST,
 			);
 		}
 
-		// Verificar conflitos
+		// Validação para reserva DIARIO: só pode ser 1 dia
+		if (amenity.bookingType === "DIARIO") {
+			const diffTime =
+				bookingCreateDto.endDate.getTime() -
+				bookingCreateDto.startDate.getTime();
+			const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+			
+			if (diffDays > 1) {
+				throw httpException(
+					"Reservas diárias só podem ser feitas para 1 dia",
+					httpStatus.BAD_REQUEST,
+				);
+			}
+		}
+
 		const hasConflict = await this.checkConflicts(
-			amenityBookingCreateDto.amenityId,
-			amenityBookingCreateDto.startDate,
-			amenityBookingCreateDto.endDate,
+			bookingCreateDto.amenityId,
+			bookingCreateDto.startDate,
+			bookingCreateDto.endDate,
 		);
 
 		if (hasConflict) {
@@ -146,53 +172,85 @@ export class AmenityBookingService {
 			);
 		}
 
-		// Calcular valor total
+		// Calcular o valor total baseado no tipo de reserva
 		const totalValue = this.calculateTotalValue(
 			amenity,
-			amenityBookingCreateDto.startDate,
-			amenityBookingCreateDto.endDate,
+			bookingCreateDto.startDate,
+			bookingCreateDto.endDate,
 		);
 
-		// Calcular número de dias
+		// Calcular numberOfDays apenas para DIARIO
 		let numberOfDays: number | undefined;
-		if (amenityBookingCreateDto.endDate) {
-			const diffTime =
-				amenityBookingCreateDto.endDate.getTime() -
-				amenityBookingCreateDto.startDate.getTime();
-			numberOfDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+		if (amenity.bookingType === "DIARIO") {
+			numberOfDays = 1; // Sempre 1 dia para DIARIO
 		} else {
-			numberOfDays = 1;
+			// Para POR_HORAS, não precisa de numberOfDays
+			numberOfDays = undefined;
 		}
 
-		const endDate = amenityBookingCreateDto.endDate;
+		const endDate = bookingCreateDto.endDate;
 
-		// Gerar QR code se a comodidade for paga
-		let qrCode: string | undefined;
-		let qrCodeExpiry: Date | undefined;
-		if (amenity.value && amenity.value > 0) {
-			const bookingId = randomUUID();
-			qrCode = this.generateQRCode(bookingId, totalValue);
-			// QR code expira em 24 horas
-			qrCodeExpiry = new Date();
-			qrCodeExpiry.setHours(qrCodeExpiry.getHours() + 24);
-		}
-
-		const amenityBookingEntity: CreateAmenityBookingEntity = {
-			amenityId: amenityBookingCreateDto.amenityId,
+		const bookingEntity: CreateBookingEntity = {
+			amenityId: bookingCreateDto.amenityId,
 			apartmentId,
+			buildingId,
 			residentId,
-			startDate: amenityBookingCreateDto.startDate,
-			endDate: endDate || amenityBookingCreateDto.startDate,
+			startDate: bookingCreateDto.startDate,
+			endDate: endDate || bookingCreateDto.startDate,
 			numberOfDays,
-			status: AmenityBookingStatusEnum.PENDENTE,
+			status: BookingStatusEnum.PENDENTE,
 			totalValue,
-			qrCode,
-			qrCodeExpiry,
-			observation: amenityBookingCreateDto.observation,
+			observation: bookingCreateDto.observation,
 		};
 
-		const createdBooking =
-			await this.amenityBookingRepository.create(amenityBookingEntity);
+		let createdBooking = await this.bookingRepository.create(bookingEntity);
+
+		if (createdBooking && createdBooking.totalValue > 0) {
+			if (!createdBooking.residentId) {
+				throw httpException(
+					"Residente é obrigatório para criar pagamento",
+					httpStatus.BAD_REQUEST,
+				);
+			}
+
+			try {
+				console.log("Iniciando criação de pagamento para reserva:", createdBooking._id);
+				const webPayment = await this.paymentService.createWebPayment(createdBooking);
+				console.log("WebPayment criado:", webPayment?.id || "sem ID");
+				
+				if (webPayment) {
+					const paymentResult = await this.paymentService.createPayment(
+						{
+							entityOriginId: createdBooking._id,
+							value: createdBooking.totalValue,
+							residentId: createdBooking.residentId,
+							apartmentId: createdBooking.apartmentId,
+							buildingId: createdBooking.buildingId,
+							type: "BOOKING",
+						},
+						webPayment,
+					);
+					console.log("Pagamento criado com sucesso:", paymentResult);
+					
+					// Buscar a reserva atualizada com paymentUrl e paymentId
+					const updatedBooking = await this.bookingRepository.findById(createdBooking._id);
+					if (updatedBooking) {
+						createdBooking = updatedBooking;
+					}
+				} else {
+					console.error("WebPayment não foi retornado pela API do AbacatePay");
+				}
+			} catch (error: any) {
+				console.error("Erro ao criar pagamento:", {
+					message: error.message,
+					statusCode: error.statusCode,
+					stack: error.stack,
+					bookingId: createdBooking._id
+				});
+				// Não relançar o erro para não impedir a criação da reserva
+				// Mas logar detalhadamente para debug
+			}
+		}
 
 		return {
 			success: true,
@@ -201,17 +259,10 @@ export class AmenityBookingService {
 		};
 	}
 
-	public async getAmenityBookings(
-		query: AmenityBookingListQueryDto,
+	public async getBookings(
+		query: BookingListQueryDto,
 		apartmentId: string,
-	): Promise<
-		HttpResponse<{
-			bookings: any[];
-			total: number;
-			page: number;
-			limit: number;
-		}>
-	> {
+	) {
 		// Filtrar apenas por apartmentId (obrigatório)
 		const filters: any = {
 			apartmentId,
@@ -219,7 +270,7 @@ export class AmenityBookingService {
 
 		// Buscar bookings com paginação no banco
 		const { bookings, total } =
-			await this.amenityBookingRepository.listWithFilters(
+			await this.bookingRepository.listWithFilters(
 				filters,
 				query.page,
 				query.limit,
@@ -233,10 +284,8 @@ export class AmenityBookingService {
 				continue;
 			}
 
-			// Buscar amenity
 			const amenity = await this.amenityRepository.findById(booking.amenityId);
 
-			// Serializar o booking
 			const serializedBooking: any = {
 				_id: String(booking._id || ""),
 				amenityId: String(booking.amenityId || ""),
@@ -245,9 +294,11 @@ export class AmenityBookingService {
 				status: String(booking.status || ""),
 				totalValue: Number(booking.totalValue || 0),
 				numberOfDays: booking.numberOfDays || null,
-				qrCode: booking.qrCode || null,
 				observation: booking.observation || null,
+				paymentUrl: booking.paymentUrl || null,
+				paymentId: booking.paymentId || null,
 			};
+
 
 			// Converter datas para ISO string
 			if (booking.startDate) {
@@ -268,15 +319,6 @@ export class AmenityBookingService {
 				serializedBooking.endDate = null;
 			}
 
-			if (booking.qrCodeExpiry) {
-				serializedBooking.qrCodeExpiry =
-					booking.qrCodeExpiry instanceof Date
-						? booking.qrCodeExpiry.toISOString()
-						: new Date(booking.qrCodeExpiry).toISOString();
-			} else {
-				serializedBooking.qrCodeExpiry = null;
-			}
-
 			if (booking.createdAt) {
 				serializedBooking.createdAt =
 					booking.createdAt instanceof Date
@@ -295,14 +337,6 @@ export class AmenityBookingService {
 				serializedBooking.updatedAt = null;
 			}
 
-			if (booking.qrCodeExpiry) {
-				serializedBooking.qrCodeExpiry =
-					booking.qrCodeExpiry instanceof Date
-						? booking.qrCodeExpiry.toISOString()
-						: new Date(booking.qrCodeExpiry).toISOString();
-			} else {
-				serializedBooking.qrCodeExpiry = null;
-			}
 
 			// Adicionar dados da amenity
 			if (amenity) {
@@ -322,6 +356,9 @@ export class AmenityBookingService {
 				serializedBooking.amenity = null;
 			}
 
+			// Payment não é mais buscado separadamente, os dados estão no booking
+			serializedBooking.payment = null;
+			
 			serializedBookings.push(serializedBooking);
 		}
 
@@ -337,23 +374,31 @@ export class AmenityBookingService {
 		};
 	}
 
-	public async cancelAmenityBooking(
+	public async cancelBooking(
 		bookingId: string,
-	): Promise<HttpResponse<AmenityBookingEntity>> {
-		const booking = await this.amenityBookingRepository.findById(bookingId);
+	): Promise<HttpResponse<BookingEntity>> {
+		const booking = await this.bookingRepository.findById(bookingId);
 
 		if (!booking) {
 			throw httpException("Reserva não encontrada", httpStatus.NOT_FOUND);
 		}
 
-		if (booking.status === AmenityBookingStatusEnum.CANCELADO) {
+		if (booking.status === BookingStatusEnum.CANCELADO) {
 			throw httpException("Reserva já está cancelada", httpStatus.BAD_REQUEST);
 		}
 
-		const updatedBooking = await this.amenityBookingRepository.update(
+		// Buscar o pagamento associado à reserva
+		const payment = await this.paymentRepository.findByEntityOriginId(bookingId);
+
+		// Se houver pagamento, cancelar no AbacatePay e no banco
+		if (payment) {
+			await this.paymentService.cancelPayment(payment);
+		}
+
+		const updatedBooking = await this.bookingRepository.update(
 			bookingId,
 			{
-				status: AmenityBookingStatusEnum.CANCELADO,
+				status: BookingStatusEnum.CANCELADO,
 			},
 		);
 
@@ -371,7 +416,7 @@ export class AmenityBookingService {
 		};
 	}
 
-	public async getAmenityBookingsByBuilding(
+	public async getBookingsByBuilding(
 		buildingId: string,
 	): Promise<HttpResponse<{ bookings: any[]; total: number }>> {
 		if (!buildingId) {
@@ -396,21 +441,21 @@ export class AmenityBookingService {
 			};
 		}
 
-		// Filtrar reservas apenas com status PENDENTE, CONFIRMADO e EM_ANDAMENTO
+		// Filtrar reservas apenas com status PENDENTE, AGENDADO e EM_ANDAMENTO
 		const filters: any = {
 			amenityId: { $in: amenityIds },
 			status: {
 				$in: [
-					AmenityBookingStatusEnum.PENDENTE,
-					AmenityBookingStatusEnum.CONFIRMADO,
-					AmenityBookingStatusEnum.EM_ANDAMENTO,
+					BookingStatusEnum.PENDENTE,
+					BookingStatusEnum.AGENDADO,
+					BookingStatusEnum.EM_ANDAMENTO,
 				],
 			},
 		};
 
 		// Buscar bookings
 		const { bookings, total } =
-			await this.amenityBookingRepository.listWithFilters(filters);
+			await this.bookingRepository.listWithFilters(filters);
 
 		// Buscar dados completos (amenity, apartment, resident) para cada booking
 		const bookingsWithDetails = await Promise.all(
@@ -446,7 +491,6 @@ export class AmenityBookingService {
 					status: String(booking.status),
 					totalValue: Number(booking.totalValue),
 					numberOfDays: booking.numberOfDays || null,
-					qrCode: booking.qrCode || null,
 					observation: booking.observation || null,
 				};
 
@@ -531,4 +575,73 @@ export class AmenityBookingService {
 			},
 		};
 	}
+
+	/**
+	 * Atualiza o status da reserva baseado na hora atual e se o pagamento foi feito
+	 * Status possíveis:
+	 * - PENDENTE: Pagamento não foi feito
+	 * - AGENDADO: Pagamento foi feito mas ainda não começou (hora atual < startDate)
+	 * - EM_ANDAMENTO: Pagamento foi feito e está dentro do período (hora atual >= startDate && hora atual <= endDate)
+	 * - FINALIZADO: Pagamento foi feito e já passou do período (hora atual > endDate)
+	 */
+	public async updateBookingStatus(
+		booking: BookingEntity,
+	): Promise<BookingEntity> {
+		const now = new Date();
+		const startDate = new Date(booking.startDate);
+		const endDate = new Date(booking.endDate);
+
+		// Verifica se o pagamento foi feito
+		const payment = await this.paymentRepository.findByEntityOriginId(booking._id);
+		const isPaid = payment && payment.status === "PAGO";
+
+		let newStatus: BookingStatusEnumType;
+
+		if (!isPaid) {
+			// Se não foi pago, mantém como PENDENTE
+			newStatus = BookingStatusEnum.PENDENTE;
+		} else if (now < startDate) {
+			// Pagamento feito mas ainda não começou
+			newStatus = BookingStatusEnum.AGENDADO;
+		} else if (now >= startDate && now <= endDate) {
+			// Pagamento feito e está dentro do período
+			newStatus = BookingStatusEnum.EM_ANDAMENTO;
+		} else {
+			// Pagamento feito mas já passou do período
+			newStatus = BookingStatusEnum.FINALIZADO;
+		}
+
+		// Atualiza apenas se o status mudou
+		if (booking.status !== newStatus) {
+			const updatedBooking = await this.bookingRepository.update(
+				booking._id,
+				{
+					status: newStatus,
+					updatedAt: now,
+				},
+			);
+
+			return updatedBooking || booking;
+		}
+
+		return booking;
+	}
+
+	/**
+	 * Atualiza o status da reserva verificando se há pagamento com status PAGO vinculado
+	 */
+	public async updateBookingStatusByPayment(
+		booking: BookingEntity,
+	): Promise<BookingEntity> {
+		const payment = await this.paymentRepository.findByEntityOriginId(booking._id);
+		
+		// Se não há pagamento ou o pagamento não está pago, não atualiza
+		if (!payment || payment.status !== "PAGO") {
+			return booking;
+		}
+
+		// Atualiza o status baseado na hora atual
+		return await this.updateBookingStatus(booking);
+	}
 }
+

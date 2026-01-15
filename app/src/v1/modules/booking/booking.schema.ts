@@ -1,4 +1,4 @@
-export class AmenityBookingSchema {
+export class BookingSchema {
 	public create = {
 		body: {
 			type: "object",
@@ -77,13 +77,13 @@ export class AmenityBookingSchema {
 										amenityId: { type: "string" },
 										apartmentId: { type: "string" },
 										residentId: { type: ["string", "null"] },
+										paymentId: { type: ["string", "null"] },
+										paymentUrl: { type: ["string", "null"] },
 										startDate: { type: ["string", "null"] },
 										endDate: { type: ["string", "null"] },
 										numberOfDays: { type: ["number", "null"] },
 										status: { type: "string" },
 										totalValue: { type: "number" },
-										qrCode: { type: ["string", "null"] },
-										qrCodeExpiry: { type: ["string", "null"] },
 										observation: { type: ["string", "null"] },
 										createdAt: { type: ["string", "null"] },
 										updatedAt: { type: ["string", "null"] },
@@ -165,13 +165,13 @@ export class AmenityBookingSchema {
 										amenityId: { type: "string" },
 										apartmentId: { type: "string" },
 										residentId: { type: ["string", "null"] },
+										paymentId: { type: ["string", "null"] },
+										paymentUrl: { type: ["string", "null"] },
 										startDate: { type: ["string", "null"] },
 										endDate: { type: ["string", "null"] },
 										numberOfDays: { type: ["number", "null"] },
 										status: { type: "string" },
 										totalValue: { type: "number" },
-										qrCode: { type: ["string", "null"] },
-										qrCodeExpiry: { type: ["string", "null"] },
 										observation: { type: ["string", "null"] },
 										createdAt: { type: ["string", "null"] },
 										updatedAt: { type: ["string", "null"] },
@@ -222,3 +222,4 @@ export class AmenityBookingSchema {
 		},
 	};
 }
+

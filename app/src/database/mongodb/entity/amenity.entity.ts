@@ -1,6 +1,6 @@
 import type { AmenityStatusEnumType } from "@/v1/enum/amenityStatus.enum";
 import type { AmenityTypeEnumType } from "@/v1/enum/amenityType.enum";
-import type { AmenityBookingTypeEnumType } from "@/v1/enum/amenityBookingType.enum";
+import type { BookingTypeEnumType } from "@/v1/enum/bookingType.enum";
 
 export interface AmenityEntity {
 	_id: string;
@@ -12,8 +12,9 @@ export interface AmenityEntity {
 	fineValue?: number;
 	nonComplianceFine?: number;
 	maxResidents?: number;
-	usageRules?: string; // HTML content for rich text
-	bookingType?: AmenityBookingTypeEnumType;
+	maxHours?: number;
+	usageRules?: string; 
+	bookingType?: BookingTypeEnumType;
 	status?: AmenityStatusEnumType;
 	createdAt: Date;
 	updatedAt: Date;

@@ -88,7 +88,10 @@ export class AmenityService {
 			);
 		}
 
-		const amenities = await this.amenityRepository.findMany({ buildingId });
+		// Não exibir amenidades deletadas (soft delete)
+		// Buscar todas e filtrar no código, já que o repository não suporta $ne diretamente
+		const allAmenities = await this.amenityRepository.findMany({ buildingId });
+		const amenities = allAmenities.filter((amenity) => amenity.status !== "DELETADO");
 
 		return {
 			success: true,
@@ -100,10 +103,12 @@ export class AmenityService {
 	public async getActiveCommoditiesByBuilding(
 		buildingId: string,
 	): Promise<HttpResponse<AmenityEntity[]>> {
-		const amenities = await this.amenityRepository.findMany({
+		// Buscar apenas comodidades ativas e não deletadas
+		const allAmenities = await this.amenityRepository.findMany({
 			buildingId,
 			status: "ATIVO",
 		});
+		const amenities = allAmenities.filter((amenity) => amenity.status !== "DELETADO");
 
 		return {
 			success: true,
@@ -156,9 +161,12 @@ export class AmenityService {
 			throw httpException("Comodidade não encontrada", httpStatus.NOT_FOUND);
 		}
 
-		const deleted = await this.amenityRepository.delete(amenityId);
+		// Soft delete: apenas mudar o status para DELETADO
+		const updated = await this.amenityRepository.update(amenityId, {
+			status: "DELETADO" as AmenityStatusEnumType,
+		});
 
-		if (!deleted) {
+		if (!updated) {
 			throw httpException(
 				"Erro ao deletar comodidade",
 				httpStatus.INTERNAL_SERVER_ERROR,
@@ -182,7 +190,9 @@ export class AmenityService {
 			);
 		}
 
-		const count = await this.amenityRepository.count({ buildingId });
+		// Contar apenas comodidades não deletadas
+		const allAmenities = await this.amenityRepository.findMany({ buildingId });
+		const count = allAmenities.filter((amenity) => amenity.status !== "DELETADO").length;
 
 		return {
 			success: true,

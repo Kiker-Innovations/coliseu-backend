@@ -57,6 +57,7 @@ const authGuardPlugin = async (
 		new RegExp(`^${config.stripPrefix}/docs.*`),
 		new RegExp(`^${config.stripPrefix}/swagger.*`),
 		new RegExp(`^${config.stripPrefix}/v1/buildings/.*/apartments$`),
+		new RegExp(`^${config.stripPrefix}/v1/payments/webhook/abacatepay`),
 	];
 
 	fastify.addHook(

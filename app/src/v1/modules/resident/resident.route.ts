@@ -25,13 +25,10 @@ export class ResidentRouteV1 {
 				tags: ["Residents"],
 				summary: "Create a new resident",
 				description:
-					"Cria um novo morador no sistema e envia email de confirmação",
+					"Cria um novo morador no sistema e envia email de confirmação. Rota pública para permitir registro.",
 				...this.residentSchema.create,
 			},
-			preHandler: [
-				this.authMiddleware.authenticate,
-				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
-			],
+			// Rota pública - não requer autenticação para permitir registro
 			handler: this.residentController.createResident.bind(
 				this.residentController,
 			) as RouteHandlerMethod,
@@ -125,13 +122,10 @@ export class ResidentRouteV1 {
 			schema: {
 				tags: ["Residents"],
 				summary: "Confirm resident email",
-				description: "Confirma o código de verificação enviado por email",
+				description: "Confirma o código de verificação enviado por email (público)",
 				...this.residentSchema.confirm,
 			},
-			preHandler: [
-				this.authMiddleware.authenticate,
-				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
-			],
+			// Rota pública - não requer autenticação para permitir confirmação de email antes do login
 			handler: this.residentController.confirmResident.bind(
 				this.residentController,
 			) as RouteHandlerMethod,
@@ -183,10 +177,6 @@ export class ResidentRouteV1 {
 					"Busca o status e dados básicos do morador por email (público)",
 				...this.residentSchema.getStatus,
 			},
-			preHandler: [
-				this.authMiddleware.authenticate,
-				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
-			],
 			handler: this.residentController.getResidentStatus.bind(
 				this.residentController,
 			) as RouteHandlerMethod,
@@ -204,10 +194,7 @@ export class ResidentRouteV1 {
 					"Reenvia o email de confirmação para moradores com status A_CONFIRMACAO_EMAIL (público)",
 				...this.residentSchema.resendConfirmationEmail,
 			},
-			preHandler: [
-				this.authMiddleware.authenticate,
-				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
-			],
+			// Rota pública - não requer autenticação para permitir reenvio de email
 			handler: this.residentController.resendConfirmationEmail.bind(
 				this.residentController,
 			) as RouteHandlerMethod,
@@ -225,10 +212,7 @@ export class ResidentRouteV1 {
 					"Atualiza dados de um residente rejeitado e muda status para A_VALIDACAO (público)",
 				...this.residentSchema.updateRejectedResident,
 			},
-			preHandler: [
-				this.authMiddleware.authenticate,
-				this.authMiddleware.checkPermission(MODULE_TAG, "update"),
-			],
+			// Rota pública - não requer autenticação para permitir atualização de residentes rejeitados
 			handler: this.residentController.updateRejectedResident.bind(
 				this.residentController,
 			) as RouteHandlerMethod,

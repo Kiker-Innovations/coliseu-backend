@@ -119,6 +119,20 @@ export class ResidentRepository
 		return await this.findOne({ email });
 	}
 
+	public async findByDocumentAndBuilding(
+		document: string,
+		buildingId: string,
+	): Promise<ResidentEntity | null> {
+		return await this.findOne({ document, buildingId });
+	}
+
+	public async findByPhoneAndBuilding(
+		phone: string,
+		buildingId: string,
+	): Promise<ResidentEntity | null> {
+		return await this.findOne({ phone, buildingId });
+	}
+
 	public async updateByEmail(
 		email: string,
 		data: UpdateResidentEntity,

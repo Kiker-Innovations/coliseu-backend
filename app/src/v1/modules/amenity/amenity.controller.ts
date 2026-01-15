@@ -48,7 +48,7 @@ export class AmenityController {
 			const buildingId = request.user?.buildingId;
 
 			if (!buildingId) {
-				return reply.status(httpStatus.BAD_REQUEST).send({
+				return reply.code(httpStatus.BAD_REQUEST).send({
 					success: false,
 					message: "ID do edifício não encontrado no token",
 				});
@@ -59,7 +59,7 @@ export class AmenityController {
 				.send(await this.amenityService.getAllAmenitiesByBuilding(buildingId));
 		} catch (error: any) {
 			console.error("Erro ao buscar comodidades:", error);
-			return reply.status(httpStatus.INTERNAL_SERVER_ERROR).send({
+			return reply.code(httpStatus.INTERNAL_SERVER_ERROR).send({
 				success: false,
 				message: error.message || "Erro ao buscar comodidades",
 			});
@@ -99,7 +99,7 @@ export class AmenityController {
 			const { buildingId } = request.query as { buildingId: string };
 
 			if (!buildingId) {
-				return reply.status(httpStatus.BAD_REQUEST).send({
+				return reply.code(httpStatus.BAD_REQUEST).send({
 					success: false,
 					message: "ID do edifício não fornecido",
 				});
@@ -110,7 +110,7 @@ export class AmenityController {
 				.send(await this.amenityService.countAmenitiesByBuilding(buildingId));
 		} catch (error: any) {
 			console.error("Erro ao contar comodidades:", error);
-			return reply.status(httpStatus.INTERNAL_SERVER_ERROR).send({
+			return reply.code(httpStatus.INTERNAL_SERVER_ERROR).send({
 				success: false,
 				message: error.message || "Erro ao contar comodidades",
 			});
@@ -132,7 +132,7 @@ export class AmenityController {
 		const buildingId = request.user?.buildingId;
 
 		if (!buildingId) {
-			return reply.status(httpStatus.BAD_REQUEST).send({
+			return reply.code(httpStatus.BAD_REQUEST).send({
 				success: false,
 				message: "ID do edifício não encontrado no token",
 			});

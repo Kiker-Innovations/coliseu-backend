@@ -44,13 +44,9 @@ export class ApartmentRouteV1 {
 			schema: {
 				tags: ["Apartments"],
 				summary: "Get all apartments by building",
-				description: "Lista todos os apartamentos de um edifício específico",
+				description: "Lista todos os apartamentos de um edifício específico. Rota pública para permitir busca durante o registro.",
 				...this.apartmentSchema.getAllByBuilding,
 			},
-			preHandler: [
-				this.authMiddleware.authenticate,
-				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
-			],
 			handler: this.apartmentController.getAllApartmentsByBuilding.bind(
 				this.apartmentController,
 			) as RouteHandlerMethod,

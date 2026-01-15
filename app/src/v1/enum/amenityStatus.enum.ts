@@ -1,6 +1,7 @@
 export const AmenityStatusEnum = {
 	ATIVO: "ATIVO",
 	INATIVO: "INATIVO",
+	DELETADO: "DELETADO",
 } as const;
 
 export type AmenityStatusEnumType =

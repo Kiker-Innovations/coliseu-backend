@@ -1,38 +1,38 @@
 import type { RouteHandlerMethod, RouteOptions } from "fastify";
 import type { MongoClient } from "mongodb";
-import { AmenityBookingController } from "./amenity_booking.controller";
-import { AmenityBookingSchema } from "./amenity_booking.schema";
+import { BookingController } from "./booking.controller";
+import { BookingSchema } from "./booking.schema";
 import { AuthMiddleware } from "../auth/auth.middleware";
 
-const MODULE_TAG = "amenity-booking";
+const MODULE_TAG = "booking";
 
-export class AmenityBookingRouteV1 {
-	private amenityBookingController: AmenityBookingController;
-	private amenityBookingSchema: AmenityBookingSchema;
+export class BookingRouteV1 {
+	private bookingController: BookingController;
+	private bookingSchema: BookingSchema;
 	private authMiddleware: AuthMiddleware;
 
 	constructor(mongoClient: MongoClient) {
-		this.amenityBookingController = new AmenityBookingController(mongoClient);
-		this.amenityBookingSchema = new AmenityBookingSchema();
+		this.bookingController = new BookingController(mongoClient);
+		this.bookingSchema = new BookingSchema();
 		this.authMiddleware = new AuthMiddleware(mongoClient);
 	}
 
 	private create = (): RouteOptions => {
 		return {
 			method: "POST",
-			url: "/v1/amenity-bookings",
+			url: "/v1/bookings",
 			schema: {
-				tags: ["Amenity Bookings"],
-				summary: "Create a new amenity booking",
+				tags: ["Bookings"],
+				summary: "Create a new booking",
 				description: "Cria uma nova reserva de comodidade",
-				...this.amenityBookingSchema.create,
+				...this.bookingSchema.create,
 			},
 			preHandler: [
 				this.authMiddleware.authenticate,
 				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
 			],
-			handler: this.amenityBookingController.createAmenityBooking.bind(
-				this.amenityBookingController,
+			handler: this.bookingController.createBooking.bind(
+				this.bookingController,
 			) as RouteHandlerMethod,
 		};
 	};
@@ -40,19 +40,19 @@ export class AmenityBookingRouteV1 {
 	private list = (): RouteOptions => {
 		return {
 			method: "GET",
-			url: "/v1/amenity-bookings",
+			url: "/v1/bookings",
 			schema: {
-				tags: ["Amenity Bookings"],
-				summary: "List amenity bookings",
+				tags: ["Bookings"],
+				summary: "List bookings",
 				description: "Lista reservas de comodidades com filtros opcionais",
-				...this.amenityBookingSchema.list,
+				...this.bookingSchema.list,
 			},
 			preHandler: [
 				this.authMiddleware.authenticate,
 				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
 			],
-			handler: this.amenityBookingController.getAmenityBookings.bind(
-				this.amenityBookingController,
+			handler: this.bookingController.getBookings.bind(
+				this.bookingController,
 			) as RouteHandlerMethod,
 		};
 	};
@@ -60,19 +60,19 @@ export class AmenityBookingRouteV1 {
 	private cancel = (): RouteOptions => {
 		return {
 			method: "POST",
-			url: "/v1/amenity-bookings/:id/cancel",
+			url: "/v1/bookings/:id/cancel",
 			schema: {
-				tags: ["Amenity Bookings"],
-				summary: "Cancel amenity booking",
+				tags: ["Bookings"],
+				summary: "Cancel booking",
 				description: "Cancela uma reserva de comodidade",
-				...this.amenityBookingSchema.cancel,
+				...this.bookingSchema.cancel,
 			},
 			preHandler: [
 				this.authMiddleware.authenticate,
 				this.authMiddleware.checkPermission(MODULE_TAG, "update"),
 			],
-			handler: this.amenityBookingController.cancelAmenityBooking.bind(
-				this.amenityBookingController,
+			handler: this.bookingController.cancelBooking.bind(
+				this.bookingController,
 			) as RouteHandlerMethod,
 		};
 	};
@@ -80,20 +80,20 @@ export class AmenityBookingRouteV1 {
 	private listByBuilding = (): RouteOptions => {
 		return {
 			method: "GET",
-			url: "/v1/amenity-bookings/admin/building",
+			url: "/v1/bookings/admin/building",
 			schema: {
-				tags: ["Amenity Bookings"],
-				summary: "List amenity bookings by building (Admin)",
+				tags: ["Bookings"],
+				summary: "List bookings by building (Admin)",
 				description:
 					"Lista todas as reservas de comodidades do edifício (exclui FINALIZADO e CANCELADO)",
-				...this.amenityBookingSchema.listByBuilding,
+				...this.bookingSchema.listByBuilding,
 			},
 			preHandler: [
 				this.authMiddleware.authenticate,
 				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
 			],
-			handler: this.amenityBookingController.getAmenityBookingsByBuilding.bind(
-				this.amenityBookingController,
+			handler: this.bookingController.getBookingsByBuilding.bind(
+				this.bookingController,
 			) as RouteHandlerMethod,
 		};
 	};
@@ -102,3 +102,4 @@ export class AmenityBookingRouteV1 {
 		return [this.create(), this.list(), this.cancel(), this.listByBuilding()];
 	};
 }
+

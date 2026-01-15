@@ -44,6 +44,13 @@ export class AmenitySchema {
 					description: "Quantidade Máxima de Residentes na comodidade",
 					example: 10,
 				},
+				maxHours: {
+					type: "number",
+					description: "Limite de horas que podem ser agendadas para a comodidade",
+					example: 4,
+					minimum: 1,
+					maximum: 24,
+				},
 				usageRules: {
 					type: "string",
 					description: "Normas de uso da comodidade (HTML)",
@@ -51,8 +58,8 @@ export class AmenitySchema {
 				},
 				bookingType: {
 					type: "string",
-					enum: ["DIARIO"],
-					description: "Tipo de reserva (DIARIO)",
+					enum: ["DIARIO", "POR_HORAS"],
+					description: "Tipo de reserva (DIARIO ou POR_HORAS). Se POR_HORAS, maxHours é obrigatório",
 					example: "DIARIO",
 				},
 				status: {
@@ -253,6 +260,13 @@ export class AmenitySchema {
 					description: "Quantidade Máxima de Residentes na comodidade",
 					example: 10,
 				},
+				maxHours: {
+					type: "number",
+					description: "Limite de horas que podem ser agendadas para a comodidade",
+					example: 4,
+					minimum: 1,
+					maximum: 24,
+				},
 				usageRules: {
 					type: "string",
 					description: "Normas de uso da comodidade (HTML)",
@@ -260,8 +274,8 @@ export class AmenitySchema {
 				},
 				bookingType: {
 					type: "string",
-					enum: ["DIARIO"],
-					description: "Tipo de reserva (DIARIO)",
+					enum: ["DIARIO", "POR_HORAS"],
+					description: "Tipo de reserva (DIARIO ou POR_HORAS). Se POR_HORAS, maxHours é obrigatório",
 					example: "DIARIO",
 				},
 				status: {

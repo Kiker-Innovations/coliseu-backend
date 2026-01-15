@@ -16,7 +16,7 @@ export class BuildingController {
 	): Promise<void> {
 		const { id } = request.params as { id: string };
 		return reply
-			.status(httpStatus.OK)
+			.code(httpStatus.OK)
 			.send(await this.buildingService.getBuilding(id));
 	}
 
@@ -25,7 +25,7 @@ export class BuildingController {
 		reply: FastifyReply,
 	): Promise<void> {
 		return reply
-			.status(httpStatus.OK)
+			.code(httpStatus.OK)
 			.send(await this.buildingService.getAllBuildings());
 	}
 }

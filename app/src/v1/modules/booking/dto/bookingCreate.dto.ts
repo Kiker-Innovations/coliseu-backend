@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const amenityBookingCreateSchema = z
+export const bookingCreateSchema = z
 	.object({
 		amenityId: z
 			.string({ required_error: "ID da comodidade é obrigatório" })
@@ -28,12 +28,13 @@ export const amenityBookingCreateSchema = z
 		},
 	);
 
-export type AmenityBookingCreateDto = z.infer<
-	typeof amenityBookingCreateSchema
+export type BookingCreateDto = z.infer<
+	typeof bookingCreateSchema
 >;
 
-export const transformCreateAmenityBookingDto = (
-	data: AmenityBookingCreateDto,
-): AmenityBookingCreateDto => {
-	return amenityBookingCreateSchema.parse(data);
+export const transformCreateBookingDto = (
+	data: BookingCreateDto,
+): BookingCreateDto => {
+	return bookingCreateSchema.parse(data);
 };
+

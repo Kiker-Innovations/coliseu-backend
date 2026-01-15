@@ -51,7 +51,7 @@ const envSchema = z.object({
 				financials: z.string().min(1),
 				financialSnapshots: z.string().min(1),
 				documents: z.string().min(1),
-				amenityBookings: z.string().min(1),
+				bookings: z.string().min(1),
 				notices: z.string().min(1),
 				infractions: z.string().min(1),
 				fines: z.string().min(1),
@@ -63,6 +63,7 @@ const envSchema = z.object({
 				rolePlanModules: z.string().min(1),
 				modules: z.string().min(1),
 				usefulContacts: z.string().min(1),
+				payments: z.string().min(1),
 			}),
 		}),
 	}),
@@ -75,6 +76,10 @@ const envSchema = z.object({
 			adminToken: z.string().min(1).optional(),
 			instanceToken: z.string().min(1),
 			phoneNumber: z.string().min(1).optional(),
+		}),
+		abacatepay: z.object({
+			apiKey: z.string().min(1),
+			webhookSecret: z.string().min(1).optional(),
 		}),
 		aws: z.object({
 			config: z.object({
@@ -157,8 +162,8 @@ export const env = envSchema.parse({
 					process.env.MONGODB_COLLECTION_FINANCIAL_SNAPSHOTS ||
 					"financial_snapshots",
 				documents: process.env.MONGODB_COLLECTION_DOCUMENTS || "documents",
-				amenityBookings:
-					process.env.MONGODB_COLLECTION_AMENITY_BOOKINGS || "amenity_bookings",
+			bookings:
+				process.env.MONGODB_COLLECTION_BOOKINGS || "bookings",
 				notices: process.env.MONGODB_COLLECTION_NOTICES || "notices",
 				infractions:
 					process.env.MONGODB_COLLECTION_INFRACTIONS || "infractions",
@@ -177,6 +182,7 @@ export const env = envSchema.parse({
 				modules: process.env.MONGODB_COLLECTION_MODULES || "modules",
 				usefulContacts:
 					process.env.MONGODB_COLLECTION_USEFUL_CONTACTS || "useful_contacts",
+				payments: process.env.MONGODB_COLLECTION_PAYMENTS || "payments",
 			},
 		},
 	},
@@ -189,6 +195,10 @@ export const env = envSchema.parse({
 			adminToken: process.env.UAZAPI_ADMIN_TOKEN || "",
 			instanceToken: process.env.UAZAPI_INSTANCE_TOKEN || "",
 			phoneNumber: process.env.UAZAPI_PHONE_NUMBER || "",
+		},
+		abacatepay: {
+			apiKey: process.env.ABACATEPAY_API_KEY || "",
+			webhookSecret: process.env.ABACATEPAY_WEBHOOK_SECRET || "",
 		},
 		aws: {
 			config: {

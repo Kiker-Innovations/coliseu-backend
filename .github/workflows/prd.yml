@@ -58,11 +58,6 @@ jobs:
         env:
           TF_VAR_environment: ${{ env.ENVIRONMENT }}
           TF_VAR_aws_account_id: ${{ env.AWS_ACCOUNT_ID }}
-          # Placeholder values for initial infrastructure setup
-          TF_VAR_app_base_url: "https://placeholder.com"
-          TF_VAR_jwt_secret: "placeholder"
-          TF_VAR_mongodb_url: "mongodb://placeholder"
-          TF_VAR_resend_api_key: "placeholder"
 
       - name: Get Terraform Outputs
         id: tf-infra
@@ -84,23 +79,6 @@ jobs:
             --secret-id "${{ steps.tf-infra.outputs.secrets_name }}" \
             --query 'SecretString' \
             --output text)
-
-          # Parse and export as environment variables (masked in logs)
-          APP_BASE_URL=$(echo "$SECRET_JSON" | jq -r '.APP_BASE_URL')
-          JWT_SECRET=$(echo "$SECRET_JSON" | jq -r '.JWT_SECRET')
-          MONGODB_URL=$(echo "$SECRET_JSON" | jq -r '.MONGODB_URL')
-          RESEND_API_KEY=$(echo "$SECRET_JSON" | jq -r '.RESEND_API_KEY')
-
-          # Mask sensitive values in GitHub logs
-          echo "::add-mask::$JWT_SECRET"
-          echo "::add-mask::$MONGODB_URL"
-          echo "::add-mask::$RESEND_API_KEY"
-
-          # Export to GITHUB_OUTPUT for use in subsequent steps
-          echo "app_base_url=$APP_BASE_URL" >> $GITHUB_OUTPUT
-          echo "jwt_secret=$JWT_SECRET" >> $GITHUB_OUTPUT
-          echo "mongodb_url=$MONGODB_URL" >> $GITHUB_OUTPUT
-          echo "resend_api_key=$RESEND_API_KEY" >> $GITHUB_OUTPUT
 
           echo "✅ Secrets fetched successfully"
         working-directory: ${{ github.workspace }}
@@ -142,11 +120,6 @@ jobs:
         env:
           TF_VAR_environment: ${{ env.ENVIRONMENT }}
           TF_VAR_aws_account_id: ${{ env.AWS_ACCOUNT_ID }}
-          # Secrets from AWS Secrets Manager
-          TF_VAR_app_base_url: ${{ steps.secrets.outputs.app_base_url }}
-          TF_VAR_jwt_secret: ${{ steps.secrets.outputs.jwt_secret }}
-          TF_VAR_mongodb_url: ${{ steps.secrets.outputs.mongodb_url }}
-          TF_VAR_resend_api_key: ${{ steps.secrets.outputs.resend_api_key }}
 
       - name: Update Lambda to use new image
         run: |

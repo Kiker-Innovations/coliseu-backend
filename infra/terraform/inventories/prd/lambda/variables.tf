@@ -97,12 +97,6 @@ variable "app_base_url" {
   default     = "https://api.coliseu.app"
 }
 
-variable "jwt_secret" {
-  description = "Secret para JWT"
-  type        = string
-  sensitive   = true
-}
-
 variable "jwt_expiration" {
   description = "Tempo de expiração do JWT"
   type        = string
@@ -125,26 +119,10 @@ variable "use_route_prefix" {
 # MongoDB Variables
 ################################################################################
 
-variable "mongodb_url" {
-  description = "URL de conexão do MongoDB"
-  type        = string
-  sensitive   = true
-}
-
 variable "mongodb_database" {
   description = "Nome do banco de dados MongoDB"
   type        = string
   default     = "coliseu"
-}
-
-################################################################################
-# Resend Variables
-################################################################################
-
-variable "resend_api_key" {
-  description = "API Key do Resend para envio de emails"
-  type        = string
-  sensitive   = true
 }
 
 ################################################################################

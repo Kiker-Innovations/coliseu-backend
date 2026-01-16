@@ -55,16 +55,11 @@ locals {
     USE_ROUTE_PREFIX = var.use_route_prefix
 
     # JWT
-    JWT_SECRET             = var.jwt_secret
     JWT_EXPIRATION         = var.jwt_expiration
     JWT_REFRESH_EXPIRATION = var.jwt_refresh_expiration
 
     # MongoDB
-    MONGODB_URL      = var.mongodb_url
     MONGODB_DATABASE = var.mongodb_database
-
-    # Resend
-    RESEND_API_KEY = var.resend_api_key
 
     # AWS
     AWS_S3_BUCKET_NAME              = var.s3_bucket_name
@@ -97,9 +92,6 @@ module "secrets" {
   # Terraform will NOT overwrite manual changes due to lifecycle ignore_changes
   initial_secret_value = {
     APP_BASE_URL   = var.app_base_url
-    JWT_SECRET     = var.jwt_secret
-    MONGODB_URL    = var.mongodb_url
-    RESEND_API_KEY = var.resend_api_key
   }
 
   tags = local.common_tags

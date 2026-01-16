@@ -48,23 +48,23 @@ export class ResidentController {
 		try {
 			const user = request.user as { userId: string };
 			if (!user || !user.userId) {
-				return reply.status(httpStatus.UNAUTHORIZED).send({
+				return reply.code(httpStatus.UNAUTHORIZED).send({
 					success: false,
 					message: "Usuário não autenticado",
 				});
 			}
 
 			const result = await this.residentService.getCurrentResident(user.userId);
-			return reply.status(httpStatus.OK).send(result);
+			return reply.code(httpStatus.OK).send(result);
 		} catch (error: any) {
 			if (error.statusCode) {
-				return reply.status(error.statusCode).send({
+				return reply.code(error.statusCode).send({
 					success: false,
 					message: error.message,
 				});
 			}
 			console.error("Erro ao buscar perfil do morador:", error);
-			return reply.status(httpStatus.INTERNAL_SERVER_ERROR).send({
+			return reply.code(httpStatus.INTERNAL_SERVER_ERROR).send({
 				success: false,
 				message: "Erro interno do servidor",
 			});
@@ -143,7 +143,7 @@ export class ResidentController {
 			const { email } = request.query as { email: string };
 
 			if (!email) {
-				return reply.status(httpStatus.BAD_REQUEST).send({
+				return reply.code(httpStatus.BAD_REQUEST).send({
 					success: false,
 					message: "Email é obrigatório",
 				});
@@ -151,16 +151,16 @@ export class ResidentController {
 
 			const result = await this.residentService.getResidentStatusByEmail(email);
 
-			return reply.status(httpStatus.OK).send(result);
+			return reply.code(httpStatus.OK).send(result);
 		} catch (error: any) {
 			if (error.statusCode) {
-				return reply.status(error.statusCode).send({
+				return reply.code(error.statusCode).send({
 					success: false,
 					message: error.message,
 				});
 			}
 			console.error("Erro ao buscar status do resident:", error);
-			return reply.status(httpStatus.INTERNAL_SERVER_ERROR).send({
+			return reply.code(httpStatus.INTERNAL_SERVER_ERROR).send({
 				success: false,
 				message: "Erro interno do servidor",
 			});
@@ -175,7 +175,7 @@ export class ResidentController {
 			const { email } = request.body as { email: string };
 
 			if (!email) {
-				return reply.status(httpStatus.BAD_REQUEST).send({
+				return reply.code(httpStatus.BAD_REQUEST).send({
 					success: false,
 					message: "Email é obrigatório",
 				});
@@ -183,16 +183,16 @@ export class ResidentController {
 
 			const result = await this.residentService.resendConfirmationEmail(email);
 
-			return reply.status(httpStatus.OK).send(result);
+			return reply.code(httpStatus.OK).send(result);
 		} catch (error: any) {
 			if (error.statusCode) {
-				return reply.status(error.statusCode).send({
+				return reply.code(error.statusCode).send({
 					success: false,
 					message: error.message,
 				});
 			}
 			console.error("Erro ao reenviar email de confirmação:", error);
-			return reply.status(httpStatus.INTERNAL_SERVER_ERROR).send({
+			return reply.code(httpStatus.INTERNAL_SERVER_ERROR).send({
 				success: false,
 				message: "Erro interno do servidor",
 			});
@@ -207,7 +207,7 @@ export class ResidentController {
 			const { email } = request.query as { email: string };
 
 			if (!email) {
-				return reply.status(httpStatus.BAD_REQUEST).send({
+				return reply.code(httpStatus.BAD_REQUEST).send({
 					success: false,
 					message: "Email é obrigatório",
 				});
@@ -218,16 +218,16 @@ export class ResidentController {
 				transformUpdateResidentDto(request.body),
 			);
 
-			return reply.status(httpStatus.OK).send(result);
+			return reply.code(httpStatus.OK).send(result);
 		} catch (error: any) {
 			if (error.statusCode) {
-				return reply.status(error.statusCode).send({
+				return reply.code(error.statusCode).send({
 					success: false,
 					message: error.message,
 				});
 			}
 			console.error("Erro ao atualizar residente rejeitado:", error);
-			return reply.status(httpStatus.INTERNAL_SERVER_ERROR).send({
+			return reply.code(httpStatus.INTERNAL_SERVER_ERROR).send({
 				success: false,
 				message: "Erro interno do servidor",
 			});
@@ -248,16 +248,16 @@ export class ResidentController {
 				fileExtension,
 			);
 
-			return reply.status(httpStatus.OK).send(result);
+			return reply.code(httpStatus.OK).send(result);
 		} catch (error: any) {
 			if (error.statusCode) {
-				return reply.status(error.statusCode).send({
+				return reply.code(error.statusCode).send({
 					success: false,
 					message: error.message,
 				});
 			}
 			console.error("Erro ao gerar presigned URL:", error);
-			return reply.status(httpStatus.INTERNAL_SERVER_ERROR).send({
+			return reply.code(httpStatus.INTERNAL_SERVER_ERROR).send({
 				success: false,
 				message: "Erro interno do servidor",
 			});
@@ -271,7 +271,7 @@ export class ResidentController {
 		try {
 			const user = request.user as { userId: string };
 			if (!user || !user.userId) {
-				return reply.status(httpStatus.UNAUTHORIZED).send({
+				return reply.code(httpStatus.UNAUTHORIZED).send({
 					success: false,
 					message: "Usuário não autenticado",
 				});
@@ -282,16 +282,16 @@ export class ResidentController {
 				transformChangePasswordResidentDto(request.body),
 			);
 
-			return reply.status(httpStatus.OK).send(result);
+			return reply.code(httpStatus.OK).send(result);
 		} catch (error: any) {
 			if (error.statusCode) {
-				return reply.status(error.statusCode).send({
+				return reply.code(error.statusCode).send({
 					success: false,
 					message: error.message,
 				});
 			}
 			console.error("Erro ao alterar senha:", error);
-			return reply.status(httpStatus.INTERNAL_SERVER_ERROR).send({
+			return reply.code(httpStatus.INTERNAL_SERVER_ERROR).send({
 				success: false,
 				message: "Erro interno do servidor",
 			});

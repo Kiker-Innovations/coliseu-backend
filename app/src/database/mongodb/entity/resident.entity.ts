@@ -11,6 +11,7 @@ export interface ResidentEntity {
 	email: string;
 	passwordHash: string;
 	phone: string;
+	document: string;
 	status: ResidentStatusEnumType;
 	photoUrl: string | null;
 	residentCode: string;
@@ -39,6 +40,7 @@ export type UpdateResidentEntity = Partial<
 		| "buildingId"
 		| "apartmentId"
 		| "phone"
+		| "document"
 		| "photoUrl"
 		| "status"
 		| "passwordHash"

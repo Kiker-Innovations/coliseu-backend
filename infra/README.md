@@ -23,15 +23,13 @@ infra/
         │       ├── backend.tf     # Backend S3 para state
         │       ├── main.tf        # Configuração do ambiente HML
         │       ├── variables.tf   # Variáveis com defaults para HML
-        │       ├── outputs.tf     # Outputs do ambiente
-        │       └── terraform.tfvars.example
+        │       └── outputs.tf     # Outputs do ambiente
         └── prd/
             └── lambda/
                 ├── backend.tf     # Backend S3 para state
                 ├── main.tf        # Configuração do ambiente PRD
                 ├── variables.tf   # Variáveis com defaults para PRD
-                ├── outputs.tf     # Outputs do ambiente
-                └── terraform.tfvars.example
+                └── outputs.tf     # Outputs do ambiente
 ```
 
 ## Configuração da Lambda
@@ -58,12 +56,10 @@ infra/
 
 ## Deploy Manual
 
-### 1. Configurar variáveis
+### 1. Navegar para o ambiente
 
 ```bash
 cd infra/terraform/inventories/hml/lambda  # ou prd/lambda
-cp terraform.tfvars.example terraform.tfvars
-# Edite terraform.tfvars com os valores corretos
 ```
 
 ### 2. Inicializar Terraform
@@ -76,14 +72,24 @@ terraform init
 
 ```bash
 terraform validate
-terraform plan
+terraform plan \
+  -var="aws_account_id=123456789012" \
+  -var="jwt_secret=your-secret" \
+  -var="mongodb_url=mongodb+srv://..." \
+  -var="resend_api_key=re_xxx"
 ```
 
 ### 4. Aplicar mudanças
 
 ```bash
-terraform apply
+terraform apply \
+  -var="aws_account_id=123456789012" \
+  -var="jwt_secret=your-secret" \
+  -var="mongodb_url=mongodb+srv://..." \
+  -var="resend_api_key=re_xxx"
 ```
+
+**Nota**: Todas as variáveis sensíveis devem ser passadas via linha de comando ou através de variáveis de ambiente. Valores padrão estão definidos em `variables.tf` para variáveis não sensíveis.
 
 ## Variáveis Sensíveis (CI/CD)
 

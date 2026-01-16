@@ -55,24 +55,20 @@ locals {
     USE_ROUTE_PREFIX = var.use_route_prefix
 
     # JWT
-    JWT_SECRET             = var.jwt_secret
     JWT_EXPIRATION         = var.jwt_expiration
     JWT_REFRESH_EXPIRATION = var.jwt_refresh_expiration
 
     # MongoDB
-    MONGODB_URL      = var.mongodb_url
     MONGODB_DATABASE = var.mongodb_database
-
-    # Resend
-    RESEND_API_KEY = var.resend_api_key
 
     # AWS
     AWS_S3_BUCKET_NAME              = var.s3_bucket_name
     AWS_S3_PRESIGNED_URL_EXPIRATION = tostring(var.aws_s3_presigned_url_expiration)
-    AWS_S3_FOLDER_RESIDENT          = var.aws_s3_folder_resident
-    AWS_S3_FOLDER_VISITOR           = var.aws_s3_folder_visitor
-    AWS_S3_FOLDER_DOCUMENTS         = var.aws_s3_folder_documents
     AWS_SES_FROM_EMAIL              = var.aws_ses_from_email
+
+    # UAZApi
+    UAZAPI_PHONE_NUMBER = var.uazapi_phone_number
+    UAZAPI_SERVER_URL   = var.uazapi_server_url
   }
 
   common_tags = {
@@ -95,10 +91,7 @@ module "secrets" {
   # Initial placeholder values - update via AWS Console
   # Terraform will NOT overwrite manual changes due to lifecycle ignore_changes
   initial_secret_value = {
-    APP_BASE_URL   = "https://api.example.com"
-    JWT_SECRET     = "change-me-in-aws-console"
-    MONGODB_URL    = "mongodb://change-me-in-aws-console"
-    RESEND_API_KEY = "change-me-in-aws-console"
+    APP_BASE_URL   = var.app_base_url
   }
 
   tags = local.common_tags

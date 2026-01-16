@@ -65,6 +65,34 @@ export class ResidentService {
 			);
 		}
 
+		// Verificar se já existe um resident com o mesmo CPF no mesmo building
+		const existingResidentByDocument =
+			await this.residentRepository.findByDocumentAndBuilding(
+				residentCreateDto.document,
+				residentCreateDto.buildingId,
+			);
+
+		if (existingResidentByDocument) {
+			throw httpException(
+				"CPF já cadastrado para outro morador neste edifício.",
+				httpStatus.CONFLICT,
+			);
+		}
+
+		// Verificar se já existe um resident com o mesmo telefone no mesmo building
+		const existingResidentByPhone =
+			await this.residentRepository.findByPhoneAndBuilding(
+				residentCreateDto.phone,
+				residentCreateDto.buildingId,
+			);
+
+		if (existingResidentByPhone) {
+			throw httpException(
+				"Telefone já cadastrado para outro morador neste edifício.",
+				httpStatus.CONFLICT,
+			);
+		}
+
 		const passwordHash = await hashPassword(residentCreateDto.password);
 		const residentCode = await generateCode();
 
@@ -85,6 +113,7 @@ export class ResidentService {
 			email: residentCreateDto.email,
 			passwordHash,
 			phone: residentCreateDto.phone,
+			document: residentCreateDto.document,
 			status: ResidentStatusEnum.A_CONFIRMACAO_EMAIL,
 			photoUrl: null,
 			residentCode,
@@ -243,7 +272,41 @@ export class ResidentService {
 		}
 
 		if (residentUpdateDto.phone !== undefined) {
+			// Verificar se já existe outro resident com o mesmo telefone no mesmo building
+			const existingResidentByPhone =
+				await this.residentRepository.findByPhoneAndBuilding(
+					residentUpdateDto.phone,
+					resident.buildingId,
+				);
+
+			// Se encontrou um resident diferente do que está sendo atualizado
+			if (existingResidentByPhone && existingResidentByPhone._id !== residentId) {
+				throw httpException(
+					"Telefone já cadastrado para outro morador neste edifício.",
+					httpStatus.CONFLICT,
+				);
+			}
+
 			updateData.phone = residentUpdateDto.phone;
+		}
+
+		if (residentUpdateDto.document !== undefined) {
+			// Verificar se já existe outro resident com o mesmo CPF no mesmo building
+			const existingResidentByDocument =
+				await this.residentRepository.findByDocumentAndBuilding(
+					residentUpdateDto.document,
+					resident.buildingId,
+				);
+
+			// Se encontrou um resident diferente do que está sendo atualizado
+			if (existingResidentByDocument && existingResidentByDocument._id !== residentId) {
+				throw httpException(
+					"CPF já cadastrado para outro morador neste edifício.",
+					httpStatus.CONFLICT,
+				);
+			}
+
+			updateData.document = residentUpdateDto.document;
 		}
 
 		if (residentUpdateDto.photoUrl !== undefined) {
@@ -490,6 +553,7 @@ export class ResidentService {
 			rejectNote?: string;
 			buildingId?: string;
 			apartmentId?: string;
+			document?: string;
 		}>
 	> {
 		const resident = await this.getResidentByEmail(email);
@@ -502,6 +566,12 @@ export class ResidentService {
 		const apartment = await this.apartmentRepository.findById(
 			resident.apartmentId,
 		);
+
+		// Formatar CPF para exibição (000.000.000-00)
+		let formattedDocument = resident.document;
+		if (formattedDocument && formattedDocument.length === 11) {
+			formattedDocument = `${formattedDocument.slice(0, 3)}.${formattedDocument.slice(3, 6)}.${formattedDocument.slice(6, 9)}-${formattedDocument.slice(9, 11)}`;
+		}
 
 		return {
 			success: true,
@@ -516,6 +586,7 @@ export class ResidentService {
 				rejectNote: resident.rejectNote,
 				buildingId: resident.buildingId,
 				apartmentId: resident.apartmentId,
+				document: formattedDocument,
 			},
 		};
 	}
@@ -602,6 +673,22 @@ export class ResidentService {
 		}
 
 		if (residentUpdateDto.phone) {
+			// Verificar se já existe outro resident com o mesmo telefone no mesmo building
+			const buildingIdToCheck = residentUpdateDto.buildingId || resident.buildingId;
+			const existingResidentByPhone =
+				await this.residentRepository.findByPhoneAndBuilding(
+					residentUpdateDto.phone,
+					buildingIdToCheck,
+				);
+
+			// Se encontrou um resident diferente do que está sendo atualizado
+			if (existingResidentByPhone && existingResidentByPhone._id !== resident._id) {
+				throw httpException(
+					"Telefone já cadastrado para outro morador neste edifício.",
+					httpStatus.CONFLICT,
+				);
+			}
+
 			updateData.phone = residentUpdateDto.phone;
 		}
 
@@ -611,6 +698,26 @@ export class ResidentService {
 
 		if (residentUpdateDto.apartmentId) {
 			updateData.apartmentId = residentUpdateDto.apartmentId;
+		}
+
+		if (residentUpdateDto.document) {
+			// Verificar se já existe outro resident com o mesmo CPF no mesmo building
+			const buildingIdToCheck = residentUpdateDto.buildingId || resident.buildingId;
+			const existingResidentByDocument =
+				await this.residentRepository.findByDocumentAndBuilding(
+					residentUpdateDto.document,
+					buildingIdToCheck,
+				);
+
+			// Se encontrou um resident diferente do que está sendo atualizado
+			if (existingResidentByDocument && existingResidentByDocument._id !== resident._id) {
+				throw httpException(
+					"CPF já cadastrado para outro morador neste edifício.",
+					httpStatus.CONFLICT,
+				);
+			}
+
+			updateData.document = residentUpdateDto.document;
 		}
 
 		// Se senha foi fornecida, fazer hash

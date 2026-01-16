@@ -2,76 +2,76 @@ import { randomUUID } from "node:crypto";
 import type { Collection, MongoClient } from "mongodb";
 import { env } from "../../../config/env";
 import type {
-	CreateAmenityBookingEntity,
-	AmenityBookingEntity,
-	UpdateAmenityBookingEntity,
-} from "../entity/amenityBooking.entity";
+	CreateBookingEntity,
+	BookingEntity,
+	UpdateBookingEntity,
+} from "../entity/booking.entity";
 import type { IRepository } from "../interfaces/IRepository";
 import { getDate } from "@/v1/utils/utils";
-import type { AmenityBookingStatusEnumType } from "@/v1/enum/amenityBookingStatus.enum";
-import { AmenityBookingStatusEnum } from "@/v1/enum/amenityBookingStatus.enum";
+import type { BookingStatusEnumType } from "@/v1/enum/bookingStatus.enum";
+import { BookingStatusEnum } from "@/v1/enum/bookingStatus.enum";
 
-export interface AmenityBookingListFilters {
+export interface BookingListFilters {
 	amenityId?: string;
 	apartmentId?: string;
-	status?: AmenityBookingStatusEnumType;
+	status?: BookingStatusEnumType;
 	startDate?: Date;
 	endDate?: Date;
 }
 
-export class AmenityBookingRepository
+export class BookingRepository
 	implements
 		IRepository<
-			AmenityBookingEntity,
-			CreateAmenityBookingEntity,
-			UpdateAmenityBookingEntity
+			BookingEntity,
+			CreateBookingEntity,
+			UpdateBookingEntity
 		>
 {
-	private collection: Collection<AmenityBookingEntity>;
+	private collection: Collection<BookingEntity>;
 
 	constructor(mongoClient: MongoClient) {
 		const database = mongoClient.db(env.databases.mongodb.database);
-		this.collection = database.collection<AmenityBookingEntity>(
-			env.databases.mongodb.collections.amenityBookings,
+		this.collection = database.collection<BookingEntity>(
+			env.databases.mongodb.collections.bookings,
 		);
 	}
 
 	public async create(
-		data: CreateAmenityBookingEntity,
-	): Promise<AmenityBookingEntity> {
+		data: CreateBookingEntity,
+	): Promise<BookingEntity> {
 		const now = getDate();
-		const amenityBookingEntity: AmenityBookingEntity = {
+		const bookingEntity: BookingEntity = {
 			_id: randomUUID(),
 			...data,
 			createdAt: now,
 			updatedAt: now,
 		};
 
-		await this.collection.insertOne(amenityBookingEntity);
-		return amenityBookingEntity;
+		await this.collection.insertOne(bookingEntity);
+		return bookingEntity;
 	}
 
-	public async findById(_id: string): Promise<AmenityBookingEntity | null> {
+	public async findById(_id: string): Promise<BookingEntity | null> {
 		return await this.collection.findOne({ _id });
 	}
 
 	public async findOne(
-		filter: Partial<AmenityBookingEntity>,
-	): Promise<AmenityBookingEntity | null> {
+		filter: Partial<BookingEntity>,
+	): Promise<BookingEntity | null> {
 		return await this.collection.findOne(filter);
 	}
 
 	public async findMany(
-		filter?: Partial<AmenityBookingEntity> | any, // Permitir queries MongoDB complexas
-	): Promise<AmenityBookingEntity[]> {
+		filter?: Partial<BookingEntity> | any, // Permitir queries MongoDB complexas
+	): Promise<BookingEntity[]> {
 		// Se filter já é um objeto de query MongoDB (com $gte, $lte, $in, etc), usar diretamente
 		return await this.collection.find(filter || {}).toArray();
 	}
 
 	public async update(
 		_id: string,
-		data: UpdateAmenityBookingEntity,
-	): Promise<AmenityBookingEntity | null> {
+		data: UpdateBookingEntity,
+	): Promise<BookingEntity | null> {
 		const updateData = {
 			...data,
 			updatedAt: getDate(),
@@ -87,10 +87,10 @@ export class AmenityBookingRepository
 	}
 
 	public async listWithFilters(
-		filters: AmenityBookingListFilters | any, // Permitir filtros MongoDB complexos
+		filters: BookingListFilters | any, // Permitir filtros MongoDB complexos
 		page?: number,
 		limit?: number,
-	): Promise<{ bookings: AmenityBookingEntity[]; total: number }> {
+	): Promise<{ bookings: BookingEntity[]; total: number }> {
 		// Se filters já é um objeto de query MongoDB (com $in, $nin, etc), usar diretamente
 		let query: any;
 
@@ -153,13 +153,13 @@ export class AmenityBookingRepository
 		startDate: Date,
 		endDate: Date,
 		excludeBookingId?: string,
-	): Promise<AmenityBookingEntity[]> {
+	): Promise<BookingEntity[]> {
 		const query: any = {
 			amenityId,
 			status: {
 				$in: [
-					AmenityBookingStatusEnum.PENDENTE,
-					AmenityBookingStatusEnum.CONFIRMADO,
+					BookingStatusEnum.PENDENTE,
+					BookingStatusEnum.AGENDADO,
 				],
 			},
 			$or: [
@@ -201,3 +201,4 @@ export class AmenityBookingRepository
 		return await this.collection.find(query).toArray();
 	}
 }
+

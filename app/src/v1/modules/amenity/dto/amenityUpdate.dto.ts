@@ -60,10 +60,20 @@ export const amenityUpdateSchema = z
 			.int("Quantidade Máxima de Residentes deve ser um valor inteiro")
 			.min(1, "Quantidade Máxima de Residentes deve ser pelo menos 1")
 			.optional()),
+		maxHours: z.preprocess((val) => {
+			if (val === "" || val === null || val === undefined) return undefined;
+			const num = typeof val === "string" ? Number(val) : val;
+			if (isNaN(num as number) || !isFinite(num as number)) return undefined;
+			return num;
+		}, z
+			.number()
+			.min(1, "Limite de horas deve ser pelo menos 1")
+			.max(24, "Limite de horas não pode ser maior que 24")
+			.optional()),
 		bookingType: z
-			.enum(["DIARIO"], {
+			.enum(["DIARIO", "POR_HORAS"], {
 				errorMap: () => ({
-					message: "Tipo de reserva deve ser DIARIO",
+					message: "Tipo de reserva deve ser DIARIO ou POR_HORAS",
 				}),
 			})
 			.optional(),
@@ -96,6 +106,19 @@ export const amenityUpdateSchema = z
 		{
 			message: "Área comum não pode ter valor de uso",
 			path: ["value"],
+		},
+	)
+	.refine(
+		(data) => {
+			// Se bookingType é POR_HORAS, maxHours é obrigatório
+			if (data.bookingType === "POR_HORAS" && (!data.maxHours || data.maxHours < 1)) {
+				return false;
+			}
+			return true;
+		},
+		{
+			message: "Quantidade máxima de horas é obrigatória quando o tipo de reserva é por horas",
+			path: ["maxHours"],
 		},
 	);
 

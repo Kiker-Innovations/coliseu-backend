@@ -94,12 +94,7 @@ variable "app_environment" {
 variable "app_base_url" {
   description = "URL base da aplicação"
   type        = string
-}
-
-variable "jwt_secret" {
-  description = "Secret para JWT"
-  type        = string
-  sensitive   = true
+  default     = "https://api-hml.coliseu.app"
 }
 
 variable "jwt_expiration" {
@@ -123,27 +118,10 @@ variable "use_route_prefix" {
 ################################################################################
 # MongoDB Variables
 ################################################################################
-
-variable "mongodb_url" {
-  description = "URL de conexão do MongoDB"
-  type        = string
-  sensitive   = true
-}
-
 variable "mongodb_database" {
   description = "Nome do banco de dados MongoDB"
   type        = string
   default     = "coliseu_hml"
-}
-
-################################################################################
-# Resend Variables
-################################################################################
-
-variable "resend_api_key" {
-  description = "API Key do Resend para envio de emails"
-  type        = string
-  sensitive   = true
 }
 
 ################################################################################
@@ -156,24 +134,6 @@ variable "aws_s3_presigned_url_expiration" {
   default     = 3600
 }
 
-variable "aws_s3_folder_resident" {
-  description = "Pasta de residentes no S3"
-  type        = string
-  default     = "residents"
-}
-
-variable "aws_s3_folder_visitor" {
-  description = "Pasta de visitantes no S3"
-  type        = string
-  default     = "visitors"
-}
-
-variable "aws_s3_folder_documents" {
-  description = "Pasta de documentos no S3"
-  type        = string
-  default     = "documents"
-}
-
 ################################################################################
 # AWS SES Variables
 ################################################################################
@@ -181,5 +141,21 @@ variable "aws_s3_folder_documents" {
 variable "aws_ses_from_email" {
   description = "Email remetente para SES"
   type        = string
-  default     = "noreply@coliseu.app"
+  default     = "noreply@hml.coliseu.app"
+}
+
+################################################################################
+# UAZApi Variables
+################################################################################
+
+variable "uazapi_phone_number" {
+  description = "Número de telefone do UAZApi"
+  type        = string
+  default     = "13996662857"
+}
+
+variable "uazapi_server_url" {
+  description = "URL do servidor UAZApi"
+  type        = string
+  default     = "https://free.uazapi.com"
 }

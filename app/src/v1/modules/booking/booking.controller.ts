@@ -1,46 +1,55 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
 import type { MongoClient } from "mongodb";
-import { AmenityBookingService } from "./amenity_booking.service";
+import { BookingService } from "./booking.service";
 import type {
-	AmenityBookingCreateDto,
-	AmenityBookingListQueryDto,
+	BookingCreateDto,
+	BookingListQueryDto,
 } from "./dto";
 import {
-	transformCreateAmenityBookingDto,
-	transformAmenityBookingListQueryDto,
+	transformCreateBookingDto,
+	transformBookingListQueryDto,
 } from "./dto";
 import httpStatus from "http-status";
 
-export class AmenityBookingController {
-	private amenityBookingService: AmenityBookingService;
+export class BookingController {
+	private bookingService: BookingService;
 
 	constructor(mongoClient: MongoClient) {
-		this.amenityBookingService = new AmenityBookingService(mongoClient);
+		this.bookingService = new BookingService(mongoClient);
 	}
 
-	public async createAmenityBooking(
+	public async createBooking(
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
 		try {
-			const body = request.body as AmenityBookingCreateDto;
-			const amenityBookingCreateDto = transformCreateAmenityBookingDto(body);
+			const body = request.body as BookingCreateDto;
+			const bookingCreateDto = transformCreateBookingDto(body);
 
-			const apartmentId = request.user?.apartmentId;
-			const residentId = request.user?.userId;
+		const apartmentId = request.user?.apartmentId;
+		const residentId = request.user?.userId;
+		const buildingId = request.user?.buildingId;
 
-			if (!apartmentId) {
-				return reply.status(httpStatus.BAD_REQUEST).send({
-					success: false,
-					message: "apartmentId não encontrado no token",
-				});
-			}
+		if (!apartmentId) {
+			return reply.status(httpStatus.BAD_REQUEST).send({
+				success: false,
+				message: "apartmentId não encontrado no token",
+			});
+		}
 
-			const result = await this.amenityBookingService.createAmenityBooking(
-				amenityBookingCreateDto,
-				apartmentId,
-				residentId,
-			);
+		if (!buildingId) {
+			return reply.status(httpStatus.BAD_REQUEST).send({
+				success: false,
+				message: "buildingId não encontrado no token",
+			});
+		}
+
+		const result = await this.bookingService.createBooking(
+			bookingCreateDto,
+			apartmentId,
+			residentId,
+			buildingId,
+		);
 
 			return reply.status(httpStatus.CREATED).send(result);
 		} catch (error: any) {
@@ -57,14 +66,14 @@ export class AmenityBookingController {
 		}
 	}
 
-	public async getAmenityBookings(
+	public async getBookings(
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
 		try {
 			const query = request.query as any;
-			const amenityBookingListQueryDto =
-				transformAmenityBookingListQueryDto(query);
+			const bookingListQueryDto =
+				transformBookingListQueryDto(query);
 
 			// apartmentId é obrigatório - vem do token JWT
 			const apartmentId = request.user?.apartmentId;
@@ -76,10 +85,17 @@ export class AmenityBookingController {
 				});
 			}
 
-			const result = await this.amenityBookingService.getAmenityBookings(
-				amenityBookingListQueryDto,
+			const result = await this.bookingService.getBookings(
+				bookingListQueryDto,
 				apartmentId,
 			);
+
+			// Log para debug - verificar se paymentUrl está presente antes de enviar
+			if (result.data?.bookings && result.data.bookings.length > 0) {
+				const firstBooking = result.data.bookings[0];
+				console.log(`Controller - Primeiro booking paymentUrl:`, firstBooking.paymentUrl);
+				console.log(`Controller - Primeiro booking paymentId:`, firstBooking.paymentId);
+			}
 
 			return reply.status(httpStatus.OK).send(result);
 		} catch (error: any) {
@@ -96,7 +112,7 @@ export class AmenityBookingController {
 		}
 	}
 
-	public async cancelAmenityBooking(
+	public async cancelBooking(
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
@@ -112,7 +128,7 @@ export class AmenityBookingController {
 			}
 
 			const result =
-				await this.amenityBookingService.cancelAmenityBooking(bookingId);
+				await this.bookingService.cancelBooking(bookingId);
 
 			return reply.status(httpStatus.OK).send(result);
 		} catch (error: any) {
@@ -129,7 +145,7 @@ export class AmenityBookingController {
 		}
 	}
 
-	public async getAmenityBookingsByBuilding(
+	public async getBookingsByBuilding(
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
@@ -144,7 +160,7 @@ export class AmenityBookingController {
 			}
 
 			const result =
-				await this.amenityBookingService.getAmenityBookingsByBuilding(
+				await this.bookingService.getBookingsByBuilding(
 					buildingId,
 				);
 
@@ -164,3 +180,4 @@ export class AmenityBookingController {
 		}
 	}
 }
+

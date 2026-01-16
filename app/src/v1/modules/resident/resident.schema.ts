@@ -658,6 +658,11 @@ export class ResidentSchema {
 					format: "uuid",
 					description: "ID do apartamento",
 				},
+				document: {
+					type: "string",
+					description: "CPF do morador (11 dígitos)",
+					pattern: "^\\d{11}$",
+				},
 			},
 		},
 		response: {

@@ -33,6 +33,14 @@
 				"ses:SendRawEmail"
 			],
 			"Resource": "*"
+		},
+		{
+			"Sid": "SecretsManagerAccess",
+			"Effect": "Allow",
+			"Action": [
+				"secretsmanager:GetSecretValue"
+			],
+			"Resource": "arn:aws:secretsmanager:*:${aws_account_id}:secret:${secret_name}*"
 		}
 	]
 }

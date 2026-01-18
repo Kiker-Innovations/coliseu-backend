@@ -36,11 +36,13 @@ provider "aws" {
 locals {
   function_name   = "${var.lambda_function_name}-${var.environment}"
   repository_name = "${var.project_name}-${var.environment}"
+  secret_name     = "${var.project_name}/${var.environment}/app"
 
   # Carrega o template da policy e substitui as variáveis
   lambda_policy = templatefile("${path.module}/../../../iam/policy/policy.json.tpl", {
     aws_account_id = var.aws_account_id
     s3_bucket_name = var.s3_bucket_name
+    secret_name    = local.secret_name
   })
 
   # Carrega o arquivo de role
@@ -65,6 +67,7 @@ locals {
     AWS_S3_BUCKET_NAME              = var.s3_bucket_name
     AWS_S3_PRESIGNED_URL_EXPIRATION = tostring(var.aws_s3_presigned_url_expiration)
     AWS_SES_FROM_EMAIL              = var.aws_ses_from_email
+    AWS_SECRETS_NAME                = local.secret_name
 
     # UAZApi
     UAZAPI_PHONE_NUMBER = var.uazapi_phone_number

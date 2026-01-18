@@ -1,11 +1,12 @@
 import awsLambdaFastify from "@fastify/aws-lambda";
 import type {
-	APIGatewayProxyEvent,
-	APIGatewayProxyEventV2,
-	APIGatewayProxyResult,
-	APIGatewayProxyResultV2,
-	Context,
+  APIGatewayProxyEvent,
+  APIGatewayProxyEventV2,
+  APIGatewayProxyResult,
+  APIGatewayProxyResultV2,
+  Context,
 } from "aws-lambda";
+import { injectSecretsToEnv } from "./providers/aws/secrets-manager.provider";
 import { buildApp } from "./app";
 
 /**
@@ -15,23 +16,35 @@ import { buildApp } from "./app";
 let proxy: ReturnType<typeof awsLambdaFastify> | null = null;
 
 /**
+ * Flag para indicar se os secrets já foram carregados.
+ */
+let secretsLoaded = false;
+
+/**
  * Inicializa o proxy do Lambda de forma lazy.
  * Isso permite que a primeira invocação configure a aplicação,
  * e as invocações subsequentes reutilizem a mesma instância.
  */
 async function initializeProxy(): Promise<ReturnType<typeof awsLambdaFastify>> {
-	if (!proxy) {
-		console.log("[Lambda] Inicializando aplicação Fastify...");
-		const app = await buildApp({ logger: true });
+  if (!proxy) {
+    // Carrega os secrets do AWS Secrets Manager antes de inicializar a aplicação
+    if (!secretsLoaded) {
+      console.log("[Lambda] Carregando secrets do AWS Secrets Manager...");
+      await injectSecretsToEnv();
+      secretsLoaded = true;
+    }
 
-		proxy = awsLambdaFastify(app, {
-			// decorateRequest: false because buildApp() calls server.ready()
-			// which locks the plugin chain before awsLambdaFastify runs
-			decorateRequest: false,
-		});
-		console.log("[Lambda] Proxy @fastify/aws-lambda criado com sucesso");
-	}
-	return proxy;
+    console.log("[Lambda] Inicializando aplicação Fastify...");
+    const app = await buildApp({ logger: true });
+
+    proxy = awsLambdaFastify(app, {
+      // decorateRequest: false because buildApp() calls server.ready()
+      // which locks the plugin chain before awsLambdaFastify runs
+      decorateRequest: false,
+    });
+    console.log("[Lambda] Proxy @fastify/aws-lambda criado com sucesso");
+  }
+  return proxy;
 }
 
 /**
@@ -51,64 +64,64 @@ async function initializeProxy(): Promise<ReturnType<typeof awsLambdaFastify>> {
  *       - httpApi: '*'
  */
 export async function handler(
-	event: APIGatewayProxyEvent | APIGatewayProxyEventV2,
-	context: Context,
+  event: APIGatewayProxyEvent | APIGatewayProxyEventV2,
+  context: Context
 ): Promise<APIGatewayProxyResult | APIGatewayProxyResultV2> {
-	// Evita que o Lambda aguarde o event loop esvaziar
-	// Importante para conexões persistentes como MongoDB
-	context.callbackWaitsForEmptyEventLoop = false;
+  // Evita que o Lambda aguarde o event loop esvaziar
+  // Importante para conexões persistentes como MongoDB
+  context.callbackWaitsForEmptyEventLoop = false;
 
-	console.log(
-		"[Lambda] Event recebido:",
-		JSON.stringify(
-			{
-				httpMethod: (event as APIGatewayProxyEvent).httpMethod,
-				requestContext: {
-					http: (event as APIGatewayProxyEventV2).requestContext?.http,
-					resourcePath: (event as APIGatewayProxyEvent).requestContext
-						?.resourcePath,
-				},
-				path: (event as APIGatewayProxyEvent).path,
-				rawPath: (event as APIGatewayProxyEventV2).rawPath,
-				headers: event.headers,
-			},
-			null,
-			2,
-		),
-	);
+  console.log(
+    "[Lambda] Event recebido:",
+    JSON.stringify(
+      {
+        httpMethod: (event as APIGatewayProxyEvent).httpMethod,
+        requestContext: {
+          http: (event as APIGatewayProxyEventV2).requestContext?.http,
+          resourcePath: (event as APIGatewayProxyEvent).requestContext
+            ?.resourcePath,
+        },
+        path: (event as APIGatewayProxyEvent).path,
+        rawPath: (event as APIGatewayProxyEventV2).rawPath,
+        headers: event.headers,
+      },
+      null,
+      2
+    )
+  );
 
-	const proxyHandler = await initializeProxy();
+  const proxyHandler = await initializeProxy();
 
-	// Usa callback pattern que é o esperado pelo @fastify/aws-lambda
-	const result = await new Promise<
-		APIGatewayProxyResult | APIGatewayProxyResultV2
-	>((resolve, reject) => {
-		proxyHandler(event, context, (err, res) => {
-			if (err) {
-				console.error("[Lambda] Erro no proxy:", err);
-				reject(err);
-			} else {
-				const response = res as APIGatewayProxyResult;
-				console.log(
-					"[Lambda] Response do proxy:",
-					JSON.stringify(
-						{
-							statusCode: response?.statusCode,
-							headers: response?.headers,
-							bodyLength: response?.body?.length,
-							bodyPreview: response?.body?.substring(0, 500),
-							isBase64Encoded: response?.isBase64Encoded,
-						},
-						null,
-						2,
-					),
-				);
-				resolve(response);
-			}
-		});
-	});
+  // Usa callback pattern que é o esperado pelo @fastify/aws-lambda
+  const result = await new Promise<
+    APIGatewayProxyResult | APIGatewayProxyResultV2
+  >((resolve, reject) => {
+    proxyHandler(event, context, (err, res) => {
+      if (err) {
+        console.error("[Lambda] Erro no proxy:", err);
+        reject(err);
+      } else {
+        const response = res as APIGatewayProxyResult;
+        console.log(
+          "[Lambda] Response do proxy:",
+          JSON.stringify(
+            {
+              statusCode: response?.statusCode,
+              headers: response?.headers,
+              bodyLength: response?.body?.length,
+              bodyPreview: response?.body?.substring(0, 500),
+              isBase64Encoded: response?.isBase64Encoded,
+            },
+            null,
+            2
+          )
+        );
+        resolve(response);
+      }
+    });
+  });
 
-	return result;
+  return result;
 }
 
 /**

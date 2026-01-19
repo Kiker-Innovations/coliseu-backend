@@ -59,3 +59,22 @@ output "lambda_log_group_name" {
   description = "Nome do CloudWatch Log Group"
   value       = module.lambda_coliseu.log_group_name
 }
+
+################################################################################
+# API Gateway Outputs
+################################################################################
+
+output "api_gateway_id" {
+  description = "ID do API Gateway"
+  value       = module.api_gateway.api_id
+}
+
+output "api_gateway_invoke_url" {
+  description = "URL de invocação do API Gateway"
+  value       = module.api_gateway.invoke_url
+}
+
+output "api_gateway_execution_arn" {
+  description = "ARN de execução do API Gateway"
+  value       = module.api_gateway.execution_arn
+}

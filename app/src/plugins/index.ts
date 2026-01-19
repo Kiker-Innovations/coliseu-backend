@@ -5,8 +5,11 @@ import { healthcheck } from "./fastify-healthcheck";
 import { schemaCompiler } from "./fastify-schema-compiler";
 import { swagger } from "./fastify-swagger";
 
+const isLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+const isPrd = env.app.environment?.toUpperCase() === "PRD";
+
 const plugins =
-	env.app.environment?.toUpperCase() === "PRD"
+	isLambda || isPrd
 		? [cors, healthcheck, schemaCompiler]
 		: [swagger, cors, healthcheck, schemaCompiler];
 

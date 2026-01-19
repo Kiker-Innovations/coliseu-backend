@@ -7,7 +7,6 @@ import type {
   Context,
 } from "aws-lambda";
 import { injectSecretsToEnv } from "./providers/aws/secrets-manager.provider";
-import { buildApp } from "./app";
 
 /**
  * Proxy handler criado pelo @fastify/aws-lambda.
@@ -27,14 +26,17 @@ let secretsLoaded = false;
  */
 async function initializeProxy(): Promise<ReturnType<typeof awsLambdaFastify>> {
   if (!proxy) {
-    // Carrega os secrets do AWS Secrets Manager antes de inicializar a aplicação
+    // Carrega os secrets do AWS Secrets Manager ANTES de importar a aplicação
+    // Isso é necessário porque env.ts valida as variáveis de ambiente no momento do import
     if (!secretsLoaded) {
       console.log("[Lambda] Carregando secrets do AWS Secrets Manager...");
       await injectSecretsToEnv();
       secretsLoaded = true;
     }
 
+    // Import dinâmico para garantir que os secrets já estão nas env vars
     console.log("[Lambda] Inicializando aplicação Fastify...");
+    const { buildApp } = await import("./app");
     const app = await buildApp({ logger: true });
 
     proxy = awsLambdaFastify(app, {

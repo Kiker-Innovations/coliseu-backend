@@ -3,10 +3,32 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const packageJsonPath = join(__dirname, "../../package.json");
-const application = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
+/**
+ * Obtém o nome da aplicação.
+ * No ambiente Lambda bundleado, usa constantes injetadas pelo esbuild.
+ * No ambiente de desenvolvimento, lê do package.json dinamicamente.
+ */
+function getApplicationName(): string {
+  // Constante injetada pelo esbuild durante o build
+  const buildName = process.env.BUILD_PACKAGE_NAME;
+  if (buildName) {
+    return buildName;
+  }
+
+  // Fallback para desenvolvimento (leitura dinâmica)
+  try {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const packageJsonPath = join(__dirname, "../../package.json");
+    const application = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
+    return application.name;
+  } catch {
+    // Fallback final se tudo falhar
+    return "coliseu";
+  }
+}
+
+const applicationName = getApplicationName();
 
 const envSchema = z.object({
   app: z.object({
@@ -118,12 +140,12 @@ export const env = envSchema.parse({
   plugins: {
     swagger: {
       basePath: Object.is(process.env.USE_ROUTE_PREFIX, "true")
-        ? `/api/${application.name.replace(/-/g, "")}/`
+        ? `/api/${applicationName.replace(/-/g, "")}/`
         : "/",
     },
   },
   stripPrefix: {
-    path: `/api/${application.name.replace(/-/g, "")}`,
+    path: `/api/${applicationName.replace(/-/g, "")}`,
   },
   databases: {
     mongodb: {

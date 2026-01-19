@@ -143,11 +143,33 @@ module "lambda_coliseu" {
   # CloudWatch
   log_retention_days = var.lambda_log_retention_days
 
-  # API Gateway Permission (disabled for now)
+  # API Gateway Permission (managed by API Gateway module)
   create_api_gateway_permission = false
 
   # Tags
   tags = local.common_tags
 
   depends_on = [module.ecr]
+}
+
+################################################################################
+# API Gateway
+################################################################################
+
+module "api_gateway" {
+  source = "../../../modules/apigateway"
+
+  api_name             = "${var.project_name}-api-${var.environment}"
+  description          = "API Gateway for ${var.project_name} - ${var.environment}"
+  stage_name           = "v1"
+  lambda_function_name = module.lambda_coliseu.function_name
+  lambda_invoke_arn    = module.lambda_coliseu.invoke_arn
+
+  # Custom domain (optional - configure if needed)
+  # custom_domain_name = "api.coliseu.app"
+  # certificate_arn    = var.certificate_arn
+
+  tags = local.common_tags
+
+  depends_on = [module.lambda_coliseu]
 }

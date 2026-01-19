@@ -1,12 +1,20 @@
 import { z } from "zod";
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const packageJsonPath = join(__dirname, "../../package.json");
-const application = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
+/**
+ * Declarações globais para constantes injetadas pelo esbuild durante o build.
+ * Esses valores são substituídos em tempo de build pelo esbuild.
+ */
+declare const __BUILD_PACKAGE_NAME__: string;
+
+/**
+ * Nome da aplicação.
+ * No build do Lambda, este valor é substituído diretamente pelo esbuild.
+ * Em desenvolvimento, usa o valor default "coliseu".
+ */
+const applicationName: string =
+  typeof __BUILD_PACKAGE_NAME__ !== "undefined"
+    ? __BUILD_PACKAGE_NAME__
+    : "coliseu";
 
 const envSchema = z.object({
   app: z.object({
@@ -118,12 +126,12 @@ export const env = envSchema.parse({
   plugins: {
     swagger: {
       basePath: Object.is(process.env.USE_ROUTE_PREFIX, "true")
-        ? `/api/${application.name.replace(/-/g, "")}/`
+        ? `/api/${applicationName.replace(/-/g, "")}/`
         : "/",
     },
   },
   stripPrefix: {
-    path: `/api/${application.name.replace(/-/g, "")}`,
+    path: `/api/${applicationName.replace(/-/g, "")}`,
   },
   databases: {
     mongodb: {

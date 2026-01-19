@@ -51,6 +51,44 @@ const aliasPlugin = {
 };
 
 /**
+ * Plugin para substituir módulos que fazem leitura de arquivos em runtime
+ * por versões com valores estáticos injetados em tempo de build
+ */
+const staticModulesPlugin = {
+	name: "static-modules-plugin",
+	setup(build) {
+		const packageInfo = loadPackageInfo();
+
+		// Substitui o módulo read-package-json do @fastify/swagger
+		// Esse módulo tenta ler package.json em runtime, o que falha no Lambda
+		build.onLoad({ filter: /read-package-json\.js$/ }, (args) => {
+			// Só intercepta se for do @fastify/swagger
+			if (args.path.includes("@fastify/swagger")) {
+				return {
+					contents: `
+'use strict';
+module.exports = {
+	readPackageJson: function() {
+		return {
+			name: ${JSON.stringify(packageInfo.name)},
+			version: ${JSON.stringify(packageInfo.version)},
+			description: "API Backend",
+			author: "Luiz Ricardo Santos",
+			email: "luizr726@gmail.com",
+			license: "GPL-3.0"
+		};
+	}
+};
+						`,
+					loader: "js",
+				};
+			}
+			return null;
+		});
+	},
+};
+
+/**
  * Carrega informações do package.json para injetar no bundle
  */
 function loadPackageInfo() {
@@ -103,15 +141,13 @@ async function build() {
 			resolveExtensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
 
 			// Plugins
-			plugins: [aliasPlugin],
+			plugins: [aliasPlugin, staticModulesPlugin],
 
-			// Injeção de constantes em tempo de build
-			// Isso permite que o código acesse informações do package.json sem ler o arquivo
+			// Injeção de constantes em tempo de build usando identificadores globais
+			// Esses valores são substituídos diretamente no código durante o bundling
 			define: {
-				"process.env.BUILD_PACKAGE_NAME": JSON.stringify(packageInfo.name),
-				"process.env.BUILD_PACKAGE_VERSION": JSON.stringify(
-					packageInfo.version,
-				),
+				__BUILD_PACKAGE_NAME__: JSON.stringify(packageInfo.name),
+				__BUILD_PACKAGE_VERSION__: JSON.stringify(packageInfo.version),
 			},
 
 			// Banner para compatibilidade ESM/CJS

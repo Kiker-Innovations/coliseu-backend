@@ -1,34 +1,20 @@
 import { z } from "zod";
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
 
 /**
- * Obtém o nome da aplicação.
- * No ambiente Lambda bundleado, usa constantes injetadas pelo esbuild.
- * No ambiente de desenvolvimento, lê do package.json dinamicamente.
+ * Declarações globais para constantes injetadas pelo esbuild durante o build.
+ * Esses valores são substituídos em tempo de build pelo esbuild.
  */
-function getApplicationName(): string {
-  // Constante injetada pelo esbuild durante o build
-  const buildName = process.env.BUILD_PACKAGE_NAME;
-  if (buildName) {
-    return buildName;
-  }
+declare const __BUILD_PACKAGE_NAME__: string;
 
-  // Fallback para desenvolvimento (leitura dinâmica)
-  try {
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = dirname(__filename);
-    const packageJsonPath = join(__dirname, "../../package.json");
-    const application = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
-    return application.name;
-  } catch {
-    // Fallback final se tudo falhar
-    return "coliseu";
-  }
-}
-
-const applicationName = getApplicationName();
+/**
+ * Nome da aplicação.
+ * No build do Lambda, este valor é substituído diretamente pelo esbuild.
+ * Em desenvolvimento, usa o valor default "coliseu".
+ */
+const applicationName: string =
+  typeof __BUILD_PACKAGE_NAME__ !== "undefined"
+    ? __BUILD_PACKAGE_NAME__
+    : "coliseu";
 
 const envSchema = z.object({
   app: z.object({

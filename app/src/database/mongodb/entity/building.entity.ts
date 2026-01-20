@@ -10,12 +10,12 @@ export interface BuildingEntity {
 	complement: string;
 	phone: string;
 	floorCount: number;
-	logoUrl: string | null;
-	bannerUrl: string | null;
-	coverUrl: string | null;
-	mainColor: string;
-	secondaryColor: string;
-	tertiaryColor: string;
+	logoUrl?: string | null;
+	bannerUrl?: string | null;
+	coverUrl?: string | null;
+	mainColor?: string | null;
+	secondaryColor?: string | null;
+	tertiaryColor?: string | null;
 	planId: string;
 	createdAt: Date;
 	updatedAt: Date;

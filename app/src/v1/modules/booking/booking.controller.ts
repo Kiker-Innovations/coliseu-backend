@@ -4,10 +4,14 @@ import { BookingService } from "./booking.service";
 import type {
 	BookingCreateDto,
 	BookingListQueryDto,
+	BookingAvailabilityQueryDto,
+	BookingHoursAvailabilityQueryDto,
 } from "./dto";
 import {
 	transformCreateBookingDto,
 	transformBookingListQueryDto,
+	transformBookingAvailabilityQueryDto,
+	transformBookingHoursAvailabilityQueryDto,
 } from "./dto";
 import httpStatus from "http-status";
 
@@ -151,6 +155,7 @@ export class BookingController {
 	): Promise<void> {
 		try {
 			const buildingId = request.user?.buildingId;
+			const query = request.query as { amenityId?: string };
 
 			if (!buildingId) {
 				return reply.status(httpStatus.BAD_REQUEST).send({
@@ -162,6 +167,7 @@ export class BookingController {
 			const result =
 				await this.bookingService.getBookingsByBuilding(
 					buildingId,
+					query.amenityId,
 				);
 
 			return reply.status(httpStatus.OK).send(result);
@@ -176,6 +182,84 @@ export class BookingController {
 			return reply.status(httpStatus.INTERNAL_SERVER_ERROR).send({
 				success: false,
 				message: "Erro interno do servidor ao buscar reservas",
+			});
+		}
+	}
+
+	public async getAvailability(
+		request: FastifyRequest,
+		reply: FastifyReply,
+	): Promise<void> {
+		try {
+			const query = request.query as any;
+			const availabilityQuery = transformBookingAvailabilityQueryDto(query);
+
+			if (!availabilityQuery.amenityId) {
+				return reply.status(httpStatus.BAD_REQUEST).send({
+					success: false,
+					message: "amenityId é obrigatório",
+				});
+			}
+
+			if (!availabilityQuery.startDate || !availabilityQuery.endDate) {
+				return reply.status(httpStatus.BAD_REQUEST).send({
+					success: false,
+					message: "startDate e endDate são obrigatórios",
+				});
+			}
+
+			const result = await this.bookingService.getAvailability(availabilityQuery);
+
+			return reply.status(httpStatus.OK).send(result);
+		} catch (error: any) {
+			if (error.statusCode) {
+				return reply.status(error.statusCode).send({
+					success: false,
+					message: error.message,
+				});
+			}
+			return reply.status(httpStatus.INTERNAL_SERVER_ERROR).send({
+				success: false,
+				message: "Erro interno do servidor ao buscar disponibilidade",
+			});
+		}
+	}
+
+	public async getHoursAvailability(
+		request: FastifyRequest,
+		reply: FastifyReply,
+	): Promise<void> {
+		try {
+			const query = request.query as any;
+			const availabilityQuery = transformBookingHoursAvailabilityQueryDto(query);
+
+			if (!availabilityQuery.amenityId) {
+				return reply.status(httpStatus.BAD_REQUEST).send({
+					success: false,
+					message: "amenityId é obrigatório",
+				});
+			}
+
+			if (!availabilityQuery.date) {
+				return reply.status(httpStatus.BAD_REQUEST).send({
+					success: false,
+					message: "date é obrigatório",
+				});
+			}
+
+			const result = await this.bookingService.getHoursAvailability(availabilityQuery);
+
+			return reply.status(httpStatus.OK).send(result);
+		} catch (error: any) {
+			if (error.statusCode) {
+				return reply.status(error.statusCode).send({
+					success: false,
+					message: error.message,
+				});
+			}
+			return reply.status(httpStatus.INTERNAL_SERVER_ERROR).send({
+				success: false,
+				message: "Erro interno do servidor ao buscar disponibilidade de horas",
 			});
 		}
 	}

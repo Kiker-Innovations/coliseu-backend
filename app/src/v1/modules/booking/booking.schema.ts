@@ -146,6 +146,15 @@ export class BookingSchema {
 	};
 
 	public listByBuilding = {
+		querystring: {
+			type: "object",
+			properties: {
+				amenityId: {
+					type: "string",
+					description: "ID da comodidade para filtrar (opcional)",
+				},
+			},
+		},
 		response: {
 			200: {
 				description: "Lista de reservas do edifício",
@@ -213,6 +222,155 @@ export class BookingSchema {
 			},
 			400: {
 				description: "ID do edifício não encontrado",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public availability = {
+		querystring: {
+			type: "object",
+			required: ["amenityId", "startDate", "endDate"],
+			properties: {
+				amenityId: {
+					type: "string",
+					description: "ID da comodidade (UUID)",
+					example: "b2ce3bcd-6309-42a5-861c-33bdefb7ab33",
+				},
+				startDate: {
+					type: "string",
+					format: "date",
+					description: "Data de início do período (YYYY-MM-DD)",
+					example: "2024-01-01",
+				},
+				endDate: {
+					type: "string",
+					format: "date",
+					description: "Data de término do período (YYYY-MM-DD)",
+					example: "2024-01-31",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Disponibilidade de dias calculada com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							amenityId: { type: "string" },
+							startDate: { type: "string" },
+							endDate: { type: "string" },
+							days: {
+								type: "array",
+								items: {
+									type: "object",
+									properties: {
+										date: {
+											type: "string",
+											description: "Data no formato YYYY-MM-DD",
+										},
+										available: {
+											type: "boolean",
+											description: "Se o dia está disponível",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			400: {
+				description: "Dados inválidos",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			404: {
+				description: "Comodidade não encontrada",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+		},
+	};
+
+	public hoursAvailability = {
+		querystring: {
+			type: "object",
+			required: ["amenityId", "date"],
+			properties: {
+				amenityId: {
+					type: "string",
+					description: "ID da comodidade (UUID)",
+					example: "b2ce3bcd-6309-42a5-861c-33bdefb7ab33",
+				},
+				date: {
+					type: "string",
+					format: "date",
+					description: "Data para verificar disponibilidade de horas (YYYY-MM-DD)",
+					example: "2024-01-15",
+				},
+			},
+		},
+		response: {
+			200: {
+				description: "Disponibilidade de horas calculada com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							amenityId: { type: "string" },
+							date: { type: "string" },
+							dayAvailable: {
+								type: "boolean",
+								description: "Se tem pelo menos uma hora disponível no dia",
+							},
+							hours: {
+								type: "array",
+								items: {
+									type: "object",
+									properties: {
+										hour: {
+											type: "number",
+											description: "Hora do dia (0-23)",
+										},
+										available: {
+											type: "boolean",
+											description: "Se a hora está disponível",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			400: {
+				description: "Dados inválidos",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			404: {
+				description: "Comodidade não encontrada",
 				type: "object",
 				properties: {
 					success: { type: "boolean" },

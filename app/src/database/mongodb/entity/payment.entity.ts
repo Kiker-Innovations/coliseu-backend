@@ -1,5 +1,5 @@
 export type PaymentType = "BOOKING";
-export type PaymentStatus = "PENDENTE" | "PAGO" | "CANCELADO" | "ERROR";
+export type PaymentStatus = "PENDENTE" | "PAGO" | "CANCELADO" | "EXPIRADO" | "ERROR";
 export type PaymentMethod = "PIX" | "BOLETO" | "CARD";
 
 export interface PaymentEntity {
@@ -38,6 +38,7 @@ export type UpdatePaymentEntity = Partial<
 		| "paymentOriginId"
 		| "paidAt"
 		| "canceledAt"
+		| "expiresAt"
 		| "updatedAt"
 	>
 >;

@@ -48,7 +48,6 @@ export class AmenitySchema {
 					type: "number",
 					description: "Limite de horas que podem ser agendadas para a comodidade",
 					example: 4,
-					minimum: 1,
 					maximum: 24,
 				},
 				usageRules: {
@@ -61,6 +60,25 @@ export class AmenitySchema {
 					enum: ["DIARIO", "POR_HORAS"],
 					description: "Tipo de reserva (DIARIO ou POR_HORAS). Se POR_HORAS, maxHours é obrigatório",
 					example: "DIARIO",
+				},
+				items: {
+					type: "array",
+					description: "Lista de itens da comodidade",
+					items: {
+						type: "object",
+						properties: {
+							name: {
+								type: "string",
+								description: "Nome do item",
+								example: "Cadeira",
+							},
+							quantity: {
+								type: "number",
+								description: "Quantidade do item",
+								example: 10,
+							},
+						},
+					},
 				},
 				status: {
 					type: "string",
@@ -141,6 +159,18 @@ export class AmenitySchema {
 							usageRules: { type: "string" },
 							bookingType: { type: "string" },
 							maxHours: { type: "number" },
+							openingTime: { type: "string" },
+							closingTime: { type: "string" },
+							items: {
+								type: "array",
+								items: {
+									type: "object",
+									properties: {
+										name: { type: "string" },
+										quantity: { type: "number" },
+									},
+								},
+							},
 							createdAt: { type: "string", format: "date-time" },
 							updatedAt: { type: "string", format: "date-time" },
 						},
@@ -187,6 +217,18 @@ export class AmenitySchema {
 								usageRules: { type: "string" },
 								bookingType: { type: "string" },
 								maxHours: { type: "number" },
+								openingTime: { type: "string" },
+								closingTime: { type: "string" },
+								items: {
+									type: "array",
+									items: {
+										type: "object",
+										properties: {
+											name: { type: "string" },
+											quantity: { type: "number" },
+										},
+									},
+								},
 								status: { type: "string" },
 								createdAt: { type: "string", format: "date-time" },
 								updatedAt: { type: "string", format: "date-time" },
@@ -264,7 +306,6 @@ export class AmenitySchema {
 					type: "number",
 					description: "Limite de horas que podem ser agendadas para a comodidade",
 					example: 4,
-					minimum: 1,
 					maximum: 24,
 				},
 				usageRules: {
@@ -277,6 +318,35 @@ export class AmenitySchema {
 					enum: ["DIARIO", "POR_HORAS"],
 					description: "Tipo de reserva (DIARIO ou POR_HORAS). Se POR_HORAS, maxHours é obrigatório",
 					example: "DIARIO",
+				},
+				openingTime: {
+					type: "string",
+					description: "Horário de abertura (formato HH:mm, ex: 08:00)",
+					example: "08:00",
+				},
+				closingTime: {
+					type: "string",
+					description: "Horário de fechamento (formato HH:mm, ex: 22:00)",
+					example: "22:00",
+				},
+				items: {
+					type: "array",
+					description: "Lista de itens da comodidade",
+					items: {
+						type: "object",
+						properties: {
+							name: {
+								type: "string",
+								description: "Nome do item",
+								example: "Cadeira",
+							},
+							quantity: {
+								type: "number",
+								description: "Quantidade do item",
+								example: 10,
+							},
+						},
+					},
 				},
 				status: {
 					type: "string",
@@ -308,6 +378,8 @@ export class AmenitySchema {
 							usageRules: { type: "string" },
 							bookingType: { type: "string" },
 							maxHours: { type: "number" },
+							openingTime: { type: "string" },
+							closingTime: { type: "string" },
 							status: { type: "string" },
 							createdAt: { type: "string", format: "date-time" },
 							updatedAt: { type: "string", format: "date-time" },
@@ -420,6 +492,18 @@ export class AmenitySchema {
 								usageRules: { type: "string" },
 								bookingType: { type: "string" },
 								maxHours: { type: "number" },
+								openingTime: { type: "string" },
+								closingTime: { type: "string" },
+								items: {
+									type: "array",
+									items: {
+										type: "object",
+										properties: {
+											name: { type: "string" },
+											quantity: { type: "number" },
+										},
+									},
+								},
 								status: { type: "string" },
 								createdAt: { type: "string", format: "date-time" },
 								updatedAt: { type: "string", format: "date-time" },

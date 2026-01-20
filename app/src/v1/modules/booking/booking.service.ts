@@ -10,6 +10,12 @@ import { ResidentRepository } from "../../../database/mongodb/repositories/resid
 import type {
 	BookingCreateDto,
 	BookingListQueryDto,
+	BookingAvailabilityQueryDto,
+	BookingAvailabilityResponse,
+	BookingAvailabilityDay,
+	BookingHoursAvailabilityQueryDto,
+	BookingHoursAvailabilityResponse,
+	BookingHoursAvailabilityHour,
 } from "./dto";
 import { httpException } from "../../../config/error";
 import httpStatus from "http-status";
@@ -418,6 +424,7 @@ export class BookingService {
 
 	public async getBookingsByBuilding(
 		buildingId: string,
+		amenityId?: string,
 	): Promise<HttpResponse<{ bookings: any[]; total: number }>> {
 		if (!buildingId) {
 			throw httpException(
@@ -426,9 +433,25 @@ export class BookingService {
 			);
 		}
 
-		// Buscar todas as amenities do building
-		const amenities = await this.amenityRepository.findMany({ buildingId });
-		const amenityIds = amenities.map((a) => a._id);
+		// Se um amenityId específico foi fornecido, verificar se pertence ao building
+		if (amenityId) {
+			const amenity = await this.amenityRepository.findById(amenityId);
+			if (!amenity || amenity.buildingId !== buildingId) {
+				throw httpException(
+					"Comodidade não encontrada ou não pertence a este edifício",
+					httpStatus.NOT_FOUND,
+				);
+			}
+		}
+
+		// Buscar todas as amenities do building ou usar o amenityId específico
+		let amenityIds: string[];
+		if (amenityId) {
+			amenityIds = [amenityId];
+		} else {
+			const amenities = await this.amenityRepository.findMany({ buildingId });
+			amenityIds = amenities.map((a) => a._id);
+		}
 
 		if (amenityIds.length === 0) {
 			return {
@@ -441,14 +464,15 @@ export class BookingService {
 			};
 		}
 
-		// Filtrar reservas apenas com status PENDENTE, AGENDADO e EM_ANDAMENTO
+		// Filtrar reservas com status PENDENTE, AGENDADO, EM_ANDAMENTO e FINALIZADO (exclui apenas CANCELADO)
 		const filters: any = {
-			amenityId: { $in: amenityIds },
+			amenityId: amenityId ? amenityId : { $in: amenityIds },
 			status: {
 				$in: [
 					BookingStatusEnum.PENDENTE,
 					BookingStatusEnum.AGENDADO,
 					BookingStatusEnum.EM_ANDAMENTO,
+					BookingStatusEnum.FINALIZADO,
 				],
 			},
 		};
@@ -628,20 +652,231 @@ export class BookingService {
 	}
 
 	/**
-	 * Atualiza o status da reserva verificando se há pagamento com status PAGO vinculado
+	 * Atualiza o status da reserva verificando se há pagamento com status PAGO ou EXPIRADO vinculado
 	 */
 	public async updateBookingStatusByPayment(
 		booking: BookingEntity,
 	): Promise<BookingEntity> {
 		const payment = await this.paymentRepository.findByEntityOriginId(booking._id);
 		
-		// Se não há pagamento ou o pagamento não está pago, não atualiza
-		if (!payment || payment.status !== "PAGO") {
+		if (!payment) {
 			return booking;
 		}
 
-		// Atualiza o status baseado na hora atual
-		return await this.updateBookingStatus(booking);
+		// Se o pagamento está expirado, cancela o booking
+		if (payment.status === "EXPIRADO") {
+			return await this.bookingRepository.update(booking._id, {
+				status: BookingStatusEnum.CANCELADO,
+				canceledAt: new Date(),
+			}) || booking;
+		}
+
+		// Se o pagamento está pago, atualiza o status baseado na hora atual
+		if (payment.status === "PAGO") {
+			return await this.updateBookingStatus(booking);
+		}
+
+		return booking;
+	}
+
+	/**
+	 * Calcula a disponibilidade de dias para uma amenity em um período
+	 * Retorna um array de dias indicando quais estão disponíveis e quais não estão
+	 */
+	public async getAvailability(
+		availabilityQuery: BookingAvailabilityQueryDto,
+	): Promise<HttpResponse<BookingAvailabilityResponse>> {
+		const { amenityId, startDate, endDate } = availabilityQuery;
+
+		// Validar amenity
+		const amenity = await this.amenityRepository.findById(amenityId);
+		if (!amenity) {
+			throw httpException("Comodidade não encontrada", httpStatus.NOT_FOUND);
+		}
+
+		// Converter strings para Date
+		const start = new Date(startDate);
+		const end = new Date(endDate);
+
+		// Validar datas
+		if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+			throw httpException(
+				"Datas inválidas. Use formato ISO (YYYY-MM-DD)",
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
+		if (start > end) {
+			throw httpException(
+				"Data de início deve ser anterior à data de término",
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
+		// Buscar bookings ocupados no período
+		const occupiedBookings = await this.bookingRepository.findOccupiedBookings(
+			amenityId,
+			start,
+			end,
+		);
+
+		// Criar conjunto de datas ocupadas
+		const occupiedDates = new Set<string>();
+
+		occupiedBookings.forEach((booking) => {
+			const bookingStart = new Date(booking.startDate);
+			const bookingEnd = new Date(booking.endDate);
+
+			// Normalizar para início do dia (00:00:00)
+			bookingStart.setHours(0, 0, 0, 0);
+			bookingEnd.setHours(0, 0, 0, 0);
+
+			// Adicionar todas as datas entre startDate e endDate (inclusive)
+			const currentDate = new Date(bookingStart);
+			while (currentDate <= bookingEnd) {
+				const dateStr = currentDate.toISOString().split("T")[0]; // YYYY-MM-DD
+				occupiedDates.add(dateStr);
+				currentDate.setDate(currentDate.getDate() + 1);
+			}
+		});
+
+		// Gerar array de dias no período
+		const days: BookingAvailabilityDay[] = [];
+		const currentDate = new Date(start);
+		currentDate.setHours(0, 0, 0, 0);
+		const endDateNormalized = new Date(end);
+		endDateNormalized.setHours(0, 0, 0, 0);
+
+		while (currentDate <= endDateNormalized) {
+			const dateStr = currentDate.toISOString().split("T")[0]; // YYYY-MM-DD
+			days.push({
+				date: dateStr,
+				available: !occupiedDates.has(dateStr),
+			});
+			currentDate.setDate(currentDate.getDate() + 1);
+		}
+
+		return {
+			success: true,
+			message: "Disponibilidade calculada com sucesso",
+			data: {
+				amenityId,
+				startDate,
+				endDate,
+				days,
+			},
+		};
+	}
+
+	/**
+	 * Calcula a disponibilidade de horas para uma amenity em um dia específico
+	 * Retorna um array de horas (0-23) indicando quais estão disponíveis e quais não estão
+	 */
+	public async getHoursAvailability(
+		availabilityQuery: BookingHoursAvailabilityQueryDto,
+	): Promise<HttpResponse<BookingHoursAvailabilityResponse>> {
+		const { amenityId, date } = availabilityQuery;
+
+		// Validar amenity
+		const amenity = await this.amenityRepository.findById(amenityId);
+		if (!amenity) {
+			throw httpException("Comodidade não encontrada", httpStatus.NOT_FOUND);
+		}
+
+		// Validar que a amenity é do tipo POR_HORAS
+		if (amenity.bookingType !== "POR_HORAS") {
+			throw httpException(
+				"Esta comodidade não permite reserva por horas",
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
+		// Converter string para Date
+		const selectedDate = new Date(date + "T00:00:00");
+		if (isNaN(selectedDate.getTime())) {
+			throw httpException(
+				"Data inválida. Use formato ISO (YYYY-MM-DD)",
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
+		// Definir início e fim do dia
+		const dayStart = new Date(selectedDate);
+		dayStart.setHours(0, 0, 0, 0);
+		const dayEnd = new Date(selectedDate);
+		dayEnd.setHours(23, 59, 59, 999);
+
+		// Buscar bookings ocupados neste dia
+		const occupiedBookings = await this.bookingRepository.findOccupiedBookings(
+			amenityId,
+			dayStart,
+			dayEnd,
+		);
+
+		// Criar conjunto de horas ocupadas (0-23)
+		const occupiedHours = new Set<number>();
+
+		occupiedBookings.forEach((booking) => {
+			const bookingStart = new Date(booking.startDate);
+			const bookingEnd = new Date(booking.endDate);
+
+			// Para cada hora do dia (0-23), verificar se o booking ocupa essa hora
+			for (let hour = 0; hour < 24; hour++) {
+				const hourStart = new Date(selectedDate);
+				hourStart.setHours(hour, 0, 0, 0);
+				const hourEnd = new Date(selectedDate);
+				hourEnd.setHours(hour, 59, 59, 999);
+
+				// Verificar se há sobreposição entre o booking e a hora
+				// Há sobreposição se: bookingStart <= hourEnd && bookingEnd >= hourStart
+				if (bookingStart <= hourEnd && bookingEnd >= hourStart) {
+					occupiedHours.add(hour);
+				}
+			}
+		});
+
+		// Verificar horário de funcionamento da amenity
+		let openingHour = 0;
+		let closingHour = 23;
+		
+		if (amenity.openingTime && amenity.closingTime) {
+			const [openingHourStr, openingMinuteStr] = amenity.openingTime.split(":");
+			const [closingHourStr, closingMinuteStr] = amenity.closingTime.split(":");
+			openingHour = parseInt(openingHourStr, 10);
+			closingHour = parseInt(closingHourStr, 10);
+		}
+
+		// Gerar array de horas (0-23)
+		const hours: BookingHoursAvailabilityHour[] = [];
+		let hasAvailableHour = false;
+
+		for (let hour = 0; hour < 24; hour++) {
+			// Verificar se a hora está dentro do horário de funcionamento
+			const isWithinOperatingHours = hour >= openingHour && hour < closingHour;
+			// Verificar se não está ocupada
+			const isNotOccupied = !occupiedHours.has(hour);
+			// Hora está disponível se estiver dentro do horário de funcionamento E não estiver ocupada
+			const isAvailable = isWithinOperatingHours && isNotOccupied;
+			
+			if (isAvailable) {
+				hasAvailableHour = true;
+			}
+			hours.push({
+				hour,
+				available: isAvailable,
+			});
+		}
+
+		return {
+			success: true,
+			message: "Disponibilidade de horas calculada com sucesso",
+			data: {
+				amenityId,
+				date,
+				dayAvailable: hasAvailableHour,
+				hours,
+			},
+		};
 	}
 }
 

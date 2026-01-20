@@ -98,8 +98,57 @@ export class BookingRouteV1 {
 		};
 	};
 
+	private availability = (): RouteOptions => {
+		return {
+			method: "GET",
+			url: "/v1/bookings/availability",
+			schema: {
+				tags: ["Bookings"],
+				summary: "Get booking availability",
+				description:
+					"Retorna a disponibilidade de dias para uma comodidade em um período específico. Considera apenas bookings com status PENDENTE, AGENDADO ou EM_ANDAMENTO.",
+				...this.bookingSchema.availability,
+			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
+			handler: this.bookingController.getAvailability.bind(
+				this.bookingController,
+			) as RouteHandlerMethod,
+		};
+	};
+
+	private hoursAvailability = (): RouteOptions => {
+		return {
+			method: "GET",
+			url: "/v1/bookings/availability/hours",
+			schema: {
+				tags: ["Bookings"],
+				summary: "Get booking hours availability",
+				description:
+					"Retorna a disponibilidade de horas (0-23) para uma comodidade em um dia específico. Considera apenas bookings com status PENDENTE, AGENDADO ou EM_ANDAMENTO.",
+				...this.bookingSchema.hoursAvailability,
+			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			],
+			handler: this.bookingController.getHoursAvailability.bind(
+				this.bookingController,
+			) as RouteHandlerMethod,
+		};
+	};
+
 	public routes = (): RouteOptions[] => {
-		return [this.create(), this.list(), this.cancel(), this.listByBuilding()];
+		return [
+			this.create(),
+			this.list(),
+			this.cancel(),
+			this.listByBuilding(),
+			this.availability(),
+			this.hoursAvailability(),
+		];
 	};
 }
 

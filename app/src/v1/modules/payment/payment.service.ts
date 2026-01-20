@@ -63,11 +63,9 @@ export class PaymentService {
 		}
 
 		const cleanDocument = resident.document.replace(/\D/g, '');
-		const cleanPhone = resident.phone.replace(/\D/g, '');
+		const cleanPhone = resident.phone.replace(/\D/g, '').replace(/^55/, '');
 		const priceInCents = Math.round(originEntity.totalValue * 100);
-		
-		// Construir URLs removendo barras duplicadas
-		const baseUrl = env.app.baseUrl.replace(/\/+$/, ''); // Remove barras no final
+		const baseUrl = env.app.baseUrl.replace(/\/+$/, ''); 
 		const returnUrl = process.env.ABACATEPAY_RETURN_URL || `${baseUrl}/bookings`;
 		const completionUrl = process.env.ABACATEPAY_COMPLETION_URL || `${baseUrl}/bookings`;
 
@@ -192,14 +190,22 @@ export class PaymentService {
 	}
 
 
-	public async updateStatus(payment: any, webPayment: any) {
+	public async updateStatus(payment: any, webPayment: any, status: "PAGO" | "EXPIRADO") {
 		const updateData: any = {
-			status: "PAGO",
+			status: status,
 			updatedAt: new Date(),
 		};
 
-		if (!payment.paidAt) {
-			updateData.paidAt = new Date();
+		if (status === "PAGO") {
+			if (!payment.paidAt) {
+				updateData.paidAt = new Date();
+			}
+		} else if (status === "EXPIRADO") {
+			const expiresAt = webPayment.data.billing.expiresAt 
+				? new Date(webPayment.data.billing.expiresAt) 
+				: new Date();
+			updateData.expiresAt = expiresAt;
+			updateData.canceledAt = new Date();
 		}
 
 		const updatedPayment = await this.paymentRepository.update(payment._id, updateData);
@@ -223,14 +229,18 @@ export class PaymentService {
 			throw httpException("Pagamento não encontrado", httpStatus.NOT_FOUND);
 		}
 
-		if (webPayment.data.billing.status && payment.type === "BOOKING") {
+		const billingStatus = webPayment.data.billing.status;
+		const isBooking = payment.type === "BOOKING";
+
+		if ((billingStatus === "PAID" || billingStatus === "EXPIRED") && isBooking) {
 			const booking = await this.bookingRepository.findById(payment.entityOriginId);
 			if (booking) {
-				await this.updateStatus(payment, webPayment);
+				const paymentStatus = billingStatus === "PAID" ? "PAGO" : "EXPIRADO";
+				await this.updateStatus(payment, webPayment, paymentStatus);
 				await this.bookingService.updateBookingStatusByPayment(booking);
 			}
 		}
-		
+
 		return {
 			success: true,
 			message: "Pagamento atualizado com sucesso",

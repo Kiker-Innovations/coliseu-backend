@@ -14,9 +14,6 @@ class MongoConnection {
 				deprecationErrors: true,
 			},
 		});
-		console.log("env.databases.mongodb.url", env.databases.mongodb.url);
-		console.log("env.databases.mongodb.database", env.databases.mongodb.database);
-		console.log("env.databases.mongodb.collections", env.databases.mongodb.collections);
 	}
 
 	public static getInstance(): MongoConnection {

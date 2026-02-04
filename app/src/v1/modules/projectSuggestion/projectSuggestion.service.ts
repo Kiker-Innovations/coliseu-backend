@@ -7,6 +7,7 @@ import type {
 	CreateProjectSuggestionEntity,
 } from "../../../database/mongodb/entity/projectSuggestion.entity";
 import type { CreateProjectEntity } from "../../../database/mongodb/entity/project.entity";
+import type { ResidentSuggestionEntity } from "../../../database/mongodb/entity/residentSuggestion.entity";
 import { ProjectSuggestionRepository } from "../../../database/mongodb/repositories/projectSuggestion.repository";
 import { ProjectSuggestionPollRepository } from "../../../database/mongodb/repositories/projectSuggestionPoll.repository";
 import { ResidentSuggestionRepository } from "../../../database/mongodb/repositories/residentSuggestion.repository";
@@ -20,8 +21,31 @@ import type {
 } from "./dto";
 import { ProjectSuggestionStatusEnum } from "../../enum/projectSuggestionStatus.enum";
 import { getDate, toDate } from "@/v1/utils/utils";
+import { env } from "../../../config/env";
+import { HuggingFaceProvider } from "../../../providers/huggingface/huggingface.provider";
+import {
+	type EmbeddedItem,
+	groupBySimilarity,
+} from "../../utils/similarity";
 
 const MAX_VOTES_PER_RESIDENT = 3;
+
+/**
+ * Internal type for tracking suggestions with their embeddings during AI processing.
+ */
+interface SuggestionWithEmbedding extends EmbeddedItem {
+	suggestion: ResidentSuggestionEntity;
+}
+
+/**
+ * Result of grouping similar suggestions across apartments.
+ */
+interface GroupedSuggestion {
+	title: string;
+	description: string;
+	duplicateCount: number;
+	apartmentIds: string[];
+}
 
 export class ProjectSuggestionService {
 	private projectSuggestionRepository: ProjectSuggestionRepository;
@@ -30,6 +54,7 @@ export class ProjectSuggestionService {
 	private seasonRepository: SeasonRepository;
 	private projectRepository: ProjectRepository;
 	private residentRepository: ResidentRepository;
+	private huggingFaceProvider: HuggingFaceProvider;
 
 	constructor(mongoClient: MongoClient) {
 		this.projectSuggestionRepository = new ProjectSuggestionRepository(
@@ -44,39 +69,53 @@ export class ProjectSuggestionService {
 		this.seasonRepository = new SeasonRepository(mongoClient);
 		this.projectRepository = new ProjectRepository(mongoClient);
 		this.residentRepository = new ResidentRepository(mongoClient);
+		this.huggingFaceProvider = new HuggingFaceProvider();
 	}
 
+	/**
+	 * Ranks resident suggestions using AI-powered semantic similarity.
+	 * The process:
+	 * 1. Filters out short/empty suggestions (audit logged)
+	 * 2. Generates embeddings for semantic comparison using Hugging Face
+	 * 3. Deduplicates suggestions within the same apartment
+	 * 4. Groups semantically similar suggestions across apartments
+	 * 5. Generates canonical title/description using Mistral LLM
+	 * 6. Ranks by consensus (duplicateCount)
+	 *
+	 * If AI processing fails, falls back to basic text comparison.
+	 */
 	public async rankSuggestions(
 		seasonId: string,
 		buildingId: string,
 	): Promise<HttpResponse<ProjectSuggestionEntity[]>> {
-		const season = await this.seasonRepository.findById(seasonId);
+		try {
+			const season = await this.seasonRepository.findById(seasonId);
 
-		if (!season) {
-			throw httpException("Season não encontrada", httpStatus.NOT_FOUND);
-		}
+			if (!season) {
+				throw httpException("Season não encontrada", httpStatus.NOT_FOUND);
+			}
 
-		if (season.buildingId !== buildingId) {
-			throw httpException(
-				"Você não tem permissão para rankear sugestões desta season",
-				httpStatus.FORBIDDEN,
-			);
-		}
+			if (season.buildingId !== buildingId) {
+				throw httpException(
+					"Você não tem permissão para rankear sugestões desta season",
+					httpStatus.FORBIDDEN,
+				);
+			}
 
-		const existingSuggestions =
-			await this.projectSuggestionRepository.countBySeasonId(seasonId);
-		if (existingSuggestions > 0) {
-			throw httpException(
-				"As sugestões desta season já foram rankeadas",
-				httpStatus.BAD_REQUEST,
-			);
-		}
+			const existingSuggestions =
+				await this.projectSuggestionRepository.countBySeasonId(seasonId);
+			if (existingSuggestions > 0) {
+				throw httpException(
+					"As sugestões desta season já foram rankeadas",
+					httpStatus.BAD_REQUEST,
+				);
+			}
 
-		const residentSuggestions =
-			await this.residentSuggestionRepository.findMany({
-				actualSeasonId: seasonId,
-				buildingId: buildingId,
-			});
+			const residentSuggestions =
+				await this.residentSuggestionRepository.findMany({
+					actualSeasonId: seasonId,
+					buildingId: buildingId,
+				});
 
 		if (residentSuggestions.length === 0) {
 			throw httpException(
@@ -85,66 +124,47 @@ export class ProjectSuggestionService {
 			);
 		}
 
-		const suggestionsByApartment = new Map<
-			string,
-			typeof residentSuggestions
-		>();
-		for (const suggestion of residentSuggestions) {
-			const apartmentId = suggestion.apartmentId;
-			if (!suggestionsByApartment.has(apartmentId)) {
-				suggestionsByApartment.set(apartmentId, []);
+		let groupedSuggestions: GroupedSuggestion[];
+
+		// Phase 2: Try AI-powered processing, fallback to basic if it fails
+		if (this.huggingFaceProvider.isAvailable()) {
+			try {
+				console.log("[AI] Starting AI-powered suggestion ranking...");
+				groupedSuggestions =
+					await this.rankSuggestionsWithAI(residentSuggestions);
+				console.log(
+					`[AI] Successfully grouped ${residentSuggestions.length} suggestions into ${groupedSuggestions.length} groups`,
+				);
+			} catch (error) {
+				const errorMessage =
+					error instanceof Error ? error.message : "Unknown error";
+				console.warn(
+					`[AI] AI processing failed: ${errorMessage}. Falling back to basic text comparison.`,
+				);
+				groupedSuggestions =
+					this.rankSuggestionsWithBasicComparison(residentSuggestions);
 			}
-			suggestionsByApartment.get(apartmentId)!.push(suggestion);
+		} else {
+			console.log(
+				"[AI] HuggingFace API key not configured. Using basic text comparison.",
+			);
+			groupedSuggestions =
+				this.rankSuggestionsWithBasicComparison(residentSuggestions);
 		}
 
-		const uniqueSuggestionsByApartment: typeof residentSuggestions = [];
-		for (const [_, suggestions] of suggestionsByApartment) {
-			const seenTitles = new Set<string>();
-			for (const suggestion of suggestions) {
-				const normalizedTitle = suggestion.title.toLowerCase().trim();
-				if (!seenTitles.has(normalizedTitle)) {
-					seenTitles.add(normalizedTitle);
-					uniqueSuggestionsByApartment.push(suggestion);
-				}
-			}
-		}
-
-		const suggestionCounts = new Map<
-			string,
-			{
-				suggestion: (typeof residentSuggestions)[0];
-				count: number;
-				apartments: Set<string>;
-			}
-		>();
-		for (const suggestion of uniqueSuggestionsByApartment) {
-			const normalizedTitle = suggestion.title.toLowerCase().trim();
-			if (!suggestionCounts.has(normalizedTitle)) {
-				suggestionCounts.set(normalizedTitle, {
-					suggestion,
-					count: 1,
-					apartments: new Set([suggestion.apartmentId]),
-				});
-			} else {
-				const existing = suggestionCounts.get(normalizedTitle)!;
-				if (!existing.apartments.has(suggestion.apartmentId)) {
-					existing.count++;
-					existing.apartments.add(suggestion.apartmentId);
-				}
-			}
-		}
-
-		const rankedSuggestions = Array.from(suggestionCounts.values()).sort(
-			(a, b) => b.count - a.count,
+		// Phase 3: Sort by duplicateCount (higher = better rank)
+		const rankedSuggestions = groupedSuggestions.sort(
+			(a, b) => b.duplicateCount - a.duplicateCount,
 		);
 
+		// Phase 4: Persist to project_suggestions collection
 		const projectSuggestionsToCreate: CreateProjectSuggestionEntity[] =
 			rankedSuggestions.map((item, index) => ({
 				buildingId,
 				seasonId,
-				title: item.suggestion.title,
-				description: item.suggestion.description,
-				duplicateCount: item.count,
+				title: item.title,
+				description: item.description,
+				duplicateCount: item.duplicateCount,
 				rank: index + 1,
 				status: ProjectSuggestionStatusEnum.AGUARDANDO_VOTACAO,
 			}));
@@ -159,6 +179,279 @@ export class ProjectSuggestionService {
 			message: "Sugestões rankeadas com sucesso",
 			data: createdSuggestions,
 		};
+		} catch (error) {
+			console.error("Error ranking suggestions: ", error);
+			if (error?.message) {
+				throw httpException(error.message, httpStatus.INTERNAL_SERVER_ERROR);
+			}
+			throw httpException(
+				"Erro ao rankear sugestões",
+				httpStatus.INTERNAL_SERVER_ERROR,
+			);
+		}
+	}
+
+	/**
+	 * AI-powered ranking using Hugging Face embeddings and semantic similarity.
+	 *
+	 * ETAPA 1: Deduplicação intra-apartamento
+	 * - Para cada apartmentId, identifica sugestões com títulos similares
+	 * - Mantém apenas uma sugestão de cada grupo similar
+	 * - Usa dedupThreshold (default: 0.70)
+	 *
+	 * ETAPA 2: Agrupamento entre apartamentos
+	 * - Agrupa sugestões de apartamentos DIFERENTES que falam da mesma coisa
+	 * - Usa similarityThreshold (default: 0.75)
+	 * - Gera título/descrição canônica usando LLM
+	 * - duplicateCount = número de apartamentos no grupo
+	 */
+	private async rankSuggestionsWithAI(
+		suggestions: ResidentSuggestionEntity[],
+	): Promise<GroupedSuggestion[]> {
+		const dedupThreshold = env.providers.huggingface.dedupThreshold;
+		const similarityThreshold = env.providers.huggingface.similarityThreshold;
+
+		console.log(
+			`[AI] Processando ${suggestions.length} sugestões com dedupThreshold=${dedupThreshold}, similarityThreshold=${similarityThreshold}`,
+		);
+
+		// ===== ETAPA 1: Deduplicação intra-apartamento =====
+		// Gerar embeddings para todos os títulos
+		const texts = suggestions.map((s) => s.title.trim());
+		const { embeddings } = await this.huggingFaceProvider.generateEmbeddings(
+			texts,
+		);
+
+		// Criar itens com embeddings
+		const embeddedSuggestions: SuggestionWithEmbedding[] = suggestions.map(
+			(suggestion, index) => ({
+				id: suggestion._id,
+				text: texts[index],
+				embedding: embeddings[index],
+				metadata: { apartmentId: suggestion.apartmentId },
+				suggestion,
+			}),
+		);
+
+		// Agrupar sugestões por apartmentId
+		const byApartment = new Map<string, SuggestionWithEmbedding[]>();
+		for (const item of embeddedSuggestions) {
+			const apartmentId = item.suggestion.apartmentId;
+			const existing = byApartment.get(apartmentId);
+			if (existing) {
+				existing.push(item);
+			} else {
+				byApartment.set(apartmentId, [item]);
+			}
+		}
+
+		// Para cada apartamento, remover duplicatas usando similaridade semântica
+		// Quando encontrar duplicatas, combinar as descrições usando IA
+		const uniqueByApartment: SuggestionWithEmbedding[] = [];
+		for (const [apartmentId, apartmentSuggestions] of byApartment) {
+			// Agrupar sugestões similares primeiro
+			const similarityGroups = groupBySimilarity(
+				apartmentSuggestions,
+				dedupThreshold,
+			);
+
+			// Para cada grupo de similares, manter apenas uma e unificar descrições
+			for (const group of similarityGroups) {
+				if (group.length === 0) {
+					continue;
+				}
+
+				// Manter a primeira sugestão do grupo
+				const representative = group[0];
+
+				// Se há múltiplas sugestões no grupo, unificar todas as descrições
+				if (group.length > 1) {
+					const allDescriptions = group
+						.map((item) => item.suggestion.description)
+						.filter((desc) => desc.trim().length > 0);
+
+					if (allDescriptions.length > 1) {
+						console.log(
+							`[AI] Etapa 1: Encontrado grupo de ${group.length} sugestões similares no apartamento ${apartmentId}. Unificando ${allDescriptions.length} descrições...`,
+						);
+
+						try {
+							const unifiedDescription =
+								await this.huggingFaceProvider.combineDescriptions(
+									allDescriptions,
+									representative.suggestion.title,
+								);
+
+							// Atualizar a descrição da sugestão representativa
+							representative.suggestion.description = unifiedDescription;
+							console.log(
+								`[AI] Etapa 1: ${allDescriptions.length} descrições unificadas com sucesso para "${representative.text}"`,
+							);
+						} catch (error) {
+							const errorMessage =
+								error instanceof Error ? error.message : "Unknown error";
+							console.error(
+								`[AI] Etapa 1: Erro ao unificar descrições: ${errorMessage}`,
+							);
+							throw error; // Re-throw para que o erro seja capturado no nível superior
+						}
+					}
+				}
+
+				uniqueByApartment.push(representative);
+			}
+		}
+
+		console.log(
+			`[AI] Etapa 1 concluída: ${suggestions.length} -> ${uniqueByApartment.length} sugestões únicas`,
+		);
+
+		// ===== ETAPA 2: Agrupamento entre apartamentos =====
+		// Agrupar sugestões de apartamentos DIFERENTES que falam da mesma coisa
+		const groups = groupBySimilarity(uniqueByApartment, similarityThreshold);
+
+		console.log(
+			`[AI] Etapa 2: ${uniqueByApartment.length} sugestões agrupadas em ${groups.length} grupos`,
+		);
+
+		// Para cada grupo, gerar título/descrição canônica
+		const groupedSuggestions: GroupedSuggestion[] = [];
+
+		for (const group of groups) {
+			// Coletar apartmentIds únicos no grupo
+			const apartmentIds = [
+				...new Set(group.map((item) => item.suggestion.apartmentId)),
+			];
+
+			// Preparar input para geração de texto canônico
+			const suggestionInputs = group.map((item) => ({
+				title: item.suggestion.title,
+				description: item.suggestion.description,
+			}));
+
+			// Gerar título/descrição canônica usando LLM
+			let title: string;
+			let description: string;
+
+			try {
+				const canonicalResult =
+					await this.huggingFaceProvider.generateCanonicalText(suggestionInputs);
+				title = canonicalResult.title;
+				description = canonicalResult.description;
+
+				// Se há múltiplas sugestões mas a descrição retornada é igual à primeira,
+				// significa que o LLM não combinou corretamente - forçar combinação
+				if (
+					group.length > 1 &&
+					description === suggestionInputs[0].description &&
+					suggestionInputs.some((s) => s.description !== suggestionInputs[0].description)
+				) {
+					console.log(
+						`[AI] Etapa 2: LLM retornou descrição não unificada. Forçando unificação de ${group.length} descrições...`,
+					);
+					const allDescriptions = suggestionInputs
+						.map((s) => s.description)
+						.filter((desc) => desc.trim().length > 0);
+					description =
+						await this.huggingFaceProvider.combineDescriptions(
+							allDescriptions,
+							title,
+						);
+				}
+			} catch (error) {
+				const errorMessage =
+					error instanceof Error ? error.message : "Unknown error";
+				console.error(
+					`[AI] Etapa 2: Erro ao gerar texto canônico: ${errorMessage}. Usando primeira sugestão como fallback.`,
+				);
+				// Fallback: usar primeira sugestão
+				title = suggestionInputs[0].title;
+				description = suggestionInputs[0].description;
+			}
+
+			console.log(
+				`[AI] Grupo: "${title}" - ${apartmentIds.length} apartamento(s), ${group.length} sugestão(ões)`,
+			);
+
+			groupedSuggestions.push({
+				title,
+				description,
+				duplicateCount: apartmentIds.length,
+				apartmentIds,
+			});
+		}
+
+		return groupedSuggestions;
+	}
+
+	/**
+	 * Fallback ranking using basic text comparison (exact match after normalization).
+	 * This is the original algorithm, preserved for cases when AI is unavailable.
+	 */
+	private rankSuggestionsWithBasicComparison(
+		suggestions: ResidentSuggestionEntity[],
+	): GroupedSuggestion[] {
+		// Group suggestions by apartment
+		const suggestionsByApartment = new Map<
+			string,
+			ResidentSuggestionEntity[]
+		>();
+		for (const suggestion of suggestions) {
+			const apartmentId = suggestion.apartmentId;
+			const existing = suggestionsByApartment.get(apartmentId);
+			if (existing) {
+				existing.push(suggestion);
+			} else {
+				suggestionsByApartment.set(apartmentId, [suggestion]);
+			}
+		}
+
+		// Deduplicate within each apartment using exact title match
+		const uniqueSuggestionsByApartment: ResidentSuggestionEntity[] = [];
+		for (const [_, apartmentSuggestions] of suggestionsByApartment) {
+			const seenTitles = new Set<string>();
+			for (const suggestion of apartmentSuggestions) {
+				const normalizedTitle = suggestion.title.toLowerCase().trim();
+				if (!seenTitles.has(normalizedTitle)) {
+					seenTitles.add(normalizedTitle);
+					uniqueSuggestionsByApartment.push(suggestion);
+				}
+			}
+		}
+
+		// Group across apartments by exact title match
+		const suggestionCounts = new Map<
+			string,
+			{
+				suggestion: ResidentSuggestionEntity;
+				count: number;
+				apartments: Set<string>;
+			}
+		>();
+		for (const suggestion of uniqueSuggestionsByApartment) {
+			const normalizedTitle = suggestion.title.toLowerCase().trim();
+			const existing = suggestionCounts.get(normalizedTitle);
+			if (existing) {
+				if (!existing.apartments.has(suggestion.apartmentId)) {
+					existing.count++;
+					existing.apartments.add(suggestion.apartmentId);
+				}
+			} else {
+				suggestionCounts.set(normalizedTitle, {
+					suggestion,
+					count: 1,
+					apartments: new Set([suggestion.apartmentId]),
+				});
+			}
+		}
+
+		// Convert to GroupedSuggestion format
+		return Array.from(suggestionCounts.values()).map((item) => ({
+			title: item.suggestion.title,
+			description: item.suggestion.description,
+			duplicateCount: item.count,
+			apartmentIds: Array.from(item.apartments),
+		}));
 	}
 
 	public async getBySeasonId(

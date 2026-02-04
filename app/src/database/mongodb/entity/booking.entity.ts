@@ -14,6 +14,7 @@ export interface BookingEntity {
 	observation?: string; // Observação opcional da reserva
 	paymentUrl?: string; // URL de pagamento gerada
 	paymentId?: string; // ID do pagamento associado
+	canceledAt?: Date; // Data de cancelamento da reserva
 	createdAt: Date;
 	updatedAt: Date;
 }

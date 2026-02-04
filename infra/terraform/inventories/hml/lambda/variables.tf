@@ -121,7 +121,7 @@ variable "use_route_prefix" {
 variable "mongodb_database" {
   description = "Nome do banco de dados MongoDB"
   type        = string
-  default     = "coliseu_hml"
+  default     = "coliseu-hml"
 }
 
 ################################################################################

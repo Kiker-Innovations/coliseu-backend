@@ -46,6 +46,9 @@ export class AmenityService {
 			usageRules: amenityCreateDto.usageRules,
 			bookingType: amenityCreateDto.bookingType,
 			maxHours: amenityCreateDto.maxHours,
+			openingTime: amenityCreateDto.openingTime,
+			closingTime: amenityCreateDto.closingTime,
+			items: amenityCreateDto.items,
 			status: amenityCreateDto.status as AmenityStatusEnumType,
 		};
 

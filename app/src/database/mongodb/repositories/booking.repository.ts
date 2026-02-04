@@ -160,6 +160,7 @@ export class BookingRepository
 				$in: [
 					BookingStatusEnum.PENDENTE,
 					BookingStatusEnum.AGENDADO,
+					BookingStatusEnum.EM_ANDAMENTO,
 				],
 			},
 			$or: [
@@ -197,6 +198,38 @@ export class BookingRepository
 		if (excludeBookingId) {
 			query._id = { $ne: excludeBookingId };
 		}
+
+		return await this.collection.find(query).toArray();
+	}
+
+	/**
+	 * Busca bookings ocupados de uma amenity em um período específico
+	 * Considera apenas status PENDENTE, AGENDADO e EM_ANDAMENTO
+	 */
+	public async findOccupiedBookings(
+		amenityId: string,
+		startDate: Date,
+		endDate: Date,
+	): Promise<BookingEntity[]> {
+		const query: any = {
+			amenityId,
+			status: {
+				$in: [
+					BookingStatusEnum.PENDENTE,
+					BookingStatusEnum.AGENDADO,
+					BookingStatusEnum.EM_ANDAMENTO,
+				],
+			},
+			$or: [
+				// Booking starts during the period
+				{
+					$and: [
+						{ startDate: { $lte: endDate } },
+						{ endDate: { $gte: startDate } },
+					],
+				},
+			],
+		};
 
 		return await this.collection.find(query).toArray();
 	}

@@ -20,7 +20,7 @@ export class ProjectSuggestionController {
 	public async rankSuggestions(
 		request: FastifyRequest,
 		reply: FastifyReply,
-	): Promise<void> {
+	): Promise<void> {		
 		if (request.user.userType !== UserTypeEnum.ADMIN) {
 			throw httpException(
 				"Apenas administradores podem rankear sugestões",

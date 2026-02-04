@@ -111,6 +111,13 @@ const envSchema = z.object({
         fromEmail: z.string().email().min(1),
       }),
     }),
+    huggingface: z.object({
+      apiKey: z.string().min(1).optional(),
+      embeddingsModel: z.string().min(1),
+      summarizationModel: z.string().min(1),
+      dedupThreshold: z.number().min(0).max(1),
+      similarityThreshold: z.number().min(0).max(1),
+    }),
   }),
 });
 
@@ -229,6 +236,18 @@ export const env = envSchema.parse({
       ses: {
         fromEmail: process.env.AWS_SES_FROM_EMAIL || "no-reply@coliseu.app",
       },
+    },
+    huggingface: {
+      apiKey: process.env.HF_API_KEY || "",
+      embeddingsModel:
+        process.env.HF_EMBEDDINGS_MODEL ||
+        "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
+      summarizationModel:
+        process.env.HF_SUMMARIZATION_MODEL ||
+        "mistralai/Mistral-7B-Instruct-v0.3",
+      dedupThreshold: Number(process.env.HF_DEDUP_THRESHOLD || "0.65"),
+      similarityThreshold: Number(process.env.HF_SIMILARITY_THRESHOLD || "0.70"),
+      minSuggestionLength: Number(process.env.HF_MIN_SUGGESTION_LENGTH || "10"),
     },
   },
 });

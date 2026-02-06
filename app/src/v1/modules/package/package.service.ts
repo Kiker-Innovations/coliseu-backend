@@ -322,11 +322,11 @@ export class PackageService {
 		pickupCode?: string,
 	): string {
 		let message = "📦 *ENCOMENDA ENTREGUE NA PORTARIA*\n\n";
-		
+
 		message += `*${buildingName}*\n`;
 		message += ` Apartamento: ${apartmentDisplay}\n`;
 		message += ` Recebida em: ${formattedDate}\n\n`;
-		
+
 		if (ownerName) {
 			message += `Destinatário: ${ownerName}\n`;
 		}
@@ -355,7 +355,7 @@ export class PackageService {
 	private async sendSms(phoneNumber: string, message: string): Promise<void> {
 		return new Promise((resolve, reject) => {
 			const apiUrl = new URL(env.providers.uazapi.serverUrl);
-			
+
 			const options = {
 				method: "POST",
 				hostname: apiUrl.hostname,
@@ -370,15 +370,15 @@ export class PackageService {
 
 			const req = https.request(options, (res) => {
 				const chunks: Buffer[] = [];
-				
+
 				res.on("data", (chunk) => {
 					chunks.push(chunk);
 				});
-				
+
 				res.on("end", () => {
 					const body = Buffer.concat(chunks);
 					const responseText = body.toString();
-					
+
 					if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
 						console.log(`✅ SMS enviado para ${phoneNumber}:`, responseText);
 						resolve();
@@ -403,7 +403,7 @@ export class PackageService {
 					text: message,
 				}),
 			);
-			
+
 			req.end();
 		});
 	}
@@ -566,7 +566,10 @@ export class PackageService {
 		}
 
 		// Validate pickup code
-		if (!confirmDeliveryDto.pickupCode || !confirmDeliveryDto.pickupCode.trim()) {
+		if (
+			!confirmDeliveryDto.pickupCode ||
+			!confirmDeliveryDto.pickupCode.trim()
+		) {
 			throw httpException(
 				"O código de retirada é obrigatório para confirmar a entrega. Solicite o código ao residente.",
 				httpStatus.BAD_REQUEST,

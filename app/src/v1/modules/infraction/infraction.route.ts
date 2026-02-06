@@ -201,6 +201,26 @@ export class InfractionRouteV1 {
 		};
 	};
 
+	private cancelNotification = (): RouteOptions => {
+		return {
+			method: "POST",
+			url: "/v1/infractions/:infractionId/cancel-notification",
+			schema: {
+				tags: ["Infractions"],
+				summary: "Cancel notification",
+				description: "Cancela uma notificação ativa (apenas admin)",
+				...this.infractionSchema.cancelNotification,
+			},
+			preHandler: [
+				this.authMiddleware.authenticate,
+				this.authMiddleware.checkPermission(MODULE_TAG, "update"),
+			],
+			handler: this.infractionController.cancelNotification.bind(
+				this.infractionController,
+			) as RouteHandlerMethod,
+		};
+	};
+
 	public routes = (): RouteOptions[] => {
 		return [
 			this.createFine(),
@@ -212,6 +232,7 @@ export class InfractionRouteV1 {
 			this.approveAppeal(),
 			this.rejectAppeal(),
 			this.getInfractionAppealForAdmin(),
+			this.cancelNotification(),
 		];
 	};
 }

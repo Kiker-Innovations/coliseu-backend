@@ -15,10 +15,6 @@ export class PaymentRouteV1 {
 		this.authMiddleware = new AuthMiddleware(mongoClient);
 	}
 
-	/**
-	 * Rota de webhook para atualizar pagamento (sem autenticação)
-	 * Esta rota será acessada pela API de pagamento via webhook
-	 */
 	private updatePaymentWebhook = (): RouteOptions => {
 		return {
 			method: "POST",
@@ -75,10 +71,6 @@ export class PaymentRouteV1 {
 	};
 
 	public routes = (): RouteOptions[] => {
-		return [
-			this.updatePaymentWebhook(),
-			this.getByEntityOriginId(),
-		];
+		return [this.updatePaymentWebhook(), this.getByEntityOriginId()];
 	};
 }
-

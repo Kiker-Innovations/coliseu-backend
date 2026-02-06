@@ -44,7 +44,8 @@ export class ApartmentRouteV1 {
 			schema: {
 				tags: ["Apartments"],
 				summary: "Get all apartments by building",
-				description: "Lista todos os apartamentos de um edifício específico. Rota pública para permitir busca durante o registro.",
+				description:
+					"Lista todos os apartamentos de um edifício específico. Rota pública para permitir busca durante o registro.",
 				...this.apartmentSchema.getAllByBuilding,
 			},
 			handler: this.apartmentController.getAllApartmentsByBuilding.bind(

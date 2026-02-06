@@ -230,4 +230,22 @@ export class InfractionController {
 				await this.infractionService.getInfractionAppealForAdmin(infractionId),
 			);
 	}
+
+	public async cancelNotification(
+		request: FastifyRequest,
+		reply: FastifyReply,
+	): Promise<void> {
+		if (request.user.userType !== UserTypeEnum.ADMIN) {
+			throw httpException(
+				"Apenas administradores podem cancelar notificações",
+				httpStatus.FORBIDDEN,
+			);
+		}
+
+		const { infractionId } = request.params as { infractionId: string };
+
+		return reply
+			.status(httpStatus.OK)
+			.send(await this.infractionService.cancelNotification(infractionId));
+	}
 }

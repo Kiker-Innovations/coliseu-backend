@@ -17,4 +17,3 @@ export type CreateUsefulContactEntity = Omit<
 export type UpdateUsefulContactEntity = Partial<
 	Pick<UsefulContactEntity, "name" | "phone" | "observation" | "updatedAt">
 >;
-

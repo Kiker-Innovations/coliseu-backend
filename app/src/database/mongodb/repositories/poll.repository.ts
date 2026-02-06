@@ -40,7 +40,6 @@ export class PollRepository
 			description: data.description,
 			options,
 			votes: 0,
-			status: data.status,
 			startDate: data.startDate,
 			endDate: data.endDate,
 			createdAt: now,

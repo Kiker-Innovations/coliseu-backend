@@ -94,7 +94,9 @@ export class AmenityService {
 		// Não exibir amenidades deletadas (soft delete)
 		// Buscar todas e filtrar no código, já que o repository não suporta $ne diretamente
 		const allAmenities = await this.amenityRepository.findMany({ buildingId });
-		const amenities = allAmenities.filter((amenity) => amenity.status !== "DELETADO");
+		const amenities = allAmenities.filter(
+			(amenity) => amenity.status !== "DELETADO",
+		);
 
 		return {
 			success: true,
@@ -111,7 +113,9 @@ export class AmenityService {
 			buildingId,
 			status: "ATIVO",
 		});
-		const amenities = allAmenities.filter((amenity) => amenity.status !== "DELETADO");
+		const amenities = allAmenities.filter(
+			(amenity) => amenity.status !== "DELETADO",
+		);
 
 		return {
 			success: true,
@@ -195,7 +199,9 @@ export class AmenityService {
 
 		// Contar apenas comodidades não deletadas
 		const allAmenities = await this.amenityRepository.findMany({ buildingId });
-		const count = allAmenities.filter((amenity) => amenity.status !== "DELETADO").length;
+		const count = allAmenities.filter(
+			(amenity) => amenity.status !== "DELETADO",
+		).length;
 
 		return {
 			success: true,

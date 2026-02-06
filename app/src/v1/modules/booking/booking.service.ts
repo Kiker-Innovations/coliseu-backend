@@ -20,7 +20,10 @@ import type {
 import { httpException } from "../../../config/error";
 import httpStatus from "http-status";
 import type { HttpResponse } from "../../../interface/httpResponse.interface";
-import { BookingStatusEnum, type BookingStatusEnumType } from "../../enum/bookingStatus.enum";
+import {
+	BookingStatusEnum,
+	type BookingStatusEnumType,
+} from "../../enum/bookingStatus.enum";
 import { PaymentService } from "../payment/payment.service";
 import { PaymentRepository } from "@/database/mongodb/repositories/payment.repository";
 
@@ -73,10 +76,10 @@ export class BookingService {
 		if (amenity.bookingType === "POR_HORAS") {
 			const diffTime = endDate.getTime() - startDate.getTime();
 			const diffHours = diffTime / (1000 * 60 * 60); // Diferença em horas
-			
+
 			// Arredondar para cima para cobrar horas completas
 			const hours = Math.ceil(diffHours);
-			
+
 			// Verificar se não excede o máximo de horas permitido
 			if (amenity.maxHours && hours > amenity.maxHours) {
 				throw httpException(
@@ -84,7 +87,7 @@ export class BookingService {
 					httpStatus.BAD_REQUEST,
 				);
 			}
-			
+
 			// Valor por hora multiplicado pelo número de horas
 			return amenity.value * hours;
 		}
@@ -156,7 +159,7 @@ export class BookingService {
 				bookingCreateDto.endDate.getTime() -
 				bookingCreateDto.startDate.getTime();
 			const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-			
+
 			if (diffDays > 1) {
 				throw httpException(
 					"Reservas diárias só podem ser feitas para 1 dia",
@@ -220,10 +223,14 @@ export class BookingService {
 			}
 
 			try {
-				console.log("Iniciando criação de pagamento para reserva:", createdBooking._id);
-				const webPayment = await this.paymentService.createWebPayment(createdBooking);
+				console.log(
+					"Iniciando criação de pagamento para reserva:",
+					createdBooking._id,
+				);
+				const webPayment =
+					await this.paymentService.createWebPayment(createdBooking);
 				console.log("WebPayment criado:", webPayment?.id || "sem ID");
-				
+
 				if (webPayment) {
 					const paymentResult = await this.paymentService.createPayment(
 						{
@@ -237,9 +244,11 @@ export class BookingService {
 						webPayment,
 					);
 					console.log("Pagamento criado com sucesso:", paymentResult);
-					
+
 					// Buscar a reserva atualizada com paymentUrl e paymentId
-					const updatedBooking = await this.bookingRepository.findById(createdBooking._id);
+					const updatedBooking = await this.bookingRepository.findById(
+						createdBooking._id,
+					);
 					if (updatedBooking) {
 						createdBooking = updatedBooking;
 					}
@@ -251,7 +260,7 @@ export class BookingService {
 					message: error.message,
 					statusCode: error.statusCode,
 					stack: error.stack,
-					bookingId: createdBooking._id
+					bookingId: createdBooking._id,
 				});
 				// Não relançar o erro para não impedir a criação da reserva
 				// Mas logar detalhadamente para debug
@@ -265,22 +274,18 @@ export class BookingService {
 		};
 	}
 
-	public async getBookings(
-		query: BookingListQueryDto,
-		apartmentId: string,
-	) {
+	public async getBookings(query: BookingListQueryDto, apartmentId: string) {
 		// Filtrar apenas por apartmentId (obrigatório)
 		const filters: any = {
 			apartmentId,
 		};
 
 		// Buscar bookings com paginação no banco
-		const { bookings, total } =
-			await this.bookingRepository.listWithFilters(
-				filters,
-				query.page,
-				query.limit,
-			);
+		const { bookings, total } = await this.bookingRepository.listWithFilters(
+			filters,
+			query.page,
+			query.limit,
+		);
 
 		// Serializar bookings sem Promise.all
 		const serializedBookings: any[] = [];
@@ -304,7 +309,6 @@ export class BookingService {
 				paymentUrl: booking.paymentUrl || null,
 				paymentId: booking.paymentId || null,
 			};
-
 
 			// Converter datas para ISO string
 			if (booking.startDate) {
@@ -343,7 +347,6 @@ export class BookingService {
 				serializedBooking.updatedAt = null;
 			}
 
-
 			// Adicionar dados da amenity
 			if (amenity) {
 				serializedBooking.amenity = {
@@ -364,7 +367,7 @@ export class BookingService {
 
 			// Payment não é mais buscado separadamente, os dados estão no booking
 			serializedBooking.payment = null;
-			
+
 			serializedBookings.push(serializedBooking);
 		}
 
@@ -394,19 +397,17 @@ export class BookingService {
 		}
 
 		// Buscar o pagamento associado à reserva
-		const payment = await this.paymentRepository.findByEntityOriginId(bookingId);
+		const payment =
+			await this.paymentRepository.findByEntityOriginId(bookingId);
 
 		// Se houver pagamento, cancelar no AbacatePay e no banco
 		if (payment) {
 			await this.paymentService.cancelPayment(payment);
 		}
 
-		const updatedBooking = await this.bookingRepository.update(
-			bookingId,
-			{
-				status: BookingStatusEnum.CANCELADO,
-			},
-		);
+		const updatedBooking = await this.bookingRepository.update(bookingId, {
+			status: BookingStatusEnum.CANCELADO,
+		});
 
 		if (!updatedBooking) {
 			throw httpException(
@@ -616,7 +617,9 @@ export class BookingService {
 		const endDate = new Date(booking.endDate);
 
 		// Verifica se o pagamento foi feito
-		const payment = await this.paymentRepository.findByEntityOriginId(booking._id);
+		const payment = await this.paymentRepository.findByEntityOriginId(
+			booking._id,
+		);
 		const isPaid = payment && payment.status === "PAGO";
 
 		let newStatus: BookingStatusEnumType;
@@ -637,13 +640,10 @@ export class BookingService {
 
 		// Atualiza apenas se o status mudou
 		if (booking.status !== newStatus) {
-			const updatedBooking = await this.bookingRepository.update(
-				booking._id,
-				{
-					status: newStatus,
-					updatedAt: now,
-				},
-			);
+			const updatedBooking = await this.bookingRepository.update(booking._id, {
+				status: newStatus,
+				updatedAt: now,
+			});
 
 			return updatedBooking || booking;
 		}
@@ -657,18 +657,22 @@ export class BookingService {
 	public async updateBookingStatusByPayment(
 		booking: BookingEntity,
 	): Promise<BookingEntity> {
-		const payment = await this.paymentRepository.findByEntityOriginId(booking._id);
-		
+		const payment = await this.paymentRepository.findByEntityOriginId(
+			booking._id,
+		);
+
 		if (!payment) {
 			return booking;
 		}
 
 		// Se o pagamento está expirado, cancela o booking
 		if (payment.status === "EXPIRADO") {
-			return await this.bookingRepository.update(booking._id, {
-				status: BookingStatusEnum.CANCELADO,
-				canceledAt: new Date(),
-			}) || booking;
+			return (
+				(await this.bookingRepository.update(booking._id, {
+					status: BookingStatusEnum.CANCELADO,
+					canceledAt: new Date(),
+				})) || booking
+			);
 		}
 
 		// Se o pagamento está pago, atualiza o status baseado na hora atual
@@ -838,7 +842,7 @@ export class BookingService {
 		// Verificar horário de funcionamento da amenity
 		let openingHour = 0;
 		let closingHour = 23;
-		
+
 		if (amenity.openingTime && amenity.closingTime) {
 			const [openingHourStr, openingMinuteStr] = amenity.openingTime.split(":");
 			const [closingHourStr, closingMinuteStr] = amenity.closingTime.split(":");
@@ -857,7 +861,7 @@ export class BookingService {
 			const isNotOccupied = !occupiedHours.has(hour);
 			// Hora está disponível se estiver dentro do horário de funcionamento E não estiver ocupada
 			const isAvailable = isWithinOperatingHours && isNotOccupied;
-			
+
 			if (isAvailable) {
 				hasAvailableHour = true;
 			}
@@ -879,4 +883,3 @@ export class BookingService {
 		};
 	}
 }
-

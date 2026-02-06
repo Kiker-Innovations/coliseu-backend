@@ -21,17 +21,12 @@ export class PaymentController {
 		const expectedSecret = env.providers.abacatepay.webhookSecret;
 
 		if (expectedSecret && webhookSecret !== expectedSecret) {
-			throw httpException(
-				"Webhook secret inválido",
-				httpStatus.UNAUTHORIZED,
-			);
+			throw httpException("Webhook secret inválido", httpStatus.UNAUTHORIZED);
 		}
-		
+
 		return reply
 			.code(httpStatus.OK)
-			.send(
-				await this.paymentService.updatePayment(request.body),
-			);
+			.send(await this.paymentService.updatePayment(request.body));
 	}
 
 	public async getPaymentByEntityOriginId(
@@ -46,4 +41,3 @@ export class PaymentController {
 			);
 	}
 }
-

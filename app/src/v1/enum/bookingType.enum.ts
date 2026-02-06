@@ -6,7 +6,7 @@ export const BookingTypeEnum = {
 export type BookingTypeEnumType =
 	(typeof BookingTypeEnum)[keyof typeof BookingTypeEnum];
 
-export const BookingTypeEnumValues = Object.values(
-	BookingTypeEnum,
-) as [string, ...string[]];
-
+export const BookingTypeEnumValues = Object.values(BookingTypeEnum) as [
+	string,
+	...string[],
+];

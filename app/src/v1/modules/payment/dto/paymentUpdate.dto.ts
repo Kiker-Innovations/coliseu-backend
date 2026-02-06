@@ -27,4 +27,3 @@ export type PaymentUpdateDto = z.infer<typeof paymentUpdateSchema>;
 export const transformPaymentUpdateDto = (data: unknown): PaymentUpdateDto => {
 	return paymentUpdateSchema.parse(data);
 };
-

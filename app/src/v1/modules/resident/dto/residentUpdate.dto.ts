@@ -8,12 +8,7 @@ export const residentUpdateSchema = z.object({
 		.regex(/^[a-zA-ZÀ-ÿ\s]+$/, "Nome deve conter apenas letras e espaços")
 		.trim()
 		.transform((val) => {
-			// Converter para snake_case: remover espaços extras, converter para minúsculas e substituir espaços por underscore
-			return val
-				.trim()
-				.replace(/\s+/g, " ") // Normalizar espaços múltiplos
-				.toLowerCase()
-				.replace(/\s/g, "_"); // Substituir espaços por underscore
+			return val.trim().replace(/\s+/g, " ").toUpperCase();
 		})
 		.optional(),
 	buildingId: z
@@ -45,7 +40,7 @@ export const residentUpdateSchema = z.object({
 				const cleanCpf = cpf.replace(/\D/g, "");
 				if (cleanCpf.length !== 11) return false;
 				if (/^(\d)\1{10}$/.test(cleanCpf)) return false;
-				
+
 				let sum = 0;
 				for (let i = 0; i < 9; i++) {
 					sum += parseInt(cleanCpf.charAt(i)) * (10 - i);
@@ -53,7 +48,7 @@ export const residentUpdateSchema = z.object({
 				let digit = 11 - (sum % 11);
 				if (digit >= 10) digit = 0;
 				if (digit !== parseInt(cleanCpf.charAt(9))) return false;
-				
+
 				sum = 0;
 				for (let i = 0; i < 10; i++) {
 					sum += parseInt(cleanCpf.charAt(i)) * (11 - i);
@@ -61,7 +56,7 @@ export const residentUpdateSchema = z.object({
 				digit = 11 - (sum % 11);
 				if (digit >= 10) digit = 0;
 				if (digit !== parseInt(cleanCpf.charAt(10))) return false;
-				
+
 				return true;
 			},
 			{ message: "CPF inválido" },

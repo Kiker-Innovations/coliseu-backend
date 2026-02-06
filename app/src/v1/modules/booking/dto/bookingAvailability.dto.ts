@@ -51,4 +51,3 @@ export function transformBookingHoursAvailabilityQueryDto(
 		date: query.date as string,
 	};
 }
-

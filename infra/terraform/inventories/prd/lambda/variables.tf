@@ -50,7 +50,7 @@ variable "lambda_architecture" {
 variable "lambda_memory_size" {
   description = "Memória da função Lambda em MB"
   type        = number
-  default     = 1024
+  default     = 1512
 }
 
 variable "lambda_timeout" {

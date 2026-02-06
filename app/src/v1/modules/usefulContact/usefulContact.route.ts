@@ -123,4 +123,3 @@ export class UsefulContactRouteV1 {
 		];
 	};
 }
-

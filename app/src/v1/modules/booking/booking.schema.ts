@@ -320,7 +320,8 @@ export class BookingSchema {
 				date: {
 					type: "string",
 					format: "date",
-					description: "Data para verificar disponibilidade de horas (YYYY-MM-DD)",
+					description:
+						"Data para verificar disponibilidade de horas (YYYY-MM-DD)",
 					example: "2024-01-15",
 				},
 			},
@@ -380,4 +381,3 @@ export class BookingSchema {
 		},
 	};
 }
-

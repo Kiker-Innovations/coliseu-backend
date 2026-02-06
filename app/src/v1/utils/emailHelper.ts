@@ -63,7 +63,9 @@ export async function sendPackageArrivalEmail(
 		});
 
 		const descriptionText = description ? ` Descrição: ${description}.` : "";
-		const pickupCodeText = pickupCode ? ` Código de retirada: ${pickupCode}.` : "";
+		const pickupCodeText = pickupCode
+			? ` Código de retirada: ${pickupCode}.`
+			: "";
 		const result = await emailProvider.sendEmail({
 			from: FromEmailEnum.NOREPLY,
 			to: email,

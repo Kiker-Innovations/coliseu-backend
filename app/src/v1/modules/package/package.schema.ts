@@ -234,7 +234,8 @@ export class PackageSchema {
 					minLength: 6,
 					maxLength: 6,
 					pattern: "^[A-Z0-9]{6}$",
-					description: "Código de retirada da encomenda (6 caracteres alfanuméricos)",
+					description:
+						"Código de retirada da encomenda (6 caracteres alfanuméricos)",
 					example: "ABC123",
 				},
 			},

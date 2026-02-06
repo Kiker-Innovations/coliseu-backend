@@ -101,6 +101,18 @@ export const pollCreateSchema = z
 			message: "Data de término deve ser posterior à data de início",
 			path: ["endDate"],
 		},
+	)
+	.refine(
+		(data) => {
+			// Permite até 5 minutos no passado
+			const now = new Date();
+			const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+			return data.startDate >= fiveMinutesAgo;
+		},
+		{
+			message: "Data de início não pode ser mais de 5 minutos no passado",
+			path: ["startDate"],
+		},
 	);
 
 export type PollCreateDto = z.infer<typeof pollCreateSchema>;

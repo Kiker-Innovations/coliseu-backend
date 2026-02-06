@@ -19,3 +19,36 @@ export const formatDate = (
 ): string => {
 	return toDate(date).format(format);
 };
+
+/**
+ * Calcula o status de uma enquete baseado nas datas
+ * @param startDate Data de início da enquete
+ * @param endDate Data de fim da enquete
+ * @param cancelledAt Data de cancelamento (opcional)
+ * @returns Status calculado: "CANCELADO" | "ATIVO" | "PROGRAMADO" | "FINALIZADO"
+ */
+export const calculatePollStatus = (
+	startDate: Date,
+	endDate: Date,
+	cancelledAt?: Date | null,
+): "CANCELADO" | "ATIVO" | "PROGRAMADO" | "FINALIZADO" => {
+	const now = getDate();
+
+	// Se tiver cancelledAt preenchido, retorna CANCELADO
+	if (cancelledAt) {
+		return "CANCELADO";
+	}
+
+	// Se startDate for posterior à data atual, retorna PROGRAMADO
+	if (startDate.getTime() > now.getTime()) {
+		return "PROGRAMADO";
+	}
+
+	// Se endDate for anterior à data atual, retorna FINALIZADO
+	if (endDate.getTime() < now.getTime()) {
+		return "FINALIZADO";
+	}
+
+	// Se estiver entre startDate e endDate, retorna ATIVO
+	return "ATIVO";
+};

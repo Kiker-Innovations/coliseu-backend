@@ -25,7 +25,6 @@ export class AuthMiddleware {
 	): Promise<void> => {
 		try {
 			const authHeader = request.headers.authorization;
-
 			if (!authHeader) {
 				throw httpException(
 					"Token de autenticação não fornecido",
@@ -35,7 +34,8 @@ export class AuthMiddleware {
 
 			const parts = authHeader.split(" ");
 
-			if (parts.length !== 2 || parts[0] !== "Bearer") {
+			if (parts.length !== 2 || parts[0] !== "Bearer") {			
+	
 				throw httpException(
 					"Formato de token inválido. Use: Bearer {token}",
 					httpStatus.UNAUTHORIZED,
@@ -44,7 +44,7 @@ export class AuthMiddleware {
 
 			const token = parts[1];
 			const decoded = await this.authService.verifyToken(token);
-
+			
 			request.user = decoded;
 		} catch (error) {
 			throw error;

@@ -17,9 +17,9 @@ export const paymentCreateSchema = z.object({
 	platformFee: z
 		.number({ required_error: "platformFee é obrigatório" })
 		.positive("platformFee deve ser um número positivo"),
-	type: z.enum(["BOOKING"], {
+	type: z.enum(["BOOKING", "FINE"], {
 		required_error: "type é obrigatório",
-		invalid_type_error: "type deve ser BOOKING",
+		invalid_type_error: "type deve ser BOOKING ou FINE",
 	}),
 	value: z
 		.number({ required_error: "value é obrigatório" })

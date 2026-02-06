@@ -1,4 +1,4 @@
-export type PaymentType = "BOOKING";
+export type PaymentType = "BOOKING" | "FINE";
 export type PaymentStatus =
 	| "PENDENTE"
 	| "PAGO"

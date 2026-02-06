@@ -5,7 +5,12 @@ import type { ConciergeStatusEnumType } from "@/v1/enum/conciergeStatus.enum";
 export const conciergeCreateSchema = z.object({
 	name: z
 		.string({ required_error: "Nome é obrigatório" })
-		.min(2, "Nome deve ter no mínimo 2 caracteres"),
+		.min(2, "Nome deve ter no mínimo 2 caracteres")
+		.regex(/^[a-zA-ZÀ-ÿ\s]+$/, "Nome deve conter apenas letras e espaços")
+		.trim()
+		.transform((val) => {
+			return val.trim().replace(/\s+/g, " ").toUpperCase();
+		}),
 	email: z
 		.string({ required_error: "Email é obrigatório" })
 		.email("Email deve ser válido"),

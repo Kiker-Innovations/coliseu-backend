@@ -3,22 +3,18 @@ import { httpException } from "../../../config/error";
 import httpStatus from "http-status";
 import type { HttpResponse } from "../../../interface/httpResponse.interface";
 import { PaymentRepository } from "../../../database/mongodb/repositories/payment.repository";
-import { BuildingRepository } from "../../../database/mongodb/repositories/building.repository";
 import { ResidentRepository } from "../../../database/mongodb/repositories/resident.repository";
-import { ApartmentRepository } from "../../../database/mongodb/repositories/apartment.repository";
 import { BookingRepository } from "../../../database/mongodb/repositories/booking.repository";
 import { AmenityRepository } from "../../../database/mongodb/repositories/amenity.repository";
 import { BookingService } from "../booking/booking.service";
 import type { CreatePaymentEntity } from "../../../database/mongodb/entity/payment.entity";
-import type { PaymentCreateDto, PaymentUpdateDto } from "./dto";
+import type { PaymentUpdateDto } from "./dto";
 import type { BookingEntity } from "@/database/mongodb/entity/booking.entity";
 import { env } from "../../../config/env";
 
 export class PaymentService {
 	private paymentRepository: PaymentRepository;
-	private buildingRepository: BuildingRepository;
 	private residentRepository: ResidentRepository;
-	private apartmentRepository: ApartmentRepository;
 	private bookingRepository: BookingRepository;
 	private amenityRepository: AmenityRepository;
 	private mongoClient: MongoClient;
@@ -26,9 +22,7 @@ export class PaymentService {
 
 	constructor(mongoClient: MongoClient) {
 		this.paymentRepository = new PaymentRepository(mongoClient);
-		this.buildingRepository = new BuildingRepository(mongoClient);
 		this.residentRepository = new ResidentRepository(mongoClient);
-		this.apartmentRepository = new ApartmentRepository(mongoClient);
 		this.bookingRepository = new BookingRepository(mongoClient);
 		this.amenityRepository = new AmenityRepository(mongoClient);
 		this.mongoClient = mongoClient;
@@ -44,7 +38,10 @@ export class PaymentService {
 		return this._bookingService;
 	}
 
-	public async createWebPayment(originEntity: BookingEntity): Promise<any> {
+	public async createWebPayment(
+		originEntity: BookingEntity,
+		paymentType: "BOOKING" | "FINE" = "BOOKING",
+	): Promise<any> {
 		const resident = await this.residentRepository.findById(
 			originEntity.residentId,
 		);
@@ -68,7 +65,12 @@ export class PaymentService {
 		}
 
 		const cleanDocument = resident.document.replace(/\D/g, "");
-		const cleanPhone = resident.phone.replace(/\D/g, "").replace(/^55/, "");
+		// Remove todos os caracteres não numéricos e depois remove os primeiros 2 dígitos (código do país 55)
+		const phoneOnlyNumbers = resident.phone.replace(/\D/g, "");
+		// Remove o código do país 55 do início do número
+		const cleanPhone = phoneOnlyNumbers.startsWith("55") 
+			? phoneOnlyNumbers.substring(2) 
+			: phoneOnlyNumbers;
 		const priceInCents = Math.round(originEntity.totalValue * 100);
 		const baseUrl = env.app.baseUrl.replace(/\/+$/, "");
 		const returnUrl =
@@ -88,8 +90,10 @@ export class PaymentService {
 				products: [
 					{
 						externalId: `booking-${originEntity._id}`,
-						name: amenity.name || "Reserva de Comodidade",
-						description: `Reserva de ${amenity.name || "comodidade"}`,
+						...(paymentType === "BOOKING" && {
+							name: "Reserva: " + amenity.name,
+							description: `Reserva: ${amenity.name}`,
+						}),
 						quantity: 1,
 						price: priceInCents,
 					},
@@ -170,7 +174,7 @@ export class PaymentService {
 			paymentUrl: webPayment.url || "",
 			platformFee: webPayment.platformFee || 0,
 			method: (webPayment.methods && webPayment.methods[0]) || "PIX",
-			type: paymentData.type as "BOOKING",
+			type: paymentData.type as "BOOKING" | "FINE",
 			gateway: "ABACATEPAY",
 			value: value,
 			residentId: paymentData.residentId,

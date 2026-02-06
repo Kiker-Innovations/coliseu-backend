@@ -44,4 +44,3 @@ export type PaymentCreateDto = z.infer<typeof paymentCreateSchema>;
 export const transformPaymentCreateDto = (data: unknown): PaymentCreateDto => {
 	return paymentCreateSchema.parse(data);
 };
-

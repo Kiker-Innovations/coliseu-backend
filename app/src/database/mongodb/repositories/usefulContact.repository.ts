@@ -102,4 +102,3 @@ export class UsefulContactRepository
 		return result.deletedCount > 0;
 	}
 }
-

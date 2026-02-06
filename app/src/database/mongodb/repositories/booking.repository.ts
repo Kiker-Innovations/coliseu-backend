@@ -21,11 +21,7 @@ export interface BookingListFilters {
 
 export class BookingRepository
 	implements
-		IRepository<
-			BookingEntity,
-			CreateBookingEntity,
-			UpdateBookingEntity
-		>
+		IRepository<BookingEntity, CreateBookingEntity, UpdateBookingEntity>
 {
 	private collection: Collection<BookingEntity>;
 
@@ -36,9 +32,7 @@ export class BookingRepository
 		);
 	}
 
-	public async create(
-		data: CreateBookingEntity,
-	): Promise<BookingEntity> {
+	public async create(data: CreateBookingEntity): Promise<BookingEntity> {
 		const now = getDate();
 		const bookingEntity: BookingEntity = {
 			_id: randomUUID(),
@@ -234,4 +228,3 @@ export class BookingRepository
 		return await this.collection.find(query).toArray();
 	}
 }
-

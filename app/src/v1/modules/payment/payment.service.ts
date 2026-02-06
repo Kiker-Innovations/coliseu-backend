@@ -44,71 +44,81 @@ export class PaymentService {
 		return this._bookingService;
 	}
 
-	public async createWebPayment(
-		originEntity: BookingEntity,
-	): Promise<any> {
-		const resident = await this.residentRepository.findById(originEntity.residentId);
+	public async createWebPayment(originEntity: BookingEntity): Promise<any> {
+		const resident = await this.residentRepository.findById(
+			originEntity.residentId,
+		);
 		if (!resident) {
 			throw httpException("Residente não encontrado", httpStatus.NOT_FOUND);
 		}
 
-		const amenity = await this.amenityRepository.findById(originEntity.amenityId);
+		const amenity = await this.amenityRepository.findById(
+			originEntity.amenityId,
+		);
 		if (!amenity) {
 			throw httpException("Comodidade não encontrada", httpStatus.NOT_FOUND);
 		}
 
 		const token = process.env.ABACATEPAY_API_KEY;
 		if (!token) {
-			throw httpException("Token de autenticação não encontrado", httpStatus.INTERNAL_SERVER_ERROR);
+			throw httpException(
+				"Token de autenticação não encontrado",
+				httpStatus.INTERNAL_SERVER_ERROR,
+			);
 		}
 
-		const cleanDocument = resident.document.replace(/\D/g, '');
-		const cleanPhone = resident.phone.replace(/\D/g, '').replace(/^55/, '');
+		const cleanDocument = resident.document.replace(/\D/g, "");
+		const cleanPhone = resident.phone.replace(/\D/g, "").replace(/^55/, "");
 		const priceInCents = Math.round(originEntity.totalValue * 100);
-		const baseUrl = env.app.baseUrl.replace(/\/+$/, ''); 
-		const returnUrl = process.env.ABACATEPAY_RETURN_URL || `${baseUrl}/bookings`;
-		const completionUrl = process.env.ABACATEPAY_COMPLETION_URL || `${baseUrl}/bookings`;
+		const baseUrl = env.app.baseUrl.replace(/\/+$/, "");
+		const returnUrl =
+			process.env.ABACATEPAY_RETURN_URL || `${baseUrl}/bookings`;
+		const completionUrl =
+			process.env.ABACATEPAY_COMPLETION_URL || `${baseUrl}/bookings`;
 
 		const options = {
-			method: 'POST',
+			method: "POST",
 			headers: {
 				Authorization: `Bearer ${token}`,
-				'Content-Type': 'application/json'
+				"Content-Type": "application/json",
 			},
 			body: JSON.stringify({
-				frequency: 'ONE_TIME',
-				methods: ['PIX'],
-			products: [
-				{
-					externalId: `booking-${originEntity._id}`,
-					name: amenity.name || 'Reserva de Comodidade',
-					description: `Reserva de ${amenity.name || 'comodidade'}`,
-					quantity: 1,
-					price: priceInCents
-				}
-			],
+				frequency: "ONE_TIME",
+				methods: ["PIX"],
+				products: [
+					{
+						externalId: `booking-${originEntity._id}`,
+						name: amenity.name || "Reserva de Comodidade",
+						description: `Reserva de ${amenity.name || "comodidade"}`,
+						quantity: 1,
+						price: priceInCents,
+					},
+				],
 				returnUrl: returnUrl,
 				completionUrl: completionUrl,
 				customer: {
 					name: resident.name,
 					cellphone: cleanPhone,
 					email: resident.email,
-					taxId: cleanDocument
+					taxId: cleanDocument,
 				},
 				allowCoupons: false,
 				externalId: originEntity._id,
-				metadata: {externalId: originEntity._id}
-			})
+				metadata: { externalId: originEntity._id },
+			}),
 		};
 
 		try {
-			const response = await fetch('https://api.abacatepay.com/v1/billing/create', options);
+			const response = await fetch(
+				"https://api.abacatepay.com/v1/billing/create",
+				options,
+			);
 			const data = await response.json();
 
 			if (!response.ok || data.error) {
 				throw httpException(
 					data.error || data.message || "Erro ao criar pagamento no AbacatePay",
-					httpStatus.BAD_REQUEST
+					httpStatus.BAD_REQUEST,
 				);
 			}
 
@@ -122,17 +132,14 @@ export class PaymentService {
 			}
 			throw httpException(
 				"Erro ao comunicar com o gateway de pagamento",
-				httpStatus.INTERNAL_SERVER_ERROR
+				httpStatus.INTERNAL_SERVER_ERROR,
 			);
 		}
 	}
 
-	public async createPayment(
-		paymentData:any,
-		webPayment: any, 
-	){
+	public async createPayment(paymentData: any, webPayment: any) {
 		const paymentOriginId = webPayment.id || webPayment.paymentOriginId;
-		
+
 		if (!paymentOriginId) {
 			throw httpException(
 				"ID do pagamento não encontrado na resposta do gateway",
@@ -150,9 +157,11 @@ export class PaymentService {
 			);
 		}
 
-		const value = webPayment.amount ? webPayment.amount / 100 : paymentData.value;
-		const expiresAt = webPayment.expiresAt 
-			? new Date(webPayment.expiresAt) 
+		const value = webPayment.amount
+			? webPayment.amount / 100
+			: paymentData.value;
+		const expiresAt = webPayment.expiresAt
+			? new Date(webPayment.expiresAt)
 			: new Date(Date.now() + 1800 * 1000);
 
 		const paymentEntity: CreatePaymentEntity = {
@@ -189,8 +198,11 @@ export class PaymentService {
 		};
 	}
 
-
-	public async updateStatus(payment: any, webPayment: any, status: "PAGO" | "EXPIRADO") {
+	public async updateStatus(
+		payment: any,
+		webPayment: any,
+		status: "PAGO" | "EXPIRADO",
+	) {
 		const updateData: any = {
 			status: status,
 			updatedAt: new Date(),
@@ -201,14 +213,17 @@ export class PaymentService {
 				updateData.paidAt = new Date();
 			}
 		} else if (status === "EXPIRADO") {
-			const expiresAt = webPayment.data.billing.expiresAt 
-				? new Date(webPayment.data.billing.expiresAt) 
+			const expiresAt = webPayment.data.billing.expiresAt
+				? new Date(webPayment.data.billing.expiresAt)
 				: new Date();
 			updateData.expiresAt = expiresAt;
 			updateData.canceledAt = new Date();
 		}
 
-		const updatedPayment = await this.paymentRepository.update(payment._id, updateData);
+		const updatedPayment = await this.paymentRepository.update(
+			payment._id,
+			updateData,
+		);
 
 		if (!updatedPayment) {
 			throw httpException(
@@ -220,10 +235,10 @@ export class PaymentService {
 		return updatedPayment;
 	}
 
-	public async updatePayment(
-		webPayment: any,
-	){
-		const payment = await this.paymentRepository.findByPaymentOriginId(webPayment.data.billing.id);
+	public async updatePayment(webPayment: any) {
+		const payment = await this.paymentRepository.findByPaymentOriginId(
+			webPayment.data.billing.id,
+		);
 
 		if (!payment) {
 			throw httpException("Pagamento não encontrado", httpStatus.NOT_FOUND);
@@ -232,8 +247,13 @@ export class PaymentService {
 		const billingStatus = webPayment.data.billing.status;
 		const isBooking = payment.type === "BOOKING";
 
-		if ((billingStatus === "PAID" || billingStatus === "EXPIRED") && isBooking) {
-			const booking = await this.bookingRepository.findById(payment.entityOriginId);
+		if (
+			(billingStatus === "PAID" || billingStatus === "EXPIRED") &&
+			isBooking
+		) {
+			const booking = await this.bookingRepository.findById(
+				payment.entityOriginId,
+			);
 			if (booking) {
 				const paymentStatus = billingStatus === "PAID" ? "PAGO" : "EXPIRADO";
 				await this.updateStatus(payment, webPayment, paymentStatus);
@@ -301,9 +321,7 @@ export class PaymentService {
 	/**
 	 * Busca um pagamento por ID
 	 */
-	public async getPaymentById(
-		paymentId: string,
-	): Promise<
+	public async getPaymentById(paymentId: string): Promise<
 		HttpResponse<{
 			_id: string;
 			paymentOriginId: string;
@@ -356,9 +374,7 @@ export class PaymentService {
 	/**
 	 * Busca pagamentos por paymentOriginId (útil para webhook)
 	 */
-	public async getPaymentByPaymentOriginId(
-		paymentOriginId: string,
-	): Promise<
+	public async getPaymentByPaymentOriginId(paymentOriginId: string): Promise<
 		HttpResponse<{
 			_id: string;
 			paymentOriginId: string;
@@ -386,9 +402,7 @@ export class PaymentService {
 	/**
 	 * Busca pagamento por entityOriginId (ID do booking)
 	 */
-	public async getPaymentByEntityOriginId(
-		entityOriginId: string,
-	): Promise<
+	public async getPaymentByEntityOriginId(entityOriginId: string): Promise<
 		HttpResponse<{
 			_id: string;
 			paymentOriginId: string;
@@ -469,8 +483,8 @@ export class PaymentService {
 			// Tentar cancelar como billing primeiro (se o ID começar com 'bill_')
 			let response;
 			let data;
-			
-			if (payment.paymentOriginId.startsWith('bill_')) {
+
+			if (payment.paymentOriginId.startsWith("bill_")) {
 				// Formato billing
 				response = await fetch(
 					`https://api.abacatepay.com/v1/billing/${payment.paymentOriginId}/cancel`,
@@ -516,4 +530,3 @@ export class PaymentService {
 		});
 	}
 }
-

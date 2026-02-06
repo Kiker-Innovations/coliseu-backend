@@ -27,4 +27,3 @@ export type CreateBookingEntity = Omit<
 export type UpdateBookingEntity = Partial<
 	Omit<BookingEntity, "_id" | "createdAt">
 >;
-

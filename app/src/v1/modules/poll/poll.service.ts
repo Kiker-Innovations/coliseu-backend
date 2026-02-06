@@ -21,7 +21,7 @@ import {
 	PollStatusEnum,
 	type PollStatusEnumType,
 } from "@/v1/enum/pollStatus.enum";
-import { getDate, toDate } from "@/v1/utils/utils";
+import { getDate, toDate, calculatePollStatus } from "@/v1/utils/utils";
 
 interface PollResponse {
 	id: string;
@@ -66,27 +66,25 @@ export class PollService {
 		}>
 	> {
 		await this.validateBuildingExists(buildingId);
-		const now = getDate();
-		const startDate = pollCreateDto.startDate;
-		let finalStatus: PollStatusEnumType;
-		if (startDate.getTime() <= now.getTime()) {
-			finalStatus = PollStatusEnum.ATIVO;
-		} else {
-			finalStatus = PollStatusEnum.PROGRAMADO;
-		}
-		const normalizedStartDate = startDate;
+		const normalizedStartDate = pollCreateDto.startDate;
 		const normalizedEndDate = pollCreateDto.endDate;
 
 		const pollEntity: CreatePollEntity = {
 			buildingId,
 			description: pollCreateDto.description,
 			options: pollCreateDto.options as string[],
-			status: finalStatus,
 			startDate: normalizedStartDate,
 			endDate: normalizedEndDate,
 		};
 
 		const createdPoll = await this.pollRepository.create(pollEntity);
+
+		// Calcular status baseado nas datas
+		const calculatedStatus = calculatePollStatus(
+			createdPoll.startDate,
+			createdPoll.endDate,
+			createdPoll.cancelledAt,
+		);
 
 		return {
 			success: true,
@@ -94,7 +92,7 @@ export class PollService {
 			data: {
 				id: String(createdPoll._id),
 				description: createdPoll.description,
-				status: createdPoll.status,
+				status: calculatedStatus,
 			},
 		};
 	}
@@ -120,10 +118,31 @@ export class PollService {
 	}): Promise<HttpResponse<PollResponse[]>> {
 		await this.validateBuildingExists(pollListDto.buildingId);
 
-		const polls = await this.pollRepository.findByStatus(
-			pollListDto.buildingId,
-			pollListDto.status,
-		);
+		// Buscar todas as enquetes do prédio
+		const allPolls = await this.pollRepository.findMany({
+			buildingId: pollListDto.buildingId,
+		});
+
+		// Filtrar por status calculado
+		const polls = allPolls.filter((poll) => {
+			const startDate =
+				poll.startDate instanceof Date
+					? poll.startDate
+					: new Date(poll.startDate);
+			const endDate =
+				poll.endDate instanceof Date ? poll.endDate : new Date(poll.endDate);
+			const cancelledAt = poll.cancelledAt
+				? poll.cancelledAt instanceof Date
+					? poll.cancelledAt
+					: new Date(poll.cancelledAt)
+				: null;
+			const calculatedStatus = calculatePollStatus(
+				startDate,
+				endDate,
+				cancelledAt,
+			);
+			return pollListDto.status.includes(calculatedStatus);
+		});
 
 		if (!polls || polls.length === 0) {
 			return {
@@ -134,26 +153,38 @@ export class PollService {
 		}
 
 		const formattedPolls = polls.map((poll) => {
+			const startDate =
+				poll.startDate instanceof Date
+					? poll.startDate
+					: new Date(poll.startDate);
+			const endDate =
+				poll.endDate instanceof Date ? poll.endDate : new Date(poll.endDate);
+			const cancelledAt = poll.cancelledAt
+				? poll.cancelledAt instanceof Date
+					? poll.cancelledAt
+					: new Date(poll.cancelledAt)
+				: null;
+
+			// Calcular status baseado nas datas
+			const calculatedStatus = calculatePollStatus(
+				startDate,
+				endDate,
+				cancelledAt,
+			);
+
 			const pollResponse: any = {
 				id: String(poll._id),
 				description: poll.description,
-				startDate:
-					poll.startDate instanceof Date
-						? poll.startDate
-						: new Date(poll.startDate),
-				endDate:
-					poll.endDate instanceof Date ? poll.endDate : new Date(poll.endDate),
+				startDate,
+				endDate,
 				votes: poll.votes,
 				options: this.calculateOptionsPercent(poll.options, poll.votes),
-				status: poll.status,
+				status: calculatedStatus,
 			};
 
-			if (poll.status === PollStatusEnum.CANCELADO && poll.cancelledAt) {
+			if (cancelledAt) {
 				pollResponse.cancelReason = poll.cancelReason;
-				pollResponse.cancelledAt =
-					poll.cancelledAt instanceof Date
-						? poll.cancelledAt
-						: new Date(poll.cancelledAt);
+				pollResponse.cancelledAt = cancelledAt;
 			}
 
 			return pollResponse;
@@ -177,10 +208,23 @@ export class PollService {
 			// Verify building exists
 			await this.validateBuildingExists(buildingId);
 
-			// Get only ACTIVE polls (not PROGRAMADO)
-			const polls = await this.pollRepository.findByStatus(buildingId, [
-				PollStatusEnum.ATIVO,
-			]);
+			// Buscar todas as enquetes e filtrar apenas as ativas baseado nas datas
+			const allPolls = await this.pollRepository.findMany({ buildingId });
+			const now = getDate();
+			const polls = allPolls.filter((poll) => {
+				const status = calculatePollStatus(
+					poll.startDate instanceof Date
+						? poll.startDate
+						: new Date(poll.startDate),
+					poll.endDate instanceof Date ? poll.endDate : new Date(poll.endDate),
+					poll.cancelledAt
+						? poll.cancelledAt instanceof Date
+							? poll.cancelledAt
+							: new Date(poll.cancelledAt)
+						: null,
+				);
+				return status === PollStatusEnum.ATIVO;
+			});
 
 			// Calculate total polls
 			const totalPolls = polls.length;
@@ -315,23 +359,35 @@ export class PollService {
 			);
 		}
 
+		// Verificar status atual baseado nas datas
+		const currentStatus = calculatePollStatus(
+			poll.startDate instanceof Date
+				? poll.startDate
+				: new Date(poll.startDate),
+			poll.endDate instanceof Date ? poll.endDate : new Date(poll.endDate),
+			poll.cancelledAt
+				? poll.cancelledAt instanceof Date
+					? poll.cancelledAt
+					: new Date(poll.cancelledAt)
+				: null,
+		);
+
 		// Check if poll is already cancelled
-		if (poll.status === PollStatusEnum.CANCELADO) {
+		if (currentStatus === PollStatusEnum.CANCELADO) {
 			throw httpException("Enquete já está cancelada", httpStatus.BAD_REQUEST);
 		}
 
 		// Check if poll is already finished
-		if (poll.status === PollStatusEnum.FINALIZADO) {
+		if (currentStatus === PollStatusEnum.FINALIZADO) {
 			throw httpException(
 				"Não é possível cancelar uma enquete já finalizada",
 				httpStatus.BAD_REQUEST,
 			);
 		}
 
-		// Update poll to cancelled status
+		// Update poll to cancelled status (apenas cancelledAt, não status)
 		const now = getDate();
 		const updatedPoll = await this.pollRepository.update(pollId, {
-			status: PollStatusEnum.CANCELADO,
 			cancelReason: pollCancelDto.cancelReason,
 			cancelledAt: now,
 			updatedAt: now,
@@ -344,13 +400,28 @@ export class PollService {
 			);
 		}
 
+		// Calcular status após cancelamento
+		const calculatedStatus = calculatePollStatus(
+			updatedPoll.startDate instanceof Date
+				? updatedPoll.startDate
+				: new Date(updatedPoll.startDate),
+			updatedPoll.endDate instanceof Date
+				? updatedPoll.endDate
+				: new Date(updatedPoll.endDate),
+			updatedPoll.cancelledAt
+				? updatedPoll.cancelledAt instanceof Date
+					? updatedPoll.cancelledAt
+					: new Date(updatedPoll.cancelledAt)
+				: null,
+		);
+
 		return {
 			success: true,
 			message: "Enquete cancelada com sucesso",
 			data: {
 				id: String(updatedPoll._id),
 				description: updatedPoll.description,
-				status: updatedPoll.status,
+				status: calculatedStatus,
 				cancelReason: updatedPoll.cancelReason!,
 				cancelledAt:
 					updatedPoll.cancelledAt instanceof Date

@@ -5,10 +5,7 @@ import type { HttpResponse } from "../../../interface/httpResponse.interface";
 import { UsefulContactRepository } from "../../../database/mongodb/repositories/usefulContact.repository";
 import { BuildingRepository } from "../../../database/mongodb/repositories/building.repository";
 import type { CreateUsefulContactEntity } from "../../../database/mongodb/entity/usefulContact.entity";
-import type {
-	UsefulContactCreateDto,
-	UsefulContactUpdateDto,
-} from "./dto";
+import type { UsefulContactCreateDto, UsefulContactUpdateDto } from "./dto";
 
 export class UsefulContactService {
 	private usefulContactRepository: UsefulContactRepository;
@@ -44,9 +41,8 @@ export class UsefulContactService {
 			observation: usefulContactCreateDto.observation,
 		};
 
-		const createdContact = await this.usefulContactRepository.create(
-			usefulContactEntity,
-		);
+		const createdContact =
+			await this.usefulContactRepository.create(usefulContactEntity);
 
 		return {
 			success: true,
@@ -61,9 +57,7 @@ export class UsefulContactService {
 		};
 	}
 
-	public async getUsefulContactsByBuilding(
-		buildingId: string,
-	): Promise<
+	public async getUsefulContactsByBuilding(buildingId: string): Promise<
 		HttpResponse<
 			{
 				_id: string;
@@ -80,9 +74,8 @@ export class UsefulContactService {
 			throw httpException("Edifício não encontrado", httpStatus.NOT_FOUND);
 		}
 
-		const contacts = await this.usefulContactRepository.findManyByBuildingId(
-			buildingId,
-		);
+		const contacts =
+			await this.usefulContactRepository.findManyByBuildingId(buildingId);
 
 		return {
 			success: true,
@@ -97,9 +90,7 @@ export class UsefulContactService {
 		};
 	}
 
-	public async getUsefulContactById(
-		contactId: string,
-	): Promise<
+	public async getUsefulContactById(contactId: string): Promise<
 		HttpResponse<{
 			_id: string;
 			name: string;
@@ -172,7 +163,9 @@ export class UsefulContactService {
 		};
 	}
 
-	public async deleteUsefulContact(contactId: string): Promise<HttpResponse<void>> {
+	public async deleteUsefulContact(
+		contactId: string,
+	): Promise<HttpResponse<void>> {
 		const contact = await this.usefulContactRepository.findById(contactId);
 
 		if (!contact) {
@@ -194,4 +187,3 @@ export class UsefulContactService {
 		};
 	}
 }
-

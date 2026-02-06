@@ -122,7 +122,8 @@ export class ResidentRouteV1 {
 			schema: {
 				tags: ["Residents"],
 				summary: "Confirm resident email",
-				description: "Confirma o código de verificação enviado por email (público)",
+				description:
+					"Confirma o código de verificação enviado por email (público)",
 				...this.residentSchema.confirm,
 			},
 			// Rota pública - não requer autenticação para permitir confirmação de email antes do login
@@ -160,7 +161,7 @@ export class ResidentRouteV1 {
 					"Redefine a senha usando o código de recuperação recebido por email",
 				...this.residentSchema.resetPassword,
 			},
-				handler: this.residentController.resetPassword.bind(
+			handler: this.residentController.resetPassword.bind(
 				this.residentController,
 			) as RouteHandlerMethod,
 		};

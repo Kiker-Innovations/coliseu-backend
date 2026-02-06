@@ -52,9 +52,7 @@ export class SESProvider {
 		error?: string;
 	}> {
 		try {
-			const toAddresses = Array.isArray(options.to)
-				? options.to
-				: [options.to];
+			const toAddresses = Array.isArray(options.to) ? options.to : [options.to];
 
 			if (options.attachments && options.attachments.length > 0) {
 				return await this.sendRawEmail(options);
@@ -65,9 +63,7 @@ export class SESProvider {
 				Destination: {
 					ToAddresses: toAddresses,
 					...(options.cc && {
-						CcAddresses: Array.isArray(options.cc)
-							? options.cc
-							: [options.cc],
+						CcAddresses: Array.isArray(options.cc) ? options.cc : [options.cc],
 					}),
 					...(options.bcc && {
 						BccAddresses: Array.isArray(options.bcc)
@@ -127,9 +123,7 @@ export class SESProvider {
 	}> {
 		try {
 			const boundary = `----=_Part_${Date.now()}_${Math.random().toString(36).substring(2)}`;
-			const toAddresses = Array.isArray(options.to)
-				? options.to
-				: [options.to];
+			const toAddresses = Array.isArray(options.to) ? options.to : [options.to];
 
 			let rawMessage = this.buildRawMessageHeaders({
 				from: options.from,
@@ -263,4 +257,3 @@ export class SESProvider {
 		return this.defaultFromEmail;
 	}
 }
-

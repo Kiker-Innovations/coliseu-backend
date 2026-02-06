@@ -55,18 +55,20 @@ export const amenityCreateSchema = z
 			.int("Quantidade Máxima de Residentes deve ser um valor inteiro")
 			.min(1, "Quantidade Máxima de Residentes deve ser pelo menos 1")
 			.optional()),
-	maxHours: z.preprocess((val) => {
-		if (val === "" || val === null || val === undefined) return undefined;
-		const num = typeof val === "string" ? Number(val) : val;
-		if (isNaN(num as number) || !isFinite(num as number)) return undefined;
-		return num;
-	}, z
-		.number()
-		.max(24, "Limite de horas não pode ser maior que 24")
-		.optional()),
+		maxHours: z.preprocess((val) => {
+			if (val === "" || val === null || val === undefined) return undefined;
+			const num = typeof val === "string" ? Number(val) : val;
+			if (isNaN(num as number) || !isFinite(num as number)) return undefined;
+			return num;
+		}, z
+			.number()
+			.max(24, "Limite de horas não pode ser maior que 24")
+			.optional()),
 		bookingType: z
 			.enum(["DIARIO", "POR_HORAS"], {
-				errorMap: () => ({ message: "Tipo de reserva deve ser DIARIO ou POR_HORAS" }),
+				errorMap: () => ({
+					message: "Tipo de reserva deve ser DIARIO ou POR_HORAS",
+				}),
 			})
 			.optional(),
 		usageRules: z
@@ -76,11 +78,17 @@ export const amenityCreateSchema = z
 			.optional(),
 		openingTime: z
 			.string()
-			.regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Horário de abertura deve estar no formato HH:mm (ex: 08:00)")
+			.regex(
+				/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/,
+				"Horário de abertura deve estar no formato HH:mm (ex: 08:00)",
+			)
 			.optional(),
 		closingTime: z
 			.string()
-			.regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Horário de fechamento deve estar no formato HH:mm (ex: 22:00)")
+			.regex(
+				/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/,
+				"Horário de fechamento deve estar no formato HH:mm (ex: 22:00)",
+			)
 			.optional(),
 		items: z
 			.array(
@@ -93,7 +101,7 @@ export const amenityCreateSchema = z
 						.number({ required_error: "Quantidade é obrigatória" })
 						.int("Quantidade deve ser um número inteiro")
 						.min(1, "Quantidade deve ser pelo menos 1"),
-				})
+				}),
 			)
 			.optional(),
 		status: z.enum(AmenityStatusEnumValues as [string, ...string[]], {
@@ -120,11 +128,15 @@ export const amenityCreateSchema = z
 		(data) => {
 			// Se ambos forem fornecidos, closingTime deve ser maior que openingTime
 			if (data.openingTime && data.closingTime) {
-				const [openingHour, openingMinute] = data.openingTime.split(":").map(Number);
-				const [closingHour, closingMinute] = data.closingTime.split(":").map(Number);
+				const [openingHour, openingMinute] = data.openingTime
+					.split(":")
+					.map(Number);
+				const [closingHour, closingMinute] = data.closingTime
+					.split(":")
+					.map(Number);
 				const openingMinutes = openingHour * 60 + openingMinute;
 				const closingMinutes = closingHour * 60 + closingMinute;
-				
+
 				if (closingMinutes <= openingMinutes) {
 					return false;
 				}
@@ -153,8 +165,7 @@ export const amenityCreateSchema = z
 			message: "Área comum não pode ter valor de uso",
 			path: ["value"],
 		},
-	)
-;
+	);
 
 export type AmenityCreateDto = z.infer<typeof amenityCreateSchema>;
 

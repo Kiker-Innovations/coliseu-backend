@@ -7,7 +7,7 @@ import { httpException } from "../../../config/error";
 import httpStatus from "http-status";
 import type { HttpResponse } from "../../../interface/httpResponse.interface";
 import { PollStatusEnum } from "@/v1/enum/pollStatus.enum";
-import { getDate } from "@/v1/utils/utils";
+import { getDate, calculatePollStatus } from "@/v1/utils/utils";
 
 export class PollVoteService {
 	private pollVoteRepository: PollVoteRepository;
@@ -43,8 +43,21 @@ export class PollVoteService {
 			throw httpException("Enquete não encontrada", httpStatus.NOT_FOUND);
 		}
 
+		// Verificar status baseado nas datas
+		const pollStatus = calculatePollStatus(
+			poll.startDate instanceof Date
+				? poll.startDate
+				: new Date(poll.startDate),
+			poll.endDate instanceof Date ? poll.endDate : new Date(poll.endDate),
+			poll.cancelledAt
+				? poll.cancelledAt instanceof Date
+					? poll.cancelledAt
+					: new Date(poll.cancelledAt)
+				: null,
+		);
+
 		// Verify poll is active
-		if (poll.status !== PollStatusEnum.ATIVO) {
+		if (pollStatus !== PollStatusEnum.ATIVO) {
 			throw httpException(
 				"Enquete não está ativa. Apenas enquetes com status ATIVO podem receber votos",
 				httpStatus.BAD_REQUEST,
@@ -167,8 +180,21 @@ export class PollVoteService {
 			throw httpException("Enquete não encontrada", httpStatus.NOT_FOUND);
 		}
 
+		// Verificar status baseado nas datas
+		const pollStatus = calculatePollStatus(
+			poll.startDate instanceof Date
+				? poll.startDate
+				: new Date(poll.startDate),
+			poll.endDate instanceof Date ? poll.endDate : new Date(poll.endDate),
+			poll.cancelledAt
+				? poll.cancelledAt instanceof Date
+					? poll.cancelledAt
+					: new Date(poll.cancelledAt)
+				: null,
+		);
+
 		// Verify poll is active
-		if (poll.status !== PollStatusEnum.ATIVO) {
+		if (pollStatus !== PollStatusEnum.ATIVO) {
 			throw httpException(
 				"Enquete não está ativa. Apenas enquetes com status ATIVO podem ter votos removidos",
 				httpStatus.BAD_REQUEST,

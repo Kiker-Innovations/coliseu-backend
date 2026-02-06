@@ -24,4 +24,3 @@ export const transformUsefulContactUpdateDto = (
 ): UsefulContactUpdateDto => {
 	return usefulContactUpdateSchema.parse(data);
 };
-

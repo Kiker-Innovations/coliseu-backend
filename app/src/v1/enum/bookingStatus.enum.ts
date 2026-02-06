@@ -9,7 +9,7 @@ export const BookingStatusEnum = {
 export type BookingStatusEnumType =
 	(typeof BookingStatusEnum)[keyof typeof BookingStatusEnum];
 
-export const BookingStatusEnumValues = Object.values(
-	BookingStatusEnum,
-) as [string, ...string[]];
-
+export const BookingStatusEnumValues = Object.values(BookingStatusEnum) as [
+	string,
+	...string[],
+];

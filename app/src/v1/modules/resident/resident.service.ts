@@ -280,7 +280,10 @@ export class ResidentService {
 				);
 
 			// Se encontrou um resident diferente do que está sendo atualizado
-			if (existingResidentByPhone && existingResidentByPhone._id !== residentId) {
+			if (
+				existingResidentByPhone &&
+				existingResidentByPhone._id !== residentId
+			) {
 				throw httpException(
 					"Telefone já cadastrado para outro morador neste edifício.",
 					httpStatus.CONFLICT,
@@ -299,7 +302,10 @@ export class ResidentService {
 				);
 
 			// Se encontrou um resident diferente do que está sendo atualizado
-			if (existingResidentByDocument && existingResidentByDocument._id !== residentId) {
+			if (
+				existingResidentByDocument &&
+				existingResidentByDocument._id !== residentId
+			) {
 				throw httpException(
 					"CPF já cadastrado para outro morador neste edifício.",
 					httpStatus.CONFLICT,
@@ -674,7 +680,8 @@ export class ResidentService {
 
 		if (residentUpdateDto.phone) {
 			// Verificar se já existe outro resident com o mesmo telefone no mesmo building
-			const buildingIdToCheck = residentUpdateDto.buildingId || resident.buildingId;
+			const buildingIdToCheck =
+				residentUpdateDto.buildingId || resident.buildingId;
 			const existingResidentByPhone =
 				await this.residentRepository.findByPhoneAndBuilding(
 					residentUpdateDto.phone,
@@ -682,7 +689,10 @@ export class ResidentService {
 				);
 
 			// Se encontrou um resident diferente do que está sendo atualizado
-			if (existingResidentByPhone && existingResidentByPhone._id !== resident._id) {
+			if (
+				existingResidentByPhone &&
+				existingResidentByPhone._id !== resident._id
+			) {
 				throw httpException(
 					"Telefone já cadastrado para outro morador neste edifício.",
 					httpStatus.CONFLICT,
@@ -702,7 +712,8 @@ export class ResidentService {
 
 		if (residentUpdateDto.document) {
 			// Verificar se já existe outro resident com o mesmo CPF no mesmo building
-			const buildingIdToCheck = residentUpdateDto.buildingId || resident.buildingId;
+			const buildingIdToCheck =
+				residentUpdateDto.buildingId || resident.buildingId;
 			const existingResidentByDocument =
 				await this.residentRepository.findByDocumentAndBuilding(
 					residentUpdateDto.document,
@@ -710,7 +721,10 @@ export class ResidentService {
 				);
 
 			// Se encontrou um resident diferente do que está sendo atualizado
-			if (existingResidentByDocument && existingResidentByDocument._id !== resident._id) {
+			if (
+				existingResidentByDocument &&
+				existingResidentByDocument._id !== resident._id
+			) {
 				throw httpException(
 					"CPF já cadastrado para outro morador neste edifício.",
 					httpStatus.CONFLICT,

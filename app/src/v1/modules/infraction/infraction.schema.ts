@@ -560,4 +560,58 @@ export class InfractionSchema {
 			...forbiddenResponse,
 		},
 	});
+
+	public cancelNotification = protectedSchema({
+		params: {
+			type: "object",
+			required: ["infractionId"],
+			properties: {
+				infractionId: {
+					type: "string",
+					format: "uuid",
+					description: "ID da infração (notificação)",
+					example: "123e4567-e89b-12d3-a456-426614174000",
+				},
+			},
+		},
+		body: {
+			type: "object",
+			properties: {},
+		},
+		response: {
+			200: {
+				description: "Notificação excluída com sucesso",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+					data: {
+						type: "object",
+						properties: {
+							_id: { type: "string" },
+							deletedAt: { type: "string", format: "date-time" },
+						},
+					},
+				},
+			},
+			400: {
+				description: "Apenas notificações ativas podem ser canceladas",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			404: {
+				description: "Infração não encontrada",
+				type: "object",
+				properties: {
+					success: { type: "boolean" },
+					message: { type: "string" },
+				},
+			},
+			...unauthorizedResponse,
+			...forbiddenResponse,
+		},
+	});
 }

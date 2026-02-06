@@ -79,6 +79,7 @@ export class ApartmentRepository
 		filter?: {
 			apartmentId?: string;
 			status?: string;
+			excludeDeletedNotifications?: boolean;
 		},
 	): Promise<
 		Array<
@@ -105,6 +106,7 @@ export class ApartmentRepository
 					paidAt?: Date;
 					canceledAt?: Date;
 					canceledNote?: string;
+					deletedAt?: Date;
 				}>;
 			}
 		>
@@ -123,6 +125,17 @@ export class ApartmentRepository
 		}
 		if (filter?.status) {
 			infractionFilter.status = filter.status;
+		}
+		// Filtrar notificações excluídas (deletedAt) - apenas para residentes
+		// Para admins, não filtrar deletedAt (mostrar todas)
+		if (filter?.excludeDeletedNotifications) {
+			infractionFilter.$or = [
+				{ type: "MULTA" }, // Multas sempre aparecem
+				{
+					type: "NOTIFICACAO",
+					$or: [{ deletedAt: { $exists: false } }, { deletedAt: null }],
+				},
+			];
 		}
 
 		// Buscar todos os apartamentos do building
@@ -214,6 +227,11 @@ export class ApartmentRepository
 					: undefined,
 				canceledNote: infraction.canceledNote
 					? String(infraction.canceledNote)
+					: undefined,
+				deletedAt: infraction.deletedAt
+					? infraction.deletedAt instanceof Date
+						? infraction.deletedAt
+						: new Date(infraction.deletedAt)
 					: undefined,
 			});
 		});

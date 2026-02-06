@@ -106,4 +106,3 @@ export class PaymentRepository
 		return result.deletedCount > 0;
 	}
 }
-

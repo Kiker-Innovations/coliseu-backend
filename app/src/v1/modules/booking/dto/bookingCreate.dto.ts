@@ -28,13 +28,10 @@ export const bookingCreateSchema = z
 		},
 	);
 
-export type BookingCreateDto = z.infer<
-	typeof bookingCreateSchema
->;
+export type BookingCreateDto = z.infer<typeof bookingCreateSchema>;
 
 export const transformCreateBookingDto = (
 	data: BookingCreateDto,
 ): BookingCreateDto => {
 	return bookingCreateSchema.parse(data);
 };
-

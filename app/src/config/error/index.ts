@@ -65,7 +65,8 @@ export const errorHandler = (
 					err.message?.toLowerCase().includes("código"),
 			);
 			if (pickupCodeError) {
-				errorMessage = pickupCodeError.message || "Código de retirada fornecido inválido";
+				errorMessage =
+					pickupCodeError.message || "Código de retirada fornecido inválido";
 			} else {
 				// Usar a primeira mensagem de erro específica se disponível
 				const firstError = validationErrors[0];

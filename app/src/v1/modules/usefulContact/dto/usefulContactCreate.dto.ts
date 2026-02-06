@@ -22,4 +22,3 @@ export const transformUsefulContactCreateDto = (
 ): UsefulContactCreateDto => {
 	return usefulContactCreateSchema.parse(data);
 };
-

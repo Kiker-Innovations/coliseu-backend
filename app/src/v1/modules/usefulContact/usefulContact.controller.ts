@@ -48,9 +48,7 @@ export class UsefulContactController {
 		const { id } = request.params as { id: string };
 		return reply
 			.code(httpStatus.OK)
-			.send(
-				await this.usefulContactService.getUsefulContactById(id),
-			);
+			.send(await this.usefulContactService.getUsefulContactById(id));
 	}
 
 	public async updateUsefulContact(
@@ -75,9 +73,6 @@ export class UsefulContactController {
 		const { id } = request.params as { id: string };
 		return reply
 			.code(httpStatus.OK)
-			.send(
-				await this.usefulContactService.deleteUsefulContact(id),
-			);
+			.send(await this.usefulContactService.deleteUsefulContact(id));
 	}
 }
-

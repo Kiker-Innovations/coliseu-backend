@@ -17,6 +17,7 @@ export interface InfractionEntity {
 	confirmedAt?: Date;
 	paidAt?: Date;
 	canceledAt?: Date;
+	deletedAt?: Date;
 	updatedAt: Date;
 }
 

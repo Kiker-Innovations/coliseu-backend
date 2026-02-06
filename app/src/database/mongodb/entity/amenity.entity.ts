@@ -18,7 +18,7 @@ export interface AmenityEntity {
 	nonComplianceFine?: number;
 	maxResidents?: number;
 	maxHours?: number;
-	usageRules?: string; 
+	usageRules?: string;
 	bookingType?: BookingTypeEnumType;
 	status?: AmenityStatusEnumType;
 	openingTime?: string; // HH:mm format (e.g., "08:00")

@@ -12,7 +12,10 @@ export const packageConfirmDeliverySchema = z.object({
 		.min(6, "Código de retirada deve ter no mínimo 6 caracteres")
 		.max(6, "Código de retirada deve ter no máximo 6 caracteres")
 		.trim()
-		.regex(/^[A-Z0-9]{6}$/, "Código de retirada deve conter apenas letras maiúsculas e números"),
+		.regex(
+			/^[A-Z0-9]{6}$/,
+			"Código de retirada deve conter apenas letras maiúsculas e números",
+		),
 });
 
 export type PackageConfirmDeliveryDto = z.infer<

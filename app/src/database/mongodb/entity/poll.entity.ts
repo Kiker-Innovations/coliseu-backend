@@ -1,5 +1,3 @@
-import { PollStatusEnumType } from "@/v1/enum/pollStatus.enum";
-
 export interface PollOption {
 	id: number;
 	description: string;
@@ -13,7 +11,6 @@ export interface PollEntity {
 	description: string;
 	options: PollOption[];
 	votes: number;
-	status: PollStatusEnumType;
 	startDate: Date;
 	endDate: Date;
 	cancelledAt?: Date;
@@ -26,7 +23,6 @@ export type CreatePollEntity = {
 	buildingId: string;
 	description: string;
 	options: string[]; // No cadastro, recebe array de strings
-	status: PollStatusEnumType;
 	startDate: Date;
 	endDate: Date;
 };
@@ -35,7 +31,6 @@ export type UpdatePollEntity = Partial<
 	Pick<
 		PollEntity,
 		| "description"
-		| "status"
 		| "startDate"
 		| "endDate"
 		| "cancelReason"

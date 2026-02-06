@@ -553,4 +553,58 @@ export class InfractionService {
 			},
 		};
 	}
+
+	public async cancelNotification(
+		infractionId: string,
+	): Promise<HttpResponse<{ _id: string; deletedAt: Date }>> {
+		const infraction = await this.infractionRepository.findById(infractionId);
+		if (!infraction) {
+			throw httpException("Infração não encontrada", httpStatus.NOT_FOUND);
+		}
+
+		if (infraction.type !== InfractionTypeEnum.NOTIFICACAO) {
+			throw httpException(
+				"Apenas notificações podem ser excluídas por este endpoint",
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
+		if (infraction.status !== InfractionStatusEnum.ATIVO) {
+			throw httpException(
+				"Apenas notificações ativas podem ser excluídas",
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
+		if (infraction.deletedAt) {
+			throw httpException(
+				"Notificação já foi excluída",
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
+		const updatedInfraction = await this.infractionRepository.update(
+			infractionId,
+			{
+				deletedAt: getDate(),
+				updatedAt: getDate(),
+			},
+		);
+
+		if (!updatedInfraction) {
+			throw httpException(
+				"Erro ao excluir notificação",
+				httpStatus.INTERNAL_SERVER_ERROR,
+			);
+		}
+
+		return {
+			success: true,
+			message: "Notificação excluída com sucesso",
+			data: {
+				_id: updatedInfraction._id,
+				deletedAt: updatedInfraction.deletedAt!,
+			},
+		};
+	}
 }

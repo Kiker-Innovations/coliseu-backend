@@ -5,9 +5,7 @@ export const bookingListQuerySchema = z.object({
 	limit: z.coerce.number().int().min(1).max(100).optional().default(10),
 });
 
-export type BookingListQueryDto = z.infer<
-	typeof bookingListQuerySchema
->;
+export type BookingListQueryDto = z.infer<typeof bookingListQuerySchema>;
 
 export const transformBookingListQueryDto = (
 	query: any,
@@ -22,4 +20,3 @@ export const transformBookingListQueryDto = (
 	}
 	return bookingListQuerySchema.parse(cleanedQuery);
 };
-

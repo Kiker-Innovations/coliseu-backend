@@ -3,9 +3,6 @@ import type { MongoClient } from "mongodb";
 import { BookingService } from "./booking.service";
 import type {
 	BookingCreateDto,
-	BookingListQueryDto,
-	BookingAvailabilityQueryDto,
-	BookingHoursAvailabilityQueryDto,
 } from "./dto";
 import {
 	transformCreateBookingDto,
@@ -30,30 +27,30 @@ export class BookingController {
 			const body = request.body as BookingCreateDto;
 			const bookingCreateDto = transformCreateBookingDto(body);
 
-		const apartmentId = request.user?.apartmentId;
-		const residentId = request.user?.userId;
-		const buildingId = request.user?.buildingId;
+			const apartmentId = request.user?.apartmentId;
+			const residentId = request.user?.userId;
+			const buildingId = request.user?.buildingId;
 
-		if (!apartmentId) {
-			return reply.status(httpStatus.BAD_REQUEST).send({
-				success: false,
-				message: "apartmentId não encontrado no token",
-			});
-		}
+			if (!apartmentId) {
+				return reply.status(httpStatus.BAD_REQUEST).send({
+					success: false,
+					message: "apartmentId não encontrado no token",
+				});
+			}
 
-		if (!buildingId) {
-			return reply.status(httpStatus.BAD_REQUEST).send({
-				success: false,
-				message: "buildingId não encontrado no token",
-			});
-		}
+			if (!buildingId) {
+				return reply.status(httpStatus.BAD_REQUEST).send({
+					success: false,
+					message: "buildingId não encontrado no token",
+				});
+			}
 
-		const result = await this.bookingService.createBooking(
-			bookingCreateDto,
-			apartmentId,
-			residentId,
-			buildingId,
-		);
+			const result = await this.bookingService.createBooking(
+				bookingCreateDto,
+				apartmentId,
+				residentId,
+				buildingId,
+			);
 
 			return reply.status(httpStatus.CREATED).send(result);
 		} catch (error: any) {
@@ -76,8 +73,7 @@ export class BookingController {
 	): Promise<void> {
 		try {
 			const query = request.query as any;
-			const bookingListQueryDto =
-				transformBookingListQueryDto(query);
+			const bookingListQueryDto = transformBookingListQueryDto(query);
 
 			// apartmentId é obrigatório - vem do token JWT
 			const apartmentId = request.user?.apartmentId;
@@ -97,8 +93,14 @@ export class BookingController {
 			// Log para debug - verificar se paymentUrl está presente antes de enviar
 			if (result.data?.bookings && result.data.bookings.length > 0) {
 				const firstBooking = result.data.bookings[0];
-				console.log(`Controller - Primeiro booking paymentUrl:`, firstBooking.paymentUrl);
-				console.log(`Controller - Primeiro booking paymentId:`, firstBooking.paymentId);
+				console.log(
+					`Controller - Primeiro booking paymentUrl:`,
+					firstBooking.paymentUrl,
+				);
+				console.log(
+					`Controller - Primeiro booking paymentId:`,
+					firstBooking.paymentId,
+				);
 			}
 
 			return reply.status(httpStatus.OK).send(result);
@@ -131,8 +133,7 @@ export class BookingController {
 				});
 			}
 
-			const result =
-				await this.bookingService.cancelBooking(bookingId);
+			const result = await this.bookingService.cancelBooking(bookingId);
 
 			return reply.status(httpStatus.OK).send(result);
 		} catch (error: any) {
@@ -164,11 +165,10 @@ export class BookingController {
 				});
 			}
 
-			const result =
-				await this.bookingService.getBookingsByBuilding(
-					buildingId,
-					query.amenityId,
-				);
+			const result = await this.bookingService.getBookingsByBuilding(
+				buildingId,
+				query.amenityId,
+			);
 
 			return reply.status(httpStatus.OK).send(result);
 		} catch (error: any) {
@@ -208,7 +208,8 @@ export class BookingController {
 				});
 			}
 
-			const result = await this.bookingService.getAvailability(availabilityQuery);
+			const result =
+				await this.bookingService.getAvailability(availabilityQuery);
 
 			return reply.status(httpStatus.OK).send(result);
 		} catch (error: any) {
@@ -231,7 +232,8 @@ export class BookingController {
 	): Promise<void> {
 		try {
 			const query = request.query as any;
-			const availabilityQuery = transformBookingHoursAvailabilityQueryDto(query);
+			const availabilityQuery =
+				transformBookingHoursAvailabilityQueryDto(query);
 
 			if (!availabilityQuery.amenityId) {
 				return reply.status(httpStatus.BAD_REQUEST).send({
@@ -247,7 +249,8 @@ export class BookingController {
 				});
 			}
 
-			const result = await this.bookingService.getHoursAvailability(availabilityQuery);
+			const result =
+				await this.bookingService.getHoursAvailability(availabilityQuery);
 
 			return reply.status(httpStatus.OK).send(result);
 		} catch (error: any) {
@@ -264,4 +267,3 @@ export class BookingController {
 		}
 	}
 }
-

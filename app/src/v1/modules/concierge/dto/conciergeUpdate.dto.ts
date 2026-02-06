@@ -18,6 +18,11 @@ export const conciergeUpdateSchema = z.object({
 
 	name: z
 		.string()
+		.regex(/^[a-zA-ZÀ-ÿ\s]+$/, "Nome deve conter apenas letras e espaços")
+		.trim()
+		.transform((val) => {
+			return val.trim().replace(/\s+/g, " ").toUpperCase();
+		})
 		.optional()
 		.refine(
 			(val) => val === undefined || val.trim() !== "",

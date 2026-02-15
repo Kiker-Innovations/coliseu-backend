@@ -69,6 +69,16 @@ export class ProjectSuggestionPollRepository
 		});
 	}
 
+	public async findByProjectSuggestionIdAndApartmentId(
+		projectSuggestionId: string,
+		apartmentId: string,
+	): Promise<ProjectSuggestionPollEntity | null> {
+		return await this.collection.findOne({
+			projectSuggestionId,
+			apartmentId,
+		});
+	}
+
 	public async findByResidentId(
 		residentId: string,
 	): Promise<ProjectSuggestionPollEntity[]> {
@@ -90,6 +100,30 @@ export class ProjectSuggestionPollRepository
 				{
 					$match: {
 						residentId,
+						projectSuggestionId: { $in: projectSuggestionIds },
+					},
+				},
+				{
+					$group: {
+						_id: null,
+						totalVotes: { $sum: "$voteCount" },
+					},
+				},
+			])
+			.toArray();
+
+		return result.length > 0 ? result[0].totalVotes : 0;
+	}
+
+	public async countVotesByApartmentAndSuggestionIds(
+		apartmentId: string,
+		projectSuggestionIds: string[],
+	): Promise<number> {
+		const result = await this.collection
+			.aggregate([
+				{
+					$match: {
+						apartmentId,
 						projectSuggestionId: { $in: projectSuggestionIds },
 					},
 				},

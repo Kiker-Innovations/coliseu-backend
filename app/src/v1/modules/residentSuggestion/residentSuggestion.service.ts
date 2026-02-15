@@ -44,11 +44,14 @@ export class ResidentSuggestionService {
 		}
 
 		const currentSuggestionsCount =
-			await this.residentSuggestionRepository.countByApartmentId(apartmentId);
+			await this.residentSuggestionRepository.countByApartmentIdAndSeasonId(
+				apartmentId,
+				actualSeasonId,
+			);
 
 		if (currentSuggestionsCount >= 5) {
 			throw httpException(
-				"Limite de 5 sugestões por apartamento atingido. Para criar uma nova sugestão, exclua uma existente.",
+				"Limite de 5 sugestões por apartamento nesta temporada atingido. Para criar uma nova sugestão, exclua uma existente.",
 				httpStatus.BAD_REQUEST,
 			);
 		}

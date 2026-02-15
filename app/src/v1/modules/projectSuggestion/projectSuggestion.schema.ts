@@ -30,16 +30,13 @@ export class ProjectSuggestionSchema {
 			},
 		},
 		response: {
-			201: {
-				description: "Sugestões rankeadas com sucesso",
+			202: {
+				description: "Processamento de sugestões iniciado",
 				type: "object",
 				properties: {
 					success: { type: "boolean" },
 					message: { type: "string" },
-					data: {
-						type: "array",
-						items: this.projectSuggestionResponse,
-					},
+					data: { type: "null" },
 				},
 			},
 			400: {
@@ -275,7 +272,7 @@ export class ProjectSuggestionSchema {
 				voteCount: {
 					type: "integer",
 					description:
-						"Quantidade de votos (1 a 3). O total de votos do morador na season não pode exceder 3",
+						"Quantidade de votos (1 a 3). O total de votos do apartamento na season não pode exceder 3",
 					example: 2,
 				},
 			},
@@ -446,7 +443,7 @@ export class ProjectSuggestionSchema {
 		},
 	};
 
-	public createProjectsFromTopSuggestions = {
+	public createProjectsFromSuggestions = {
 		params: {
 			type: "object",
 			required: ["seasonId"],
@@ -459,12 +456,14 @@ export class ProjectSuggestionSchema {
 		},
 		body: {
 			type: "object",
+			required: ["suggestionIds"],
 			properties: {
-				top: {
-					type: "integer",
+				suggestionIds: {
+					type: "array",
+					items: { type: "string" },
 					description:
-						"Quantidade de projetos a serem criados a partir das sugestões mais votadas (default: 3)",
-					example: 3,
+						"IDs das sugestões selecionadas pelo administrador para criar projetos",
+					example: ["uuid-1", "uuid-2"],
 				},
 			},
 		},
@@ -484,6 +483,7 @@ export class ProjectSuggestionSchema {
 								title: { type: "string" },
 								description: { type: "string" },
 								votes: { type: "integer" },
+								rank: { type: "integer" },
 							},
 						},
 					},

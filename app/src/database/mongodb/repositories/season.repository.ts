@@ -29,6 +29,7 @@ export class SeasonRepository
 			_id: randomUUID(),
 			...data,
 			seasonNumber: nextSeasonNumber,
+			rankingStatus: null,
 			createdAt: now,
 			updatedAt: now,
 			endDate: null,

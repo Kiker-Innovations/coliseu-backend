@@ -110,7 +110,7 @@ export class ProjectSuggestionRouteV1 {
 				tags: ["ProjectSuggestions"],
 				summary: "Vote for a project suggestion",
 				description:
-					"Registra ou atualiza os votos de um morador em uma sugestão. Cada morador possui 3 votos por season que podem ser distribuídos livremente entre as sugestões",
+					"Registra ou atualiza os votos de um apartamento em uma sugestão. Cada apartamento possui 3 votos por season que podem ser distribuídos livremente entre as sugestões",
 				...this.projectSuggestionSchema.vote,
 			},
 			preHandler: [
@@ -164,23 +164,23 @@ export class ProjectSuggestionRouteV1 {
 		};
 	};
 
-	private createProjectsFromTopSuggestions = (): RouteOptions => {
+	private createProjectsFromSuggestions = (): RouteOptions => {
 		return {
 			method: "POST",
 			url: "/v1/seasons/:seasonId/project-suggestions/create-projects",
 			schema: {
 				tags: ["ProjectSuggestions"],
-				summary: "Create projects from top voted suggestions",
+				summary: "Create projects from selected suggestions",
 				description:
-					"Cria projetos a partir das sugestões mais votadas de uma season. O administrador define quantos projetos serão criados (default: 3)",
-				...this.projectSuggestionSchema.createProjectsFromTopSuggestions,
+					"Cria projetos a partir das sugestões selecionadas pelo administrador. O administrador escolhe quais sugestões serão promovidas a projetos",
+				...this.projectSuggestionSchema.createProjectsFromSuggestions,
 			},
 			preHandler: [
 				this.authMiddleware.authenticate,
 				this.authMiddleware.checkPermission(MODULE_TAG, "create"),
 			],
 			handler:
-				this.projectSuggestionController.createProjectsFromTopSuggestions.bind(
+				this.projectSuggestionController.createProjectsFromSuggestions.bind(
 					this.projectSuggestionController,
 				) as RouteHandlerMethod,
 		};
@@ -195,7 +195,7 @@ export class ProjectSuggestionRouteV1 {
 			this.vote(),
 			this.deleteVote(),
 			this.getMyVotes(),
-			this.createProjectsFromTopSuggestions(),
+			this.createProjectsFromSuggestions(),
 		];
 	};
 }

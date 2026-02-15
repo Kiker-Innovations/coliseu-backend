@@ -6,6 +6,7 @@ export class SeasonSchema {
 			buildingId: { type: "string" },
 			seasonNumber: { type: "number" },
 			reusedSuggestions: { type: "boolean" },
+			rankingStatus: { type: ["string", "null"], enum: ["idle", "in_progress", "done", "error", null] },
 			createdAt: { type: "string", format: "date-time" },
 			updatedAt: { type: "string", format: "date-time" },
 			endDate: { type: ["string", "null"], format: "date-time" },

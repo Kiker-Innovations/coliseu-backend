@@ -15,8 +15,8 @@ env:
   AWS_ACCOUNT_ID: "913173953684"
   ENVIRONMENT: hml
   TF_VERSION: 1.6.0
-  ECR_REPOSITORY: coliseu-hml
-  LAMBDA_FUNCTION_NAME: coliseu-hml
+  ECR_REPOSITORY: coliseu
+  LAMBDA_FUNCTION_NAME: coliseu
   SECRETS_NAME: coliseu/hml/app
 
 jobs:

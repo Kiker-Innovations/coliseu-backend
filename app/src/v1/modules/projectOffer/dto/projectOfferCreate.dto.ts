@@ -53,7 +53,7 @@ export const projectOfferCreateSchema = z.object({
 		.datetime("offerEndDate deve ser uma data válida"),
 	offers: z
 		.array(offerSchema)
-		.min(2, "Deve haver no mínimo 2 ofertas")
+		.min(3, "Deve haver no mínimo 3 ofertas")
 		.max(10, "Deve haver no máximo 10 ofertas"),
 });
 

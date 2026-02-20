@@ -34,8 +34,8 @@ provider "aws" {
 ################################################################################
 
 locals {
-  function_name   = "${var.lambda_function_name}-${var.environment}"
-  repository_name = "${var.project_name}-${var.environment}"
+  function_name   = var.lambda_function_name
+  repository_name = var.project_name
   secret_name     = "${var.project_name}/${var.environment}/app"
 
   # Carrega o template da policy e substitui as variáveis

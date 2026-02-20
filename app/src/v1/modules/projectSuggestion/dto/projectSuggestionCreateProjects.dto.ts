@@ -1,12 +1,12 @@
 import { z } from "zod";
 
 export const projectSuggestionCreateProjectsSchema = z.object({
-	top: z
-		.number({ required_error: "Quantidade de projetos é obrigatória" })
-		.int("Quantidade de projetos deve ser um número inteiro")
-		.min(1, "Quantidade mínima de projetos é 1")
-		.max(10, "Quantidade máxima de projetos é 10")
-		.default(3),
+	suggestionIds: z
+		.array(
+			z.string({ required_error: "ID da sugestão é obrigatório" }).uuid("ID da sugestão deve ser um UUID válido"),
+		)
+		.min(1, "Selecione pelo menos 1 sugestão para criar projeto")
+		.max(10, "Máximo de 10 projetos por vez"),
 });
 
 export type ProjectSuggestionCreateProjectsDto = z.infer<

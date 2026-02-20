@@ -19,7 +19,6 @@ export type CreateProjectEntity = Omit<
 	| "chosenOfferId"
 	| "offerStartDate"
 	| "offerEndDate"
-	| "rank"
 	| "createdAt"
 	| "updatedAt"
 >;

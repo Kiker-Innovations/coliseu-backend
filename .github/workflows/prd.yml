@@ -14,8 +14,8 @@ env:
   AWS_ACCOUNT_ID: "340593396817"
   ENVIRONMENT: prd
   TF_VERSION: 1.6.0
-  ECR_REPOSITORY: coliseu-prd
-  LAMBDA_FUNCTION_NAME: coliseu-prd
+  ECR_REPOSITORY: coliseu
+  LAMBDA_FUNCTION_NAME: coliseu
   SECRETS_NAME: coliseu/prd/app
 
 jobs:

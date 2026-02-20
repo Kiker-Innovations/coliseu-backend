@@ -28,7 +28,7 @@ import {
 	groupBySimilarity,
 } from "../../utils/similarity";
 
-const MAX_VOTES_PER_RESIDENT = 3;
+const MAX_VOTES_PER_APARTMENT = 3;
 
 /**
  * Internal type for tracking suggestions with their embeddings during AI processing.
@@ -73,49 +73,55 @@ export class ProjectSuggestionService {
 	}
 
 	/**
-	 * Ranks resident suggestions using AI-powered semantic similarity.
-	 * The process:
-	 * 1. Filters out short/empty suggestions (audit logged)
-	 * 2. Generates embeddings for semantic comparison using Hugging Face
-	 * 3. Deduplicates suggestions within the same apartment
-	 * 4. Groups semantically similar suggestions across apartments
-	 * 5. Generates canonical title/description using Mistral LLM
-	 * 6. Ranks by consensus (duplicateCount)
-	 *
-	 * If AI processing fails, falls back to basic text comparison.
+	 * Starts the async ranking process for resident suggestions.
+	 * Sets the season's rankingStatus to "in_progress" and returns immediately.
+	 * The actual processing continues in the background.
 	 */
 	public async rankSuggestions(
 		seasonId: string,
 		buildingId: string,
-	): Promise<HttpResponse<ProjectSuggestionEntity[]>> {
-		try {
-			const season = await this.seasonRepository.findById(seasonId);
+	): Promise<HttpResponse<null>> {
+		const season = await this.seasonRepository.findById(seasonId);
 
-			if (!season) {
-				throw httpException("Season não encontrada", httpStatus.NOT_FOUND);
-			}
+		if (!season) {
+			throw httpException("Season não encontrada", httpStatus.NOT_FOUND);
+		}
 
-			if (season.buildingId !== buildingId) {
-				throw httpException(
-					"Você não tem permissão para rankear sugestões desta season",
-					httpStatus.FORBIDDEN,
-				);
-			}
+		if (season.buildingId !== buildingId) {
+			throw httpException(
+				"Você não tem permissão para rankear sugestões desta season",
+				httpStatus.FORBIDDEN,
+			);
+		}
 
-			const existingSuggestions =
-				await this.projectSuggestionRepository.countBySeasonId(seasonId);
-			if (existingSuggestions > 0) {
-				throw httpException(
-					"As sugestões desta season já foram rankeadas",
-					httpStatus.BAD_REQUEST,
-				);
-			}
+		if (season.rankingStatus === "in_progress") {
+			throw httpException(
+				"O processamento das sugestões já está em andamento",
+				httpStatus.BAD_REQUEST,
+			);
+		}
 
-			const residentSuggestions =
-				await this.residentSuggestionRepository.findMany({
-					actualSeasonId: seasonId,
-					buildingId: buildingId,
-				});
+		if (season.rankingStatus === "done") {
+			throw httpException(
+				"As sugestões desta season já foram rankeadas",
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
+		const existingSuggestions =
+			await this.projectSuggestionRepository.countBySeasonId(seasonId);
+		if (existingSuggestions > 0) {
+			throw httpException(
+				"As sugestões desta season já foram rankeadas",
+				httpStatus.BAD_REQUEST,
+			);
+		}
+
+		const residentSuggestions =
+			await this.residentSuggestionRepository.findMany({
+				actualSeasonId: seasonId,
+				buildingId: buildingId,
+			});
 
 		if (residentSuggestions.length === 0) {
 			throw httpException(
@@ -124,70 +130,93 @@ export class ProjectSuggestionService {
 			);
 		}
 
-		let groupedSuggestions: GroupedSuggestion[];
+		// Set ranking status to in_progress
+		await this.seasonRepository.update(seasonId, {
+			rankingStatus: "in_progress",
+		});
 
-		// Phase 2: Try AI-powered processing, fallback to basic if it fails
-		if (this.huggingFaceProvider.isAvailable()) {
-			try {
-				console.log("[AI] Starting AI-powered suggestion ranking...");
-				groupedSuggestions =
-					await this.rankSuggestionsWithAI(residentSuggestions);
+		// Fire-and-forget: process ranking in background
+		this.processRankingAsync(seasonId, buildingId, residentSuggestions)
+			.catch((error) => {
+				console.error("[Ranking] Unhandled error in async ranking:", error);
+			});
+
+		return {
+			success: true,
+			message: "Processamento de sugestões iniciado. Acompanhe o status pela temporada.",
+			data: null,
+		};
+	}
+
+	/**
+	 * Processes ranking asynchronously in the background.
+	 * Updates the season's rankingStatus to "done" on success or "error" on failure.
+	 */
+	private async processRankingAsync(
+		seasonId: string,
+		buildingId: string,
+		residentSuggestions: ResidentSuggestionEntity[],
+	): Promise<void> {
+		try {
+			let groupedSuggestions: GroupedSuggestion[];
+
+			if (this.huggingFaceProvider.isAvailable()) {
+				try {
+					console.log("[AI] Starting AI-powered suggestion ranking...");
+					groupedSuggestions =
+						await this.rankSuggestionsWithAI(residentSuggestions);
+					console.log(
+						`[AI] Successfully grouped ${residentSuggestions.length} suggestions into ${groupedSuggestions.length} groups`,
+					);
+				} catch (error) {
+					const errorMessage =
+						error instanceof Error ? error.message : "Unknown error";
+					console.warn(
+						`[AI] AI processing failed: ${errorMessage}. Falling back to basic text comparison.`,
+					);
+					groupedSuggestions =
+						this.rankSuggestionsWithBasicComparison(residentSuggestions);
+				}
+			} else {
 				console.log(
-					`[AI] Successfully grouped ${residentSuggestions.length} suggestions into ${groupedSuggestions.length} groups`,
-				);
-			} catch (error) {
-				const errorMessage =
-					error instanceof Error ? error.message : "Unknown error";
-				console.warn(
-					`[AI] AI processing failed: ${errorMessage}. Falling back to basic text comparison.`,
+					"[AI] HuggingFace API key not configured. Using basic text comparison.",
 				);
 				groupedSuggestions =
 					this.rankSuggestionsWithBasicComparison(residentSuggestions);
 			}
-		} else {
-			console.log(
-				"[AI] HuggingFace API key not configured. Using basic text comparison.",
-			);
-			groupedSuggestions =
-				this.rankSuggestionsWithBasicComparison(residentSuggestions);
-		}
 
-		// Phase 3: Sort by duplicateCount (higher = better rank)
-		const rankedSuggestions = groupedSuggestions.sort(
-			(a, b) => b.duplicateCount - a.duplicateCount,
-		);
+			const rankedSuggestions = groupedSuggestions
+				.sort((a, b) => b.duplicateCount - a.duplicateCount)
+				.slice(0, 10);
 
-		// Phase 4: Persist to project_suggestions collection
-		const projectSuggestionsToCreate: CreateProjectSuggestionEntity[] =
-			rankedSuggestions.map((item, index) => ({
-				buildingId,
-				seasonId,
-				title: item.title,
-				description: item.description,
-				duplicateCount: item.duplicateCount,
-				rank: index + 1,
-				status: ProjectSuggestionStatusEnum.AGUARDANDO_VOTACAO,
-			}));
+			const projectSuggestionsToCreate: CreateProjectSuggestionEntity[] =
+				rankedSuggestions.map((item, index) => ({
+					buildingId,
+					seasonId,
+					title: item.title,
+					description: item.description,
+					duplicateCount: item.duplicateCount,
+					rank: index + 1,
+					status: ProjectSuggestionStatusEnum.AGUARDANDO_VOTACAO,
+				}));
 
-		const createdSuggestions =
 			await this.projectSuggestionRepository.createMany(
 				projectSuggestionsToCreate,
 			);
 
-		return {
-			success: true,
-			message: "Sugestões rankeadas com sucesso",
-			data: createdSuggestions,
-		};
+			// Set ranking status to done
+			await this.seasonRepository.update(seasonId, {
+				rankingStatus: "done",
+			});
+
+			console.log(`[Ranking] Season ${seasonId} ranking completed successfully.`);
 		} catch (error) {
-			console.error("Error ranking suggestions: ", error);
-			if (error?.message) {
-				throw httpException(error.message, httpStatus.INTERNAL_SERVER_ERROR);
-			}
-			throw httpException(
-				"Erro ao rankear sugestões",
-				httpStatus.INTERNAL_SERVER_ERROR,
-			);
+			console.error("[Ranking] Error during async ranking:", error);
+
+			// Set ranking status to error
+			await this.seasonRepository.update(seasonId, {
+				rankingStatus: "error",
+			});
 		}
 	}
 
@@ -651,6 +680,8 @@ export class ProjectSuggestionService {
 			);
 		}
 
+		const apartmentId = resident.apartmentId;
+
 		const seasonSuggestions =
 			await this.projectSuggestionRepository.findBySeasonId(
 				suggestion.seasonId,
@@ -658,24 +689,24 @@ export class ProjectSuggestionService {
 		const suggestionIds = seasonSuggestions.map((s) => s._id);
 
 		const currentVotes =
-			await this.projectSuggestionPollRepository.countVotesByResidentAndSuggestionIds(
-				residentId,
+			await this.projectSuggestionPollRepository.countVotesByApartmentAndSuggestionIds(
+				apartmentId,
 				suggestionIds,
 			);
 
 		const existingVote =
-			await this.projectSuggestionPollRepository.findByProjectSuggestionIdAndResidentId(
+			await this.projectSuggestionPollRepository.findByProjectSuggestionIdAndApartmentId(
 				dto.projectSuggestionId,
-				residentId,
+				apartmentId,
 			);
 
 		const votesBeingUsed = existingVote ? existingVote.voteCount : 0;
 		const availableVotes =
-			MAX_VOTES_PER_RESIDENT - currentVotes + votesBeingUsed;
+			MAX_VOTES_PER_APARTMENT - currentVotes + votesBeingUsed;
 
 		if (dto.voteCount > availableVotes) {
 			throw httpException(
-				`Você só possui ${availableVotes} voto(s) disponível(is). Já utilizou ${
+				`Seu apartamento só possui ${availableVotes} voto(s) disponível(is). Já utilizou ${
 					currentVotes - votesBeingUsed
 				} voto(s) nesta season`,
 				httpStatus.BAD_REQUEST,
@@ -715,6 +746,7 @@ export class ProjectSuggestionService {
 		const vote = await this.projectSuggestionPollRepository.create({
 			projectSuggestionId: dto.projectSuggestionId,
 			residentId,
+			apartmentId,
 			voteCount: dto.voteCount,
 		});
 
@@ -767,14 +799,14 @@ export class ProjectSuggestionService {
 		}
 
 		const existingVote =
-			await this.projectSuggestionPollRepository.findByProjectSuggestionIdAndResidentId(
+			await this.projectSuggestionPollRepository.findByProjectSuggestionIdAndApartmentId(
 				projectSuggestionId,
-				residentId,
+				resident.apartmentId,
 			);
 
 		if (!existingVote) {
 			throw httpException(
-				"Você não votou nesta sugestão",
+				"Seu apartamento não votou nesta sugestão",
 				httpStatus.NOT_FOUND,
 			);
 		}
@@ -822,7 +854,7 @@ export class ProjectSuggestionService {
 		const suggestionIds = suggestions.map((s) => s._id);
 
 		const votes = await this.projectSuggestionPollRepository.findMany({
-			residentId,
+			apartmentId: resident.apartmentId,
 		});
 
 		const seasonVotes = votes.filter((v) =>
@@ -839,13 +871,13 @@ export class ProjectSuggestionService {
 		};
 	}
 
-	public async createProjectsFromTopSuggestions(
+	public async createProjectsFromSuggestions(
 		seasonId: string,
 		dto: ProjectSuggestionCreateProjectsDto,
 		buildingId: string,
 	): Promise<
 		HttpResponse<
-			{ id: string; title: string; description: string; votes: number }[]
+			{ id: string; title: string; description: string; votes: number; rank: number }[]
 		>
 	> {
 		const season = await this.seasonRepository.findById(seasonId);
@@ -874,17 +906,26 @@ export class ProjectSuggestionService {
 			);
 		}
 
-		const topSuggestions =
-			await this.projectSuggestionRepository.findTopByVotes(seasonId, dto.top);
+		const selectedSuggestions = suggestions.filter((s) =>
+			dto.suggestionIds.includes(s._id),
+		);
+
+		if (selectedSuggestions.length === 0) {
+			throw httpException(
+				"Nenhuma das sugestões selecionadas foi encontrada com votação encerrada",
+				httpStatus.BAD_REQUEST,
+			);
+		}
 
 		const createdProjects: {
 			id: string;
 			title: string;
 			description: string;
 			votes: number;
+			rank: number;
 		}[] = [];
 
-		for (const suggestion of topSuggestions) {
+		for (const suggestion of selectedSuggestions) {
 			const existingProject = await this.projectRepository.findOne({
 				buildingId,
 				fromSeasonId: seasonId,
@@ -901,6 +942,7 @@ export class ProjectSuggestionService {
 				title: suggestion.title,
 				description: suggestion.description,
 				votes: suggestion.votes,
+				rank: suggestion.rank,
 			};
 
 			const project = await this.projectRepository.create(projectData);
@@ -910,6 +952,7 @@ export class ProjectSuggestionService {
 				title: project.title,
 				description: project.description,
 				votes: project.votes,
+				rank: project.rank ?? suggestion.rank,
 			});
 		}
 

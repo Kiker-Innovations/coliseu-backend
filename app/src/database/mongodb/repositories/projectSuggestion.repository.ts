@@ -82,6 +82,15 @@ export class ProjectSuggestionRepository
 		return await this.collection.find(filter || {}).toArray();
 	}
 
+	public async findManyByIds(
+		ids: string[],
+	): Promise<ProjectSuggestionEntity[]> {
+		return await this.collection
+			.find({ _id: { $in: ids } })
+			.sort({ rank: 1 })
+			.toArray();
+	}
+
 	public async findBySeasonId(
 		seasonId: string,
 	): Promise<ProjectSuggestionEntity[]> {

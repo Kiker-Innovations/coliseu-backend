@@ -2,6 +2,7 @@ export interface ProjectSuggestionPollEntity {
 	_id: string;
 	projectSuggestionId: string;
 	residentId: string;
+	apartmentId: string;
 	voteCount: number;
 	createdAt: Date;
 	updatedAt: Date;

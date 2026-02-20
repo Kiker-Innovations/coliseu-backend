@@ -31,7 +31,7 @@ export class ProjectSuggestionController {
 		const { seasonId } = request.params as { seasonId: string };
 
 		return reply
-			.code(httpStatus.CREATED)
+			.code(httpStatus.ACCEPTED)
 			.send(
 				await this.projectSuggestionService.rankSuggestions(
 					seasonId,
@@ -172,7 +172,7 @@ export class ProjectSuggestionController {
 			);
 	}
 
-	public async createProjectsFromTopSuggestions(
+	public async createProjectsFromSuggestions(
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): Promise<void> {
@@ -184,14 +184,13 @@ export class ProjectSuggestionController {
 		}
 
 		const { seasonId } = request.params as { seasonId: string };
-		const body = request.body || { top: 3 };
 
 		return reply
 			.code(httpStatus.CREATED)
 			.send(
-				await this.projectSuggestionService.createProjectsFromTopSuggestions(
+				await this.projectSuggestionService.createProjectsFromSuggestions(
 					seasonId,
-					transformProjectSuggestionCreateProjectsDto(body),
+					transformProjectSuggestionCreateProjectsDto(request.body),
 					request.user.buildingId,
 				),
 			);

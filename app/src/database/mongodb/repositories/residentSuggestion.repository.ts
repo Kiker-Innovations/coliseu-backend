@@ -70,6 +70,13 @@ export class ResidentSuggestionRepository
 		return await this.collection.countDocuments({ apartmentId });
 	}
 
+	public async countByApartmentIdAndSeasonId(
+		apartmentId: string,
+		actualSeasonId: string,
+	): Promise<number> {
+		return await this.collection.countDocuments({ apartmentId, actualSeasonId });
+	}
+
 	public async update(
 		_id: string,
 		data: UpdateResidentSuggestionEntity,

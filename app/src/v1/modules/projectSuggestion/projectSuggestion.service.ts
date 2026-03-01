@@ -23,6 +23,7 @@ import { ProjectSuggestionStatusEnum } from "../../enum/projectSuggestionStatus.
 import { getDate, toDate } from "@/v1/utils/utils";
 import { env } from "../../../config/env";
 import { HuggingFaceProvider } from "../../../providers/huggingface/huggingface.provider";
+import { SQSProvider } from "../../../providers/aws/sqs.provider";
 import {
 	type EmbeddedItem,
 	groupBySimilarity,
@@ -55,6 +56,7 @@ export class ProjectSuggestionService {
 	private projectRepository: ProjectRepository;
 	private residentRepository: ResidentRepository;
 	private huggingFaceProvider: HuggingFaceProvider;
+	private sqsProvider: SQSProvider;
 
 	constructor(mongoClient: MongoClient) {
 		this.projectSuggestionRepository = new ProjectSuggestionRepository(
@@ -70,6 +72,7 @@ export class ProjectSuggestionService {
 		this.projectRepository = new ProjectRepository(mongoClient);
 		this.residentRepository = new ResidentRepository(mongoClient);
 		this.huggingFaceProvider = new HuggingFaceProvider();
+		this.sqsProvider = new SQSProvider();
 	}
 
 	/**
@@ -732,6 +735,19 @@ export class ProjectSuggestionService {
 				);
 			}
 
+			this.sendProjectSuggestionPollToQueueAsync(
+				{
+					_id: existingVote._id,
+					projectSuggestionId: existingVote.projectSuggestionId,
+					residentId: existingVote.residentId,
+					apartmentId: existingVote.apartmentId,
+					voteCount: dto.voteCount,
+				},
+				suggestion,
+				"PROJECT_SUGGESTION_POLL_UPDATED",
+				existingVote.voteCount,
+			);
+
 			return {
 				success: true,
 				message: "Voto atualizado com sucesso",
@@ -754,6 +770,8 @@ export class ProjectSuggestionService {
 			dto.projectSuggestionId,
 			dto.voteCount,
 		);
+
+		this.sendProjectSuggestionPollToQueueAsync(vote, suggestion);
 
 		return {
 			success: true,
@@ -961,5 +979,60 @@ export class ProjectSuggestionService {
 			message: `${createdProjects.length} projeto(s) criado(s) com sucesso`,
 			data: createdProjects,
 		};
+	}
+
+	private sendProjectSuggestionPollToQueueAsync(
+		vote: {
+			_id: string;
+			projectSuggestionId: string;
+			residentId: string;
+			apartmentId: string;
+			voteCount: number;
+		},
+		suggestion: { buildingId: string; seasonId: string },
+		action: "PROJECT_SUGGESTION_POLL_CREATED" | "PROJECT_SUGGESTION_POLL_UPDATED" = "PROJECT_SUGGESTION_POLL_CREATED",
+		previousVoteCount?: number,
+	): void {
+		const timestamp = new Date().toISOString();
+		const messageBody = JSON.stringify({
+			action,
+			projectSuggestionPollId: vote._id,
+			projectSuggestionId: vote.projectSuggestionId,
+			residentId: vote.residentId,
+			apartmentId: vote.apartmentId,
+			voteCount: vote.voteCount,
+			...(previousVoteCount !== undefined && {
+				previousVoteCount,
+			}),
+			buildingId: suggestion.buildingId,
+			seasonId: suggestion.seasonId,
+			type: "PROJECT_SUGGESTION_POLL",
+			timestamp,
+		});
+
+		this.sqsProvider
+			.sendMessage({
+				queueUrl: env.providers.aws.sqs.voteQueueUrl,
+				messageBody,
+				messageGroupId: vote.projectSuggestionId,
+				messageDeduplicationId: `${action}-${vote._id}-${Date.now()}`,
+			})
+			.then((result) => {
+				if (result.success) {
+					console.log(
+						`[SQS] ProjectSuggestionPoll enviado com sucesso. MessageId: ${result.messageId}`,
+					);
+				} else {
+					console.error(
+						`[SQS] Falha ao enviar ProjectSuggestionPoll: ${result.error}`,
+					);
+				}
+			})
+			.catch((error) => {
+				console.error(
+					"[SQS] Erro ao enviar ProjectSuggestionPoll para fila SQS:",
+					error,
+				);
+			});
 	}
 }

@@ -110,6 +110,9 @@ const envSchema = z.object({
       ses: z.object({
         fromEmail: z.string().email().min(1),
       }),
+      sqs: z.object({
+        voteQueueUrl: z.string().url(),
+      }),
     }),
     huggingface: z.object({
       apiKey: z.string().min(1).optional(),
@@ -235,6 +238,11 @@ export const env = envSchema.parse({
       },
       ses: {
         fromEmail: process.env.AWS_SES_FROM_EMAIL || "no-reply@coliseu.app",
+      },
+      sqs: {
+        voteQueueUrl:
+          process.env.AWS_SQS_VOTE_QUEUE_URL ??
+          "https://sqs.us-east-1.amazonaws.com/913173953684/queue-log-vote.fifo",
       },
     },
     huggingface: {

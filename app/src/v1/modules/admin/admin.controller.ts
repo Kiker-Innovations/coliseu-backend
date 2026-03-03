@@ -12,6 +12,11 @@ import { AdminService } from "./admin.service";
 import { httpException } from "../../../config/error";
 import { UserTypeEnum } from "../../enum/userType.enum";
 
+import { SendMessageCommand } from "@aws-sdk/client-sqs";
+import { sqsClient, QUEUE_URL } from "../../../sqs";
+
+
+
 export class AdminController {
 	private adminService: AdminService;
 
@@ -27,6 +32,15 @@ export class AdminController {
 		return reply
 			.status(httpStatus.OK)
 			.send(await this.adminService.getAdmin(id));
+	}
+
+	public async sendToQueue(
+    request: FastifyRequest,
+    reply: FastifyReply,
+	): Promise<void> {
+		return reply
+			.status(httpStatus.OK)
+			.send(await this.adminService.sendMessageToQueue(request.body));
 	}
 
 	public async getCurrentAdmin(

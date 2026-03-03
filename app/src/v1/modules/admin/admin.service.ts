@@ -20,6 +20,8 @@ import { sendPasswordResetEmail } from "@/v1/utils/emailHelper";
 import { getDate } from "@/v1/utils/utils";
 import { AdminStatusEnum } from "../../enum/adminStatus.enum";
 import { ResidentStatusEnum } from "../../enum/residentStatus.enum";
+import { SendMessageCommand } from "@aws-sdk/client-sqs";
+import { sqsClient, QUEUE_URL } from "../../../sqs";
 
 export class AdminService {
 	private adminRepository: AdminRepository;
@@ -57,6 +59,28 @@ export class AdminService {
 			},
 		};
 	}
+
+	public async sendMessageToQueue(data: any): Promise<HttpResponse<{ messageId: string | undefined }>> {
+        try {
+            const command = new SendMessageCommand({
+                QueueUrl: QUEUE_URL,
+                MessageBody: JSON.stringify(data),
+            });
+
+            const result = await sqsClient.send(command);
+
+            return {
+                success: true,
+                message: "Mensagem enviada para a fila com sucesso",
+                data: {
+                    messageId: result.MessageId,
+                },
+            };
+        } catch (error) {
+            // Segue o seu padrão de erro
+            throw httpException("Erro ao enviar mensagem para o SQS", httpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
 	public async getCurrentAdmin(adminId: string): Promise<
 		HttpResponse<{

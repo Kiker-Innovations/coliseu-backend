@@ -39,11 +39,11 @@ export async function buildApp(
 	registerPlugins(server, env);
 
 	// Registra o guard de autenticação global
-	const { authGuard } = await import("./plugins/fastify-auth-guard");
-	await server.register(authGuard, {
-		mongoClient: mongoConnection.getClient(),
-		stripPrefix: env.stripPrefix.path,
-	});
+	// const { authGuard } = await import("./plugins/fastify-auth-guard");
+	// await server.register(authGuard, {
+	// 	mongoClient: mongoConnection.getClient(),
+	// 	stripPrefix: env.stripPrefix.path,
+	// });
 
 	// Registra as rotas com o prefixo configurado
 	server.register(new Route().registerRoutes, {

@@ -1,0 +1,6 @@
+docker buildx build --provenance=false -t lambda_ai_repo --load .
+docker tag lambda_ai_repo:latest 913173953684.dkr.ecr.us-east-1.amazonaws.com/lambda_ai_repo:late{version}_{data}
+docker push 913173953684.dkr.ecr.us-east-1.amazonaws.com/lambda_ai_repo:late02_01032026
+
+
+depois põe a imagem lá no aws.

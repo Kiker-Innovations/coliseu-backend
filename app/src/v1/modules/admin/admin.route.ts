@@ -4,6 +4,9 @@ import { AdminController } from "./admin.controller";
 import { AdminSchema } from "./admin.schema";
 import { AuthMiddleware } from "../auth/auth.middleware";
 import { UserTypeEnum } from "../../enum/userType.enum";
+import { SendMessageCommand } from "@aws-sdk/client-sqs";
+import { sqsClient, QUEUE_URL } from "../../../sqs";
+
 
 const MODULE_TAG = "admin";
 
@@ -118,6 +121,19 @@ export class AdminRouteV1 {
 		};
 	};
 
+	private sendSqs = (): RouteOptions => {
+    return {
+        method: "POST",
+        url: "/v1/admins/send-sqs", // O endereço que você vai chamar no Postman
+        schema: {
+            tags: ["Admins"],
+            summary: "Enviar mensagem para o SQS",
+            description: "Envia um payload genérico para a fila do Amazon SQS",
+        },
+        handler: this.adminController.sendToQueue.bind(this.adminController) as RouteHandlerMethod,
+    };
+};
+
 	private forgetPassword = (): RouteOptions => {
 		return {
 			method: "POST",
@@ -182,10 +198,10 @@ export class AdminRouteV1 {
 				description: "Lista residentes do edifício com paginação e filtros",
 				...this.adminSchema.getResidents,
 			},
-			preHandler: [
-				this.authMiddleware.authenticate,
-				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
-			],
+			// preHandler: [
+			// 	this.authMiddleware.authenticate,
+			// 	this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			// ],
 			handler: this.adminController.getResidents.bind(
 				this.adminController,
 			) as RouteHandlerMethod,
@@ -202,10 +218,10 @@ export class AdminRouteV1 {
 				description: "Retorna a contagem total de residentes do edifício",
 				...this.adminSchema.countResidents,
 			},
-			preHandler: [
-				this.authMiddleware.authenticate,
-				this.authMiddleware.checkPermission(MODULE_TAG, "read"),
-			],
+			//preHandler: [
+			//	this.authMiddleware.authenticate,
+			//	this.authMiddleware.checkPermission(MODULE_TAG, "read"),
+			//],
 			handler: this.adminController.countResidents.bind(
 				this.adminController,
 			) as RouteHandlerMethod,
@@ -323,6 +339,7 @@ export class AdminRouteV1 {
 			this.getMe(),
 			this.update(),
 			this.remove(),
+			this.sendSqs(),
 			this.confirm(),
 			this.forgetPassword(),
 			this.resetPassword(),

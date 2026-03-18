@@ -23,6 +23,7 @@ jobs:
   deploy:
     name: Deploy to Homologation
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     defaults:
       run:

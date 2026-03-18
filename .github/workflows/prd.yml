@@ -22,6 +22,7 @@ jobs:
   deploy:
     name: Deploy to Production
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     defaults:
       run:

@@ -63,6 +63,12 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
+      - name: Apply force_delete on ECR
+        run: terraform apply -auto-approve -lock=false -target=module.ecr
+        env:
+          TF_VAR_environment: ${{ inputs.environment }}
+          TF_VAR_aws_account_id: ${{ env.AWS_ACCOUNT_ID }}
+
       - name: Terraform Destroy
         run: terraform destroy -auto-approve -lock=false
         env:

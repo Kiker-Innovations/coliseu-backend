@@ -64,7 +64,7 @@ jobs:
         run: terraform init
 
       - name: Terraform Destroy
-        run: terraform destroy -auto-approve
+        run: terraform destroy -auto-approve -lock=false
         env:
           TF_VAR_environment: ${{ inputs.environment }}
           TF_VAR_aws_account_id: ${{ env.AWS_ACCOUNT_ID }}
